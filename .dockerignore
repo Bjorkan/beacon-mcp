@@ -1,0 +1,15 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+node_modules
+dist
+coverage
+.npm
+*.log
+.DS_Store
+.idea
+.vscode
+docs
+tests/container

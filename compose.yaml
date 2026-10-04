@@ -1,0 +1,35 @@
+services:
+  beacon-mcp:
+    image: beacon-mcp:local
+    build:
+      context: .
+      args:
+        APP_VERSION: ${APP_VERSION:-0.1.0}
+    environment:
+      BEACON_BASE_URL: ${BEACON_BASE_URL:?Set BEACON_BASE_URL}
+      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
+      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-localhost,127.0.0.1,[::1]}
+      MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-localhost,127.0.0.1,[::1]}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      BEACON_MAX_RESPONSE_BYTES: ${BEACON_MAX_RESPONSE_BYTES:-5242880}
+      PORT: "3000"
+    ports:
+      - "127.0.0.1:${PORT:-3000}:3000"
+    user: "1000:1000"
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    mem_limit: 256m
+    cpus: 0.50
+    pids_limit: 100
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "scripts/healthcheck.mjs"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

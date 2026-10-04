@@ -1,0 +1,48 @@
+{
+  "name": "beacon-mcp",
+  "version": "0.1.0",
+  "description": "Read-only MCP gateway for the MeshCore Beacon public API",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint . && eslint-config-prettier src/index.ts",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:contract": "vitest run tests/contract",
+    "test:mcp": "vitest run tests/mcp",
+    "openapi:generate": "swagger2openapi vendor/beacon-openapi.yaml --yaml --outfile /tmp/beacon-openapi-v3.yaml && openapi-typescript /tmp/beacon-openapi-v3.yaml -o src/generated/beacon-api.d.ts",
+    "openapi:check": "swagger2openapi vendor/beacon-openapi.yaml --yaml --outfile /tmp/beacon-openapi-v3.yaml && openapi-typescript /tmp/beacon-openapi-v3.yaml -o /tmp/beacon-api.check.d.ts && cmp -s src/generated/beacon-api.d.ts /tmp/beacon-api.check.d.ts",
+    "openapi:sync": "tsx scripts/sync-openapi.ts",
+    "healthcheck": "node scripts/healthcheck.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/fastify": "2.0.1",
+    "@modelcontextprotocol/node": "2.1.1",
+    "@modelcontextprotocol/server": "2.3.0",
+    "fastify": "5.12.5",
+    "pino": "10.4.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.10.1",
+    "eslint": "10.12.0",
+    "eslint-config-prettier": "10.1.8",
+    "openapi-typescript": "7.13.0",
+    "prettier": "3.9.9",
+    "swagger2openapi": "7.0.8",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.0",
+    "vitest": "5.0.3"
+  }
+}
