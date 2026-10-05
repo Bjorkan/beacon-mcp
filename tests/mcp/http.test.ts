@@ -67,7 +67,7 @@ async function rpc(
   params?: Record<string, unknown>,
 ) {
   return app.inject({
-    url: "/mcp",
+    url: "/",
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -118,7 +118,7 @@ describe("MCP HTTP integration", () => {
     expect(discovery.statusCode, discovery.body).toBe(200);
     expect(discovery.body).toContain('"version":"2.0.2"');
     const modern = await app.inject({
-      url: "/mcp",
+      url: "/",
       method: "POST",
       headers: {
         "content-type": "application/json",
@@ -282,7 +282,7 @@ describe("MCP HTTP integration", () => {
     expect(
       (
         await app.inject({
-          url: "/mcp",
+          url: "/",
           method: "POST",
           headers: {
             "content-type": "application/json",

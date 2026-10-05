@@ -37,7 +37,7 @@ export function buildHttpServer(
     maxRequestBodySize: 1_048_576,
   });
 
-  app.all("/mcp", async (request, reply) => {
+  app.all("/", async (request, reply) => {
     const started = performance.now();
     const body = request.body as
       { method?: unknown; params?: { name?: unknown } } | undefined;
