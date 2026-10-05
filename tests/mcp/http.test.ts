@@ -13,17 +13,11 @@ const config: Config = Object.freeze({
   beaconBaseUrl: new URL("https://beacon.example/"),
   beaconTimeoutMs: 1000,
   beaconStatsTimeoutMs: 1000,
-  beaconMaxResponseBytes: 5_242_880,
-  mcpLegacyMode: "stateless",
-  allowedHosts: ["127.0.0.1", "localhost"],
-  allowedOrigins: ["127.0.0.1", "localhost"],
   logLevel: "silent",
   shutdownGraceMs: 1000,
-  version: "test",
 });
 
 interface StartOptions {
-  auth?: string;
   config?: Partial<Config>;
   fetchImpl?: typeof fetch;
 }
@@ -52,7 +46,6 @@ async function start(options: StartOptions = {}): Promise<FastifyInstance> {
   const effectiveConfig = {
     ...config,
     ...options.config,
-    ...(options.auth ? { mcpAuthToken: options.auth } : {}),
   };
   const app = buildHttpServer(
     effectiveConfig,
@@ -72,7 +65,6 @@ async function rpc(
   app: FastifyInstance,
   method: string,
   params?: Record<string, unknown>,
-  token?: string,
 ) {
   return app.inject({
     url: "/mcp",
@@ -80,9 +72,28 @@ async function rpc(
     headers: {
       "content-type": "application/json",
       accept: "application/json, text/event-stream",
-      ...(token ? { authorization: `Bearer ${token}` } : {}),
+      "mcp-protocol-version": "2026-07-28",
+      "mcp-method": method,
+      ...(typeof params?.["name"] === "string"
+        ? { "mcp-name": params["name"] }
+        : {}),
     },
-    payload: { jsonrpc: "2.0", id: 1, method, ...(params ? { params } : {}) },
+    payload: {
+      jsonrpc: "2.0",
+      id: 1,
+      method,
+      params: {
+        ...params,
+        _meta: {
+          "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+          "io.modelcontextprotocol/clientInfo": {
+            name: "vitest",
+            version: "1.0.0",
+          },
+          "io.modelcontextprotocol/clientCapabilities": {},
+        },
+      },
+    },
   });
 }
 
@@ -103,6 +114,9 @@ describe("MCP HTTP integration", () => {
     expect(text).toContain("beacon_search_nodes");
     expect(text).toContain("beacon_compare_observers");
     expect(text).not.toContain("admin");
+    const discovery = await rpc(app, "server/discover");
+    expect(discovery.statusCode, discovery.body).toBe(200);
+    expect(discovery.body).toContain('"version":"2.0.2"');
     const modern = await app.inject({
       url: "/mcp",
       method: "POST",
@@ -244,37 +258,39 @@ describe("MCP HTTP integration", () => {
     expect(timeout.body).toContain("BeaconTimeoutError");
   });
 
-  it("rejects disallowed hosts, browser origins, and legacy requests", async () => {
+  it("does not filter public hosts or origins and rejects legacy MCP", async () => {
     const app = await start();
     expect(
       (
         await app.inject({
-          url: "/mcp",
-          method: "POST",
+          url: "/healthz",
+          method: "GET",
           headers: { host: "evil.example" },
         })
       ).statusCode,
-    ).toBe(403);
+    ).toBe(200);
+    expect(
+      (
+        await app.inject({
+          url: "/healthz",
+          method: "GET",
+          headers: { origin: "https://evil.example" },
+        })
+      ).statusCode,
+    ).toBe(200);
+
     expect(
       (
         await app.inject({
           url: "/mcp",
           method: "POST",
-          headers: { origin: "https://evil.example" },
+          headers: {
+            "content-type": "application/json",
+            accept: "application/json, text/event-stream",
+          },
+          payload: { jsonrpc: "2.0", id: 1, method: "tools/list" },
         })
       ).statusCode,
-    ).toBe(403);
-
-    const modernOnly = await start({ config: { mcpLegacyMode: "reject" } });
-    expect((await rpc(modernOnly, "tools/list")).statusCode).toBe(400);
-  });
-
-  it("enforces bearer authentication", async () => {
-    const token = "0123456789abcdef";
-    const app = await start({ auth: token });
-    expect((await rpc(app, "tools/list")).statusCode).toBe(401);
-    expect((await rpc(app, "tools/list", undefined, token)).statusCode).toBe(
-      200,
-    );
+    ).toBe(400);
   });
 });

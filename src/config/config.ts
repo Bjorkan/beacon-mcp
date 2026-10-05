@@ -1,15 +1,5 @@
 import { z } from "zod/v4";
 
-const csv = z
-  .string()
-  .default("localhost,127.0.0.1,[::1]")
-  .transform((value) =>
-    value
-      .split(",")
-      .map((item) => item.trim())
-      .filter(Boolean),
-  );
-
 export type LogLevel =
   "fatal" | "error" | "warn" | "info" | "debug" | "trace" | "silent";
 
@@ -29,19 +19,6 @@ const envSchema = z.object({
     .min(100)
     .max(300_000)
     .default(20_000),
-  BEACON_MAX_RESPONSE_BYTES: z.coerce
-    .number()
-    .int()
-    .min(65_536)
-    .max(52_428_800)
-    .default(5_242_880),
-  MCP_AUTH_TOKEN: z.preprocess(
-    (value) => (value === "" ? undefined : value),
-    z.string().min(16).optional(),
-  ),
-  MCP_LEGACY_MODE: z.enum(["stateless", "reject"]).default("stateless"),
-  MCP_ALLOWED_HOSTS: csv,
-  MCP_ALLOWED_ORIGINS: csv,
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
     .default("info"),
@@ -51,7 +28,6 @@ const envSchema = z.object({
     .min(100)
     .max(60_000)
     .default(10_000),
-  APP_VERSION: z.string().min(1).default("0.1.0"),
 });
 
 export type Config = Readonly<{
@@ -60,14 +36,8 @@ export type Config = Readonly<{
   beaconBaseUrl: URL;
   beaconTimeoutMs: number;
   beaconStatsTimeoutMs: number;
-  beaconMaxResponseBytes: number;
-  mcpAuthToken?: string;
-  mcpLegacyMode: "stateless" | "reject";
-  allowedHosts: readonly string[];
-  allowedOrigins: readonly string[];
   logLevel: LogLevel;
   shutdownGraceMs: number;
-  version: string;
 }>;
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -94,15 +64,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     beaconBaseUrl,
     beaconTimeoutMs: parsed.BEACON_TIMEOUT_MS,
     beaconStatsTimeoutMs: parsed.BEACON_STATS_TIMEOUT_MS,
-    beaconMaxResponseBytes: parsed.BEACON_MAX_RESPONSE_BYTES,
-    ...(parsed.MCP_AUTH_TOKEN === undefined
-      ? {}
-      : { mcpAuthToken: parsed.MCP_AUTH_TOKEN }),
-    mcpLegacyMode: parsed.MCP_LEGACY_MODE,
-    allowedHosts: Object.freeze(parsed.MCP_ALLOWED_HOSTS),
-    allowedOrigins: Object.freeze(parsed.MCP_ALLOWED_ORIGINS),
     logLevel: parsed.LOG_LEVEL,
     shutdownGraceMs: parsed.SHUTDOWN_GRACE_MS,
-    version: parsed.APP_VERSION,
   });
 }

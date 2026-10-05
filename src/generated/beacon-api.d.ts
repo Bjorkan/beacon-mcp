@@ -1791,6 +1791,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/observers/directory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List observers with windowed traffic counts
+         * @description Defaults to the trailing seven days through request time. Counts combine completed whole-hour analytics with retained observations for other hours and exact boundary slices. Incomplete history still returns numeric counts and the requested sort; coverage describes available history. Repeat filters and the returned windowStart/windowEnd as since/until with the cursor on later pages. Results may move as data changes; refresh without bounds for a new rolling window.
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Single IATA */
+                    iata?: string;
+                    /** @description Comma-separated IATAs */
+                    iatas?: string;
+                    /** @description Region ID */
+                    regionId?: number;
+                    /** @description Region slug */
+                    region?: string;
+                    /** @description Observer type */
+                    type?: string;
+                    /** @description Broker membership */
+                    broker?: string;
+                    /** @description online or offline */
+                    status?: string;
+                    /** @description Case-insensitive partial name */
+                    name?: string;
+                    /** @description Transport scope membership */
+                    scope?: string;
+                    /** @description traffic (default) or name */
+                    sort?: string;
+                    /** @description Inclusive epoch ms, preserved exactly; default seven days before until; maximum window 31 days */
+                    since?: number;
+                    /** @description Exclusive epoch ms, preserved exactly; default request time */
+                    until?: number;
+                    /** @description nextCursor returned by preceding page */
+                    cursor?: number;
+                    /** @description Page size, default 50, maximum 200 */
+                    limit?: number;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.ObserverDirectory"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/packets": {
         parameters: {
             query?: never;
@@ -4007,6 +4093,44 @@ export interface components {
             totalPackets?: number;
             /** @description exclusive, epoch milliseconds */
             until?: number;
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.ObserverDirectory": {
+            coverage?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.ObserverDirectoryCoverage"];
+            effectiveSort?: string;
+            generatedAt?: number;
+            hasMore?: boolean;
+            items?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.ObserverDirectoryItem"][];
+            /** @description Maximum over all matching observers, not only this page; zero when none match. */
+            maxObservationCount?: number;
+            nextCursor?: number;
+            observerTypes?: string[];
+            sort?: string;
+            windowEnd?: number;
+            windowStart?: number;
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.ObserverDirectoryCoverage": {
+            completeHours?: number;
+            expectedHours?: number;
+            missingHours?: number;
+            partialHours?: number;
+            status?: string;
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.ObserverDirectoryItem": {
+            /** @description friendly name from /status messages */
+            displayName?: string;
+            /** @description most recently heard IATA */
+            iata?: string;
+            id?: string;
+            /** @description Available observations in [windowStart, windowEnd), including zero with missing history. */
+            observationCount?: number;
+            /** @description e.g. "meshcoretomqtt", "meshcoreha" */
+            observerType?: string;
+            /** @description friendly radio param string: freqMhz,BwKhz,SF e.g. "910.525,62.5,7" */
+            radio?: string;
+            /** @description list of observer forwarded scopes matched to config */
+            scopes?: string[];
+            /** @description "online" or "offline" derived from last_status_at */
+            status?: string;
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.ObserverSummary": {
             /** @description friendly name from /status messages */

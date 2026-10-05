@@ -6,10 +6,9 @@ import {
   BeaconValidationError,
 } from "../../src/beacon/errors.js";
 import { toPage } from "../../src/beacon/pagination.js";
-import { bearerAuthorized } from "../../src/server/auth.js";
 import { toolError } from "../../src/mcp/result.js";
 
-describe("pagination, errors, and auth", () => {
+describe("pagination and errors", () => {
   it("preserves pagination state and bounds items", () => {
     expect(
       toPage(
@@ -46,16 +45,6 @@ describe("pagination, errors, and auth", () => {
     );
     expect(rate).toBeInstanceOf(BeaconRateLimitError);
     expect(rate.retryAfter).toBe("60");
-  });
-
-  it("checks bearer tokens without accepting malformed values", () => {
-    expect(bearerAuthorized(undefined, undefined)).toBe(true);
-    expect(
-      bearerAuthorized("Bearer correct-token-123", "correct-token-123"),
-    ).toBe(true);
-    expect(
-      bearerAuthorized("bearer correct-token-123", "correct-token-123"),
-    ).toBe(false);
   });
 
   it("does not disclose unexpected internal errors", () => {

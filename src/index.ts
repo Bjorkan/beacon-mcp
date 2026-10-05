@@ -1,5 +1,6 @@
 import { BeaconAdapter } from "./beacon/adapter.js";
 import { BeaconClient } from "./beacon/client.js";
+import { BEACON_API_VERSION } from "./beacon/version.js";
 import { loadConfig } from "./config/config.js";
 import { createLogger } from "./logging/logger.js";
 import { buildHttpServer, shutdown } from "./server/http.js";
@@ -11,8 +12,6 @@ async function main(): Promise<void> {
   const adapter = new BeaconAdapter(client);
   const app = buildHttpServer(config, adapter, logger);
 
-  if (config.mcpAuthToken === undefined)
-    logger.warn("MCP_AUTH_TOKEN is unset; /mcp allows unauthenticated access");
   if (config.beaconBaseUrl.protocol !== "https:")
     logger.warn("BEACON_BASE_URL does not use HTTPS");
 
@@ -38,7 +37,7 @@ async function main(): Promise<void> {
 
   await app.listen({ host: config.host, port: config.port });
   logger.info(
-    { host: config.host, port: config.port, version: config.version },
+    { host: config.host, port: config.port, version: BEACON_API_VERSION },
     "beacon-mcp started",
   );
 }

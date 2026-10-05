@@ -7,6 +7,7 @@ import {
 import { z } from "zod/v4";
 import type { BeaconAdapter } from "../beacon/adapter.js";
 import { BeaconError, BeaconInputError } from "../beacon/errors.js";
+import { BEACON_API_VERSION } from "../beacon/version.js";
 import type { Logger } from "../logging/logger.js";
 import { toolError, toolResult } from "./result.js";
 
@@ -88,11 +89,10 @@ function register<S extends z.ZodType<Record<string, unknown>>>(
 
 export function createMcpServer(
   adapter: BeaconAdapter,
-  version: string,
   logger: Logger,
 ): McpServer {
   const server = new McpServer(
-    { name: "beacon-mcp", version },
+    { name: "beacon-mcp", version: BEACON_API_VERSION },
     { capabilities: { tools: {} } },
   );
 

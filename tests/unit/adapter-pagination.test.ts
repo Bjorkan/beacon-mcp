@@ -6,8 +6,6 @@ const config = {
   beaconBaseUrl: new URL("https://beacon.example/"),
   beaconTimeoutMs: 1_000,
   beaconStatsTimeoutMs: 1_000,
-  beaconMaxResponseBytes: 1_000_000,
-  version: "test",
 };
 
 function adapterReturning(body: unknown): BeaconAdapter {

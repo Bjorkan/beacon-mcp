@@ -9,18 +9,11 @@ describe("configuration", () => {
     expect(config.host).toBe("0.0.0.0");
     expect(config.port).toBe(3000);
     expect(config.beaconBaseUrl.href).toBe("https://example.test/beacon/");
-    expect(config.mcpLegacyMode).toBe("stateless");
   });
 
-  it("rejects credentials and short tokens", () => {
+  it("rejects credentials in the Beacon URL", () => {
     expect(() =>
       loadConfig({ BEACON_BASE_URL: "https://user:pass@example.test" }),
     ).toThrow("credentials");
-    expect(() =>
-      loadConfig({
-        BEACON_BASE_URL: "https://example.test",
-        MCP_AUTH_TOKEN: "short",
-      }),
-    ).toThrow();
   });
 });

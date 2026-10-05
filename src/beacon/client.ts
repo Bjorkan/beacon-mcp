@@ -9,6 +9,9 @@ import {
   errorFromResponse,
 } from "./errors.js";
 import { buildQuery, type QueryValue } from "./query.js";
+import { BEACON_API_VERSION } from "./version.js";
+
+const BEACON_MAX_RESPONSE_BYTES = 5_242_880;
 
 type PublicApiPath = Exclude<keyof paths, `/admin/${string}`>;
 
@@ -158,11 +161,7 @@ export class BeaconClient {
   constructor(
     private readonly config: Pick<
       Config,
-      | "beaconBaseUrl"
-      | "beaconTimeoutMs"
-      | "beaconStatsTimeoutMs"
-      | "beaconMaxResponseBytes"
-      | "version"
+      "beaconBaseUrl" | "beaconTimeoutMs" | "beaconStatsTimeoutMs"
     >,
     options: BeaconClientOptions = {},
   ) {
@@ -218,15 +217,12 @@ export class BeaconClient {
           method: "GET",
           headers: {
             accept: "application/json",
-            "user-agent": `beacon-mcp/${this.config.version}`,
+            "user-agent": `beacon-mcp/${BEACON_API_VERSION}`,
           },
           signal,
         });
         upstreamStatus = response.status;
-        const body = await responseJson(
-          response,
-          this.config.beaconMaxResponseBytes,
-        );
+        const body = await responseJson(response, BEACON_MAX_RESPONSE_BYTES);
         this.logger?.info(
           {
             ...currentRequestContext(),

@@ -6,14 +6,15 @@
 MCP client -> Streamable HTTP /mcp -> beacon-mcp -> HTTPS/JSON -> Beacon /api/v1
 ```
 
-The service has no database, cache, queue, WebSocket, volume, or other persistent state. Every MCP request gets a fresh MCP server instance, so replicas can sit behind a round-robin load balancer.
+The MCP endpoint is intentionally public and has no application-layer authentication. The service has no database, cache, queue, WebSocket, volume, or other persistent state. Every MCP request gets a fresh MCP server instance, so replicas can sit behind a round-robin load balancer.
 
 ## Compatibility and pinned contracts
 
 - Node.js 24 LTS, TypeScript, ESM, Fastify
 - MCP TypeScript SDK `@modelcontextprotocol/server` 2.3.0
-- MCP revision `2026-07-28`; 2025-era stateless compatibility is enabled by default
-- Beacon server commit `c7209b70433b8b127a5b1062fdfb17d4a676245c`
+- MCP revision `2026-07-28` only, served statelessly; 2025-era requests are rejected
+- Beacon API version `2.0.2`, also advertised as the MCP server version
+- Beacon server commit `4db780894d5b053cedcf445a26c95581560df70a`
 - Beacon docs commit `5a60f1e00b3e7c13c416382d4a53f4ea84b7b0f4`
 
 The exact upstream Swagger 2.0 document is committed at `vendor/beacon-openapi.yaml`. Build-time tooling converts it to OpenAPI 3 and generates `src/generated/beacon-api.d.ts`; production never downloads a schema.
@@ -22,7 +23,7 @@ The exact upstream Swagger 2.0 document is committed at `vendor/beacon-openapi.y
 
 ```sh
 cp .env.example .env
-# Edit BEACON_BASE_URL, MCP_AUTH_TOKEN, and allowed hosts.
+# Edit BEACON_BASE_URL.
 npm ci --ignore-scripts
 npm run openapi:check
 npm test
@@ -32,9 +33,7 @@ npm run dev
 Production-style local execution needs only Docker:
 
 ```sh
-BEACON_BASE_URL=https://beacon.example.org \
-MCP_AUTH_TOKEN="$(openssl rand -hex 32)" \
-docker compose up --build
+BEACON_BASE_URL=https://beacon.example.org docker compose up --build
 ```
 
 The Compose port binds to loopback by default. Put a TLS reverse proxy in front when exposing it.
@@ -50,15 +49,11 @@ docker pull ghcr.io/bjorkan/beacon-mcp:edge
 Build and run:
 
 ```sh
-docker build \
-  --build-arg APP_VERSION=0.1.0 \
-  -t beacon-mcp:0.1.0 .
+docker build -t beacon-mcp:2.0.2 .
 
 docker run --rm -p 127.0.0.1:3000:3000 \
   -e BEACON_BASE_URL=https://beacon.example.org \
-  -e MCP_AUTH_TOKEN=replace-with-a-long-random-token \
-  -e MCP_ALLOWED_HOSTS=localhost,127.0.0.1,mcp.example.org \
-  beacon-mcp:0.1.0
+  beacon-mcp:2.0.2
 ```
 
 Hardened example:
@@ -71,9 +66,7 @@ docker run --rm --name beacon-mcp \
   --memory=256m --cpus=0.5 --pids-limit=100 \
   -p 127.0.0.1:3000:3000 \
   -e BEACON_BASE_URL=https://beacon.example.org \
-  -e MCP_AUTH_TOKEN=replace-with-a-long-random-token \
-  -e MCP_ALLOWED_HOSTS=localhost,127.0.0.1,mcp.example.org \
-  beacon-mcp:0.1.0
+  beacon-mcp:2.0.2
 ```
 
 The final `node:24-bookworm-slim` stage contains compiled JavaScript, production dependencies, package metadata, and the Node healthcheck only. It runs as the image's `node` user (UID/GID 1000), uses exec-form `CMD`, and writes no application files. Logs go to stdout/stderr. Prefer an immutable semantic-version, Git SHA tag, or image digest in production.
@@ -82,7 +75,7 @@ Multi-architecture build:
 
 ```sh
 docker buildx build --platform linux/amd64,linux/arm64 \
-  -t registry.example/beacon-mcp:0.1.0 --push .
+  -t registry.example/beacon-mcp:2.0.2 --push .
 ```
 
 All direct dependencies are JavaScript-only and support both targets. CI builds both platforms for every change and publishes the `edge` manifest after successful pushes to `main`.
@@ -91,34 +84,29 @@ All direct dependencies are JavaScript-only and support both targets. CI builds 
 
 Configuration is parsed once with Zod during startup. Invalid values stop the process.
 
-| Variable                    |     Default | Meaning                                                   |
-| --------------------------- | ----------: | --------------------------------------------------------- |
-| `HOST`                      |   `0.0.0.0` | Listen address                                            |
-| `PORT`                      |      `3000` | Unprivileged listen port                                  |
-| `BEACON_BASE_URL`           |    required | Fixed upstream base; credentials/query/fragment forbidden |
-| `BEACON_TIMEOUT_MS`         |     `10000` | Normal request timeout, 100–120000 ms                     |
-| `BEACON_STATS_TIMEOUT_MS`   |     `20000` | Analytics timeout, 100–300000 ms                          |
-| `BEACON_MAX_RESPONSE_BYTES` |   `5242880` | Maximum upstream JSON response, 65536–52428800 bytes      |
-| `MCP_AUTH_TOKEN`            |       unset | Optional inbound bearer token, minimum 16 characters      |
-| `MCP_LEGACY_MODE`           | `stateless` | `stateless` or modern-only `reject`                       |
-| `MCP_ALLOWED_HOSTS`         | local hosts | Comma-separated, port-independent Host allowlist          |
-| `MCP_ALLOWED_ORIGINS`       | local hosts | Comma-separated browser Origin hostname allowlist         |
-| `LOG_LEVEL`                 |      `info` | Log level setting                                         |
-| `SHUTDOWN_GRACE_MS`         |     `10000` | Bounded shutdown grace period                             |
-| `APP_VERSION`               |     `0.1.0` | Version advertised by MCP                                 |
+| Variable                  |   Default | Meaning                                                   |
+| ------------------------- | --------: | --------------------------------------------------------- |
+| `HOST`                    | `0.0.0.0` | Listen address                                            |
+| `PORT`                    |    `3000` | Unprivileged listen port                                  |
+| `BEACON_BASE_URL`         |  required | Fixed upstream base; credentials/query/fragment forbidden |
+| `BEACON_TIMEOUT_MS`       |   `10000` | Normal request timeout, 100–120000 ms                     |
+| `BEACON_STATS_TIMEOUT_MS` |   `20000` | Analytics timeout, 100–300000 ms                          |
+| `LOG_LEVEL`               |    `info` | Log level setting                                         |
+| `SHUTDOWN_GRACE_MS`       |   `10000` | Bounded shutdown grace period                             |
 
-Do not place secrets in image build arguments or source-controlled `.env` files. Use the runtime environment, Docker secrets injected as environment, or the platform secret manager. When `MCP_AUTH_TOKEN` is unset the service emits a warning and `/mcp` is public. The inbound Authorization header is never forwarded to Beacon.
+The upstream response limit is fixed at 5 MiB. MCP is always public, modern-only, and stateless; these are service invariants rather than deployment settings.
 
 ## MCP client
 
-Point a Streamable HTTP client at `https://mcp.example.org/mcp` and, when configured, send `Authorization: Bearer <token>`. The server supports modern discovery and stateless legacy clients. A minimal request is:
+Point a modern MCP client at `https://mcp.example.org/mcp`. A discovery request is:
 
 ```sh
 curl -sS https://mcp.example.org/mcp \
-  -H 'Authorization: Bearer replace-with-a-long-random-token' \
   -H 'Content-Type: application/json' \
   -H 'Accept: application/json, text/event-stream' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+  -H 'MCP-Protocol-Version: 2026-07-28' \
+  -H 'MCP-Method: server/discover' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientInfo":{"name":"curl","version":"1.0.0"},"io.modelcontextprotocol/clientCapabilities":{}}}}'
 ```
 
 ## Tools
@@ -139,14 +127,14 @@ Times are strict RFC3339 UTC inputs and become Beacon epoch milliseconds. IATAs 
 ## Security model
 
 - The client accepts an operation enum, not a caller-provided URL or path. Only compiled public `GET` operations exist; `/api/v1/admin/*` is excluded at the generated-type boundary and runtime boundary.
-- Callers cannot choose protocol, host, port, path, headers, or upstream credentials. MCP bearer credentials never leave this process.
-- Host and Origin validation use the official MCP Fastify integration. Set the public proxy hostname in `MCP_ALLOWED_HOSTS`; non-browser clients without `Origin` continue to work.
+- Callers cannot choose the upstream protocol, host, port, path, headers, or credentials.
+- `/mcp` is public by design. Apply access control, rate limiting, or geographic policy at the reverse proxy when a deployment requires it.
 - One retry with jitter is used only for network failures and HTTP 502/503/504. HTTP 429 is never retried and `Retry-After` is returned to the client.
-- Pino logs Fastify request IDs, MCP tool names, HTTP status and latency, plus upstream operation, status, retry attempt, latency, and result count. Tokens, headers, message bodies, packet bodies, response bodies, stack traces, and environment values are not logged.
-- Upstream bodies are streamed into a bounded buffer and rejected before JSON parsing when they exceed `BEACON_MAX_RESPONSE_BYTES`.
+- Pino logs Fastify request IDs, MCP tool names, HTTP status and latency, plus upstream operation, status, retry attempt, latency, and result count. Headers, message bodies, packet bodies, response bodies, stack traces, and environment values are not logged.
+- Upstream bodies are streamed into a bounded buffer and rejected before JSON parsing when they exceed the fixed 5 MiB limit.
 - The root filesystem may be read-only, all Linux capabilities may be dropped, and no Docker socket or privileged namespace is used.
 
-The service does not trust `X-Forwarded-*` headers. A reverse proxy should terminate TLS, replace the inbound `Host` header with an allowed value (or add the public hostname to the allowlist), apply its own client-IP policy, and forward `/mcp`, `/healthz`, and `/readyz`. No direct public exposure is required.
+The service does not trust `X-Forwarded-*` headers. A reverse proxy should terminate TLS, apply any deployment-specific client policy, and forward `/mcp`, `/healthz`, and `/readyz`.
 
 ## Health, failure, and lifecycle
 
@@ -191,7 +179,7 @@ Commit the vendor document, generated declarations, and updated `vendor/UPSTREAM
 
 ## Known limitations
 
-- Version 1 is tools-only and read-only.
+- The service is tools-only and read-only.
 - Beacon `/ws` is deliberately unsupported; there are no subscriptions, persistent sockets, reconnect loops, or REST backfill state.
 - No admin endpoints, direct PostgreSQL/Redis/MQTT access, generic proxy operation, OAuth server, persistent cache, or local sessions are implemented.
 - Readiness intentionally does not report transient Beacon availability.

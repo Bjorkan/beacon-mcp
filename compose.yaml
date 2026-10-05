@@ -1,17 +1,10 @@
 services:
   beacon-mcp:
     image: beacon-mcp:local
-    build:
-      context: .
-      args:
-        APP_VERSION: ${APP_VERSION:-0.1.0}
+    build: .
     environment:
       BEACON_BASE_URL: ${BEACON_BASE_URL:?Set BEACON_BASE_URL}
-      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:-}
-      MCP_ALLOWED_HOSTS: ${MCP_ALLOWED_HOSTS:-localhost,127.0.0.1,[::1]}
-      MCP_ALLOWED_ORIGINS: ${MCP_ALLOWED_ORIGINS:-localhost,127.0.0.1,[::1]}
       LOG_LEVEL: ${LOG_LEVEL:-info}
-      BEACON_MAX_RESPONSE_BYTES: ${BEACON_MAX_RESPONSE_BYTES:-5242880}
       PORT: "3000"
     ports:
       - "127.0.0.1:${PORT:-3000}:3000"

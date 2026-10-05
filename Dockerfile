@@ -24,15 +24,13 @@ RUN npm ci --omit=dev --ignore-scripts \
     && npm cache clean --force
 
 FROM node:24-bookworm-slim AS runtime
-ARG APP_VERSION=0.1.0
 LABEL org.opencontainers.image.title="beacon-mcp" \
       org.opencontainers.image.description="Read-only MCP gateway for MeshCore Beacon" \
       org.opencontainers.image.source="https://github.com/Bjorkan/beacon-mcp" \
-      org.opencontainers.image.version="$APP_VERSION"
+      org.opencontainers.image.version="2.0.2"
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
-    PORT=3000 \
-    APP_VERSION=$APP_VERSION
+    PORT=3000
 WORKDIR /app
 COPY --from=production-dependencies --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/dist ./dist

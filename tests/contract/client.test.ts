@@ -11,8 +11,6 @@ const config = {
   beaconBaseUrl: new URL("https://beacon.example/"),
   beaconTimeoutMs: 100,
   beaconStatsTimeoutMs: 200,
-  beaconMaxResponseBytes: 5_242_880,
-  version: "test",
 };
 
 describe("Beacon HTTP contract", () => {
@@ -22,7 +20,7 @@ describe("Beacon HTTP contract", () => {
         "https://beacon.example/api/v1/nodes?iatas=ARN&limit=20",
       );
       expect(init?.headers).toMatchObject({
-        "user-agent": "beacon-mcp/test",
+        "user-agent": "beacon-mcp/2.0.2",
       });
       return Response.json({
         items: [{ id: "node-1", name: "Repeater", lastSeen: 1791127800000 }],
@@ -46,12 +44,15 @@ describe("Beacon HTTP contract", () => {
       status: 200,
     });
 
-    const oversized = new BeaconClient(
-      { ...config, beaconMaxResponseBytes: 10 },
-      {
-        fetch: vi.fn<typeof fetch>(async () => Response.json(["a", "b", "c"])),
-      },
-    );
+    const oversized = new BeaconClient(config, {
+      fetch: vi.fn<typeof fetch>(async () =>
+        Promise.resolve(
+          new Response("[]", {
+            headers: { "content-length": "5242881" },
+          }),
+        ),
+      ),
+    });
     await expect(oversized.request("listIatas")).rejects.toBeInstanceOf(
       BeaconResponseTooLargeError,
     );
