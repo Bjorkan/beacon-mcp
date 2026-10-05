@@ -3,6 +3,7 @@ import type { paths } from "../generated/beacon-api.js";
 import type { Logger } from "../logging/logger.js";
 import { currentRequestContext } from "../logging/logger.js";
 import {
+  BeaconInputError,
   BeaconResponseTooLargeError,
   BeaconTimeoutError,
   BeaconUpstreamError,
@@ -12,6 +13,7 @@ import { buildQuery, type QueryValue } from "./query.js";
 import { BEACON_API_VERSION } from "./version.js";
 
 const BEACON_MAX_RESPONSE_BYTES = 5_242_880;
+const BEACON_MAX_URL_LENGTH = 8_192;
 
 type PublicApiPath = Exclude<keyof paths, `/admin/${string}`>;
 
@@ -196,6 +198,9 @@ export class BeaconClient {
     url.search = buildQuery(
       (options.query ?? {}) as Readonly<Record<string, QueryValue>>,
     ).toString();
+    if (url.href.length > BEACON_MAX_URL_LENGTH) {
+      throw new BeaconInputError("Beacon request filters are too large");
+    }
     const analytics =
       operation === "networkOverview" ||
       operation === "networkSeries" ||
@@ -215,6 +220,7 @@ export class BeaconClient {
       try {
         const response = await this.fetchImpl(url, {
           method: "GET",
+          redirect: "error",
           headers: {
             accept: "application/json",
             "user-agent": `beacon-mcp/${BEACON_API_VERSION}`,

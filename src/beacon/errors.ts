@@ -33,7 +33,10 @@ export function errorFromResponse(
 ): BeaconError {
   const envelope = body as BeaconErrorBody;
   const message =
-    envelope?.error?.message ?? `Beacon request failed with HTTP ${status}`;
+    status >= 500
+      ? `Beacon request failed with HTTP ${status}`
+      : (envelope?.error?.message ??
+        `Beacon request failed with HTTP ${status}`);
   const code = envelope?.error?.code;
   if (status === 400) return new BeaconValidationError(message, status, code);
   if (status === 404) return new BeaconNotFoundError(message, status, code);

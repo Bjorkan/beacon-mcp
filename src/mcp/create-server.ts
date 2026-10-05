@@ -11,6 +11,16 @@ import { BEACON_API_VERSION } from "../beacon/version.js";
 import type { Logger } from "../logging/logger.js";
 import { toolError, toolResult } from "./result.js";
 
+const MAX_INT32 = 2_147_483_647;
+const shortText = z.string().trim().min(1).max(128);
+const nameText = z.string().trim().min(1).max(256);
+const hexString = z
+  .string()
+  .max(256)
+  .regex(/^[0-9a-fA-F]+$/);
+const byteHexString = hexString.refine((value) => value.length % 2 === 0, {
+  message: "Must contain a whole number of bytes",
+});
 const limit = z
   .number()
   .int()
@@ -24,28 +34,33 @@ const iata = z
   .describe("Three-character IATA identifier; normalized to uppercase");
 const iatas = z
   .array(iata)
+  .min(1)
   .max(20)
   .optional()
   .describe("IATA identifiers; normalized to uppercase");
 const timestamp = z
   .string()
+  .max(24)
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/)
   .describe("RFC3339 UTC timestamp, for example 2026-10-04T15:30:00Z");
 const observerRange = z
   .string()
   .regex(/^\d+(?:m|h)$/)
   .refine((value) => {
     const amount = Number.parseInt(value, 10);
-    return value.endsWith("h") ? amount <= 720 : amount <= 43_200;
+    return (
+      amount > 0 && (value.endsWith("h") ? amount <= 720 : amount <= 43_200)
+    );
   }, "range must be a Go duration no longer than 720h");
 const observerInterval = z.enum(["5m", "15m", "1h", "6h", "24h"]);
 const location = {
   iatas,
-  region: z.string().min(1).optional(),
-  regionId: z.number().int().positive().optional(),
+  region: shortText.optional(),
+  regionId: z.number().int().positive().max(MAX_INT32).optional(),
 };
 const scopedLocation = {
   ...location,
-  scope: z.string().min(1).optional(),
+  scope: shortText.optional(),
 };
 const pagination = {
   cursor: z.number().int().nonnegative().optional(),
@@ -101,7 +116,7 @@ export function createMcpServer(
     logger,
     "beacon_list_iatas",
     "List configured Beacon airport/location identifiers.",
-    z.object({ limit }),
+    z.strictObject({ limit }),
     (a, s) => adapter.listIatas(a.limit, s),
   );
   register(
@@ -109,7 +124,7 @@ export function createMcpServer(
     logger,
     "beacon_list_regions",
     "List configured Beacon geographic regions.",
-    z.object({ limit }),
+    z.strictObject({ limit }),
     (a, s) => adapter.listRegions(a.limit, s),
   );
   register(
@@ -117,7 +132,11 @@ export function createMcpServer(
     logger,
     "beacon_list_scopes",
     "List public MeshCore transport scopes.",
-    z.object({ ...location, limit }),
+    z
+      .strictObject({ ...location, limit })
+      .refine((a) => !(a.region && a.regionId), {
+        message: "region and regionId are mutually exclusive",
+      }),
     (a, s) => adapter.listScopes(a, s),
   );
 
@@ -126,23 +145,26 @@ export function createMcpServer(
     logger,
     "beacon_search_nodes",
     "Search known MeshCore nodes using bounded filters.",
-    z.object({
-      ...scopedLocation,
-      ...pagination,
-      name: z.string().min(1).optional(),
-      type: z.number().int().min(1).max(4).optional(),
-      typeName: z.string().min(1).optional(),
-      pubkey: z
-        .string()
-        .regex(/^[0-9a-fA-F]+$/)
-        .optional(),
-      pubkeyPrefix: z
-        .string()
-        .regex(/^[0-9a-fA-F]+$/)
-        .optional(),
-      supportsMultibytePaths: z.boolean().optional(),
-      supportsMultibyteTraces: z.boolean().optional(),
-    }),
+    z
+      .strictObject({
+        ...scopedLocation,
+        ...pagination,
+        name: nameText.optional(),
+        type: z.number().int().min(1).max(4).optional(),
+        typeName: z
+          .enum(["companion", "repeater", "room_server", "sensor"])
+          .optional(),
+        pubkey: byteHexString.optional(),
+        pubkeyPrefix: hexString.optional(),
+        supportsMultibytePaths: z.boolean().optional(),
+        supportsMultibyteTraces: z.boolean().optional(),
+      })
+      .refine((a) => !(a.region && a.regionId), {
+        message: "region and regionId are mutually exclusive",
+      })
+      .refine((a) => !(a.type && a.typeName), {
+        message: "type and typeName are mutually exclusive",
+      }),
     (a, s) => adapter.searchNodes(a, s),
   );
   register(
@@ -150,7 +172,7 @@ export function createMcpServer(
     logger,
     "beacon_get_node",
     "Get one node by its Beacon node UUID.",
-    z.object({ id: z.uuid() }),
+    z.strictObject({ id: z.uuid() }),
     (a, s) => adapter.getNode(a.id, s),
   );
 
@@ -159,14 +181,18 @@ export function createMcpServer(
     logger,
     "beacon_search_observers",
     "Search Beacon observers/gateways.",
-    z.object({
-      ...scopedLocation,
-      ...pagination,
-      type: z.string().min(1).optional(),
-      broker: z.string().min(1).optional(),
-      status: z.enum(["online", "offline"]).optional(),
-      name: z.string().min(1).optional(),
-    }),
+    z
+      .strictObject({
+        ...scopedLocation,
+        ...pagination,
+        type: shortText.optional(),
+        broker: shortText.optional(),
+        status: z.enum(["online", "offline"]).optional(),
+        name: nameText.optional(),
+      })
+      .refine((a) => !(a.region && a.regionId), {
+        message: "region and regionId are mutually exclusive",
+      }),
     (a, s) => adapter.searchObservers(a, s),
   );
   register(
@@ -174,7 +200,7 @@ export function createMcpServer(
     logger,
     "beacon_get_observer",
     "Get one observer by UUID.",
-    z.object({ id: z.uuid() }),
+    z.strictObject({ id: z.uuid() }),
     (a, s) => adapter.getObserver(a.id, s),
   );
   register(
@@ -182,12 +208,23 @@ export function createMcpServer(
     logger,
     "beacon_get_observer_activity",
     "Get heard-activity history for one observer.",
-    z.object({
-      id: z.uuid(),
-      range: observerRange.optional(),
-      interval: observerInterval.optional(),
-      until: timestamp.optional(),
-    }),
+    z
+      .strictObject({
+        id: z.uuid(),
+        range: observerRange.optional(),
+        interval: observerInterval.optional(),
+        until: timestamp.optional(),
+      })
+      .refine(
+        (a) => {
+          if (!a.range || !["5m", "15m"].includes(a.interval ?? "15m"))
+            return true;
+          const amount = Number.parseInt(a.range, 10);
+          const minutes = a.range.endsWith("h") ? amount * 60 : amount;
+          return minutes <= 48 * 60;
+        },
+        { message: "range must be 48h or less for intervals under 1h" },
+      ),
     (a, s) => adapter.getObserverActivity(a.id, a, s),
   );
 
@@ -197,19 +234,29 @@ export function createMcpServer(
     "beacon_search_packets",
     "Search packet summaries; packet content is never logged by this gateway.",
     z
-      .object({
+      .strictObject({
         ...scopedLocation,
         ...timeWindow,
         ...pagination,
-        payloadType: z.number().int().nonnegative().optional(),
+        payloadType: z.number().int().min(0).max(32_767).optional(),
         payloadTypes: z
-          .array(z.number().int().nonnegative())
+          .array(z.number().int().min(0).max(32_767))
+          .min(1)
           .max(20)
           .optional(),
-        payloadTypeName: z.string().min(1).optional(),
-        routeType: z.number().int().nonnegative().optional(),
-        routeTypes: z.array(z.number().int().nonnegative()).max(20).optional(),
-        scopes: z.array(z.string().min(1)).max(20).optional(),
+        payloadTypeName: z
+          .enum(["advert", "grp_txt", "txt_msg", "trace", "anon_req"])
+          .optional(),
+        routeType: z.number().int().min(0).max(3).optional(),
+        routeTypes: z
+          .array(z.number().int().min(0).max(3))
+          .min(1)
+          .max(20)
+          .optional(),
+        scopes: z.array(shortText).min(1).max(20).optional(),
+      })
+      .refine((a) => !(a.region && a.regionId), {
+        message: "region and regionId are mutually exclusive",
       })
       .refine((a) => !(a.payloadType !== undefined && a.payloadTypes), {
         message: "payloadType and payloadTypes are mutually exclusive",
@@ -227,7 +274,7 @@ export function createMcpServer(
     logger,
     "beacon_get_packet",
     "Get full public packet detail by hex packet hash.",
-    z.object({ hash: z.string().regex(/^[0-9a-fA-F]+$/) }),
+    z.strictObject({ hash: byteHexString }),
     (a, s) => adapter.getPacket(a.hash, s),
   );
 
@@ -237,11 +284,12 @@ export function createMcpServer(
     "beacon_search_messages",
     "Search decrypted public channel messages.",
     z
-      .object({
-        ...scopedLocation,
+      .strictObject({
+        iatas,
+        scope: shortText.optional(),
         since: timestamp.optional(),
         ...pagination,
-        channelId: z.number().int().positive().optional(),
+        channelId: z.number().int().positive().max(MAX_INT32).optional(),
         channelHash: z
           .string()
           .regex(/^[0-9a-fA-F]{2}$/)
@@ -259,7 +307,7 @@ export function createMcpServer(
     "beacon_list_channels",
     "List public channels with bounded pagination.",
     z
-      .object({
+      .strictObject({
         iatas,
         cursor: z.number().int().nonnegative().optional(),
         limit,
@@ -268,7 +316,7 @@ export function createMcpServer(
           .regex(/^[0-9a-fA-F]{2}$/)
           .optional(),
         keyKnown: z.boolean().optional(),
-        pageCursor: z.string().min(1).optional(),
+        pageCursor: z.string().min(1).max(64).optional(),
       })
       .refine(
         (a) => !(a.pageCursor && a.cursor !== undefined && a.cursor > 0),
@@ -283,9 +331,10 @@ export function createMcpServer(
     logger,
     "beacon_get_channel_messages",
     "List messages for a channel ID.",
-    z.object({
-      channelId: z.number().int().positive(),
-      ...scopedLocation,
+    z.strictObject({
+      channelId: z.number().int().positive().max(MAX_INT32),
+      iatas,
+      scope: shortText.optional(),
       since: timestamp.optional(),
       ...pagination,
     }),
@@ -297,13 +346,17 @@ export function createMcpServer(
     logger,
     "beacon_list_routes",
     "List known routes with the upstream compound cursor preserved.",
-    z.object({
-      iata: iata.optional(),
-      hopCount: z.number().int().nonnegative().optional(),
-      cursor: z.number().int().nonnegative().optional(),
-      cursorId: z.number().int().nonnegative().optional(),
-      limit,
-    }),
+    z
+      .strictObject({
+        iata: iata.optional(),
+        hopCount: z.number().int().positive().max(MAX_INT32).optional(),
+        cursor: z.number().int().nonnegative().optional(),
+        cursorId: z.number().int().positive().optional(),
+        limit,
+      })
+      .refine((a) => a.cursorId === undefined || a.cursor !== undefined, {
+        message: "cursorId requires cursor",
+      }),
     (a, s) => adapter.listRoutes(a, s),
   );
   register(
@@ -311,10 +364,10 @@ export function createMcpServer(
     logger,
     "beacon_search_routes",
     "Search routes by source and destination hash.",
-    z.object({
+    z.strictObject({
       iata,
-      from: z.string().regex(/^[0-9a-fA-F]+$/),
-      to: z.string().regex(/^[0-9a-fA-F]+$/),
+      from: hexString,
+      to: hexString,
       limit,
     }),
     (a, s) => adapter.searchRoutes(a, s),
@@ -324,10 +377,10 @@ export function createMcpServer(
     logger,
     "beacon_find_cross_iata_routes",
     "Find routes crossing IATA boundaries.",
-    z.object({
-      fromHash: z.string().regex(/^[0-9a-fA-F]+$/),
+    z.strictObject({
+      fromHash: hexString,
       fromIata: iata,
-      toHash: z.string().regex(/^[0-9a-fA-F]+$/),
+      toHash: hexString,
       toIata: iata,
       limit,
     }),
@@ -339,16 +392,20 @@ export function createMcpServer(
     logger,
     "beacon_search_traces",
     "Search trace or ping tags with the timestamp/tag cursor preserved.",
-    z.object({
-      ...scopedLocation,
-      ...timeWindow,
-      ...pagination,
-      type: z.enum(["TRACE", "PING"]).optional(),
-      cursorTag: z
-        .string()
-        .regex(/^[0-9a-fA-F]+$/)
-        .optional(),
-    }),
+    z
+      .strictObject({
+        ...scopedLocation,
+        ...timeWindow,
+        ...pagination,
+        type: z.enum(["TRACE", "PING"]).optional(),
+        cursorTag: hexString.optional(),
+      })
+      .refine((a) => !(a.region && a.regionId), {
+        message: "region and regionId are mutually exclusive",
+      })
+      .refine((a) => a.cursorTag === undefined || a.cursor !== undefined, {
+        message: "cursorTag requires cursor",
+      }),
     (a, s) => adapter.searchTraces(a, s),
   );
   register(
@@ -356,7 +413,7 @@ export function createMcpServer(
     logger,
     "beacon_get_trace",
     "Get trace detail by hex tag.",
-    z.object({ tag: z.string().regex(/^[0-9a-fA-F]+$/) }),
+    z.strictObject({ tag: hexString }),
     (a, s) => adapter.getTrace(a.tag, s),
   );
 
@@ -365,7 +422,9 @@ export function createMcpServer(
     logger,
     "beacon_get_network_overview",
     "Get the Beacon network overview for the most recent rolled 24 hours.",
-    z.object(location),
+    z.strictObject(location).refine((a) => !(a.region && a.regionId), {
+      message: "region and regionId are mutually exclusive",
+    }),
     (a, s) => adapter.getNetworkOverview(a, s),
   );
   register(
@@ -373,7 +432,11 @@ export function createMcpServer(
     logger,
     "beacon_get_network_series",
     "Get hourly network analytics for an explicit time window.",
-    z.object({ ...location, since: timestamp, until: timestamp }),
+    z
+      .strictObject({ ...location, since: timestamp, until: timestamp })
+      .refine((a) => !(a.region && a.regionId), {
+        message: "region and regionId are mutually exclusive",
+      }),
     (a, s) => adapter.getNetworkSeries(a, s),
   );
   register(
@@ -382,12 +445,15 @@ export function createMcpServer(
     "beacon_compare_observers",
     "Compare distinct flood packets reported by two observers.",
     z
-      .object({
+      .strictObject({
         ...location,
         observerA: z.uuid(),
         observerB: z.uuid(),
         since: timestamp,
         until: timestamp,
+      })
+      .refine((a) => !(a.region && a.regionId), {
+        message: "region and regionId are mutually exclusive",
       })
       .refine((a) => a.observerA !== a.observerB, {
         message: "observerA and observerB must be different",

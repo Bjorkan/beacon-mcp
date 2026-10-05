@@ -32,7 +32,7 @@ so replicas can sit behind a round-robin load balancer.
 - MCP TypeScript SDK `@modelcontextprotocol/server` 2.3.0
 - MCP revision `2026-07-28` only, served statelessly; 2025-era requests are rejected
 - Beacon API version `2.0.2`, also advertised as the MCP server version
-- Beacon server commit `4db780894d5b053cedcf445a26c95581560df70a`
+- Beacon server commit `041d9c1f45d8cb733c3f9233b7cfb7cd53c83b80`
 - Beacon docs commit `5a60f1e00b3e7c13c416382d4a53f4ea84b7b0f4`
 
 The exact upstream Swagger 2.0 document is committed at
@@ -53,6 +53,14 @@ the comparison and call out any differences from the pinned local contract. Do
 not silently update the pinned schema or commit; use the OpenAPI update workflow
 below when intentionally adopting upstream changes.
 
+The last comparison was made against `main` commit
+`041d9c1f45d8cb733c3f9233b7cfb7cd53c83b80` (Beacon 2.0.2) on 2026-10-06. Its
+Swagger document is byte-identical to the vendored contract. The upstream
+handlers currently ignore the documented `region` and `regionId` parameters on
+`GET /messages` and `GET /channels/{channelID}/messages`; the corresponding MCP
+tools intentionally expose only `iatas` and `scope` until upstream implements
+those region filters.
+
 ## Run locally
 
 ```sh
@@ -64,18 +72,20 @@ npm test
 npm run dev
 ```
 
-Production-style local execution needs only Docker:
+Production-style execution always pulls the published image from GitHub
+Packages:
 
 ```sh
-BEACON_BASE_URL=https://beacon.example.org docker compose up --build
+docker compose pull
+BEACON_BASE_URL=https://beacon.example.org docker compose up -d
 ```
 
 The Compose port binds to loopback by default. Put a TLS reverse proxy in front
 when exposing it. A regular public deployment routes a dedicated subdomain to
 the application, whose MCP endpoint is `/`.
 
-Every successful push to `main` publishes a multi-architecture edge image to
-GitHub Packages:
+Every successful push to `main` publishes multi-architecture `edge` and Git SHA
+images to GitHub Packages. A `vX.Y.Z` tag also publishes `X.Y.Z` and `X.Y`:
 
 ```sh
 docker pull ghcr.io/bjorkan/beacon-mcp:edge
@@ -83,45 +93,45 @@ docker pull ghcr.io/bjorkan/beacon-mcp:edge
 
 ## Container deployment
 
-Build and run:
+Deployment and Compose must always use an image published at
+`ghcr.io/bjorkan/beacon-mcp`; never build the deployment image on the target
+host. Pull and run:
 
 ```sh
-docker build -t beacon-mcp:2.0.2 .
+docker pull ghcr.io/bjorkan/beacon-mcp:2.0.2
 
 docker run --rm -p 127.0.0.1:3000:3000 \
+  --stop-timeout 15 \
   -e BEACON_BASE_URL=https://beacon.example.org \
-  beacon-mcp:2.0.2
+  ghcr.io/bjorkan/beacon-mcp:2.0.2
 ```
 
 Hardened example:
 
 ```sh
 docker run --rm --name beacon-mcp \
+  --stop-timeout 15 \
   --user 1000:1000 \
   --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m \
   --cap-drop=ALL --security-opt=no-new-privileges:true \
   --memory=256m --cpus=0.5 --pids-limit=100 \
   -p 127.0.0.1:3000:3000 \
   -e BEACON_BASE_URL=https://beacon.example.org \
-  beacon-mcp:2.0.2
+  ghcr.io/bjorkan/beacon-mcp:2.0.2
 ```
 
 The final `node:24-bookworm-slim` stage contains compiled JavaScript,
 production dependencies, package metadata, and the Node healthcheck only. It
 runs as the image's `node` user (UID/GID 1000), uses exec-form `CMD`, and writes
-no application files. Logs go to stdout/stderr. Prefer an immutable semantic
-version, Git SHA tag, or image digest in production.
-
-Multi-architecture build:
-
-```sh
-docker buildx build --platform linux/amd64,linux/arm64 \
-  -t registry.example/beacon-mcp:2.0.2 --push .
-```
+no application files. Logs go to stdout/stderr. Set `BEACON_MCP_IMAGE` to an
+immutable semantic-version tag, Git SHA tag, or image digest in production;
+Compose defaults to the matching `2.0.2` release tag. Use `edge` only to
+evaluate the latest `main` branch.
 
 All direct dependencies are JavaScript-only and support both targets. CI builds
-both platforms for every change and publishes the `edge` manifest after
-successful pushes to `main`.
+both platforms, publishes only from `main` or `vX.Y.Z` tags, and attaches SBOM
+and provenance attestations. Local image builds are reserved for development,
+CI, and `tests/container/run.sh` verification—not deployment.
 
 ## Configuration
 
@@ -240,9 +250,9 @@ MCP-to-mocked-Beacon connectivity, UID, read-only filesystem, dropped
 capabilities, no-new-privileges, resource bounds, and SIGTERM exit. Compose
 demonstrates the same hardening.
 
-CI also runs a production dependency audit. Release systems can add standard
-OCI steps such as `docker buildx build --sbom=true --provenance=true`, scan with
-Trivy/Grype, and sign/verify with Cosign without changing the application.
+CI also runs a production dependency audit. Release systems can additionally
+scan with Trivy/Grype and sign/verify with Cosign without changing the
+application.
 
 ## Updating Beacon OpenAPI
 

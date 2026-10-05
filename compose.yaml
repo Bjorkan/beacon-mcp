@@ -1,7 +1,7 @@
 services:
   beacon-mcp:
-    image: beacon-mcp:local
-    build: .
+    image: ${BEACON_MCP_IMAGE:-ghcr.io/bjorkan/beacon-mcp:2.0.2}
+    pull_policy: always
     environment:
       BEACON_BASE_URL: ${BEACON_BASE_URL:?Set BEACON_BASE_URL}
       LOG_LEVEL: ${LOG_LEVEL:-info}
@@ -19,6 +19,7 @@ services:
     mem_limit: 256m
     cpus: 0.50
     pids_limit: 100
+    stop_grace_period: 15s
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "scripts/healthcheck.mjs"]

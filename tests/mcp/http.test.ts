@@ -102,14 +102,19 @@ afterEach(async () => Promise.all(apps.splice(0).map((app) => app.close())));
 describe("MCP HTTP integration", () => {
   it("serves health/readiness and discovers only read-only tools", async () => {
     const app = await start();
-    expect((await app.inject({ url: "/healthz" })).json()).toEqual({
+    const health = await app.inject({ url: "/healthz" });
+    expect(health.json()).toEqual({
       status: "ok",
     });
+    expect(health.headers["cache-control"]).toBe("no-store");
+    expect(health.headers["x-content-type-options"]).toBe("nosniff");
     expect((await app.inject({ url: "/readyz" })).json()).toEqual({
       status: "ok",
     });
     const response = await rpc(app, "tools/list");
     expect(response.statusCode).toBe(200);
+    expect(response.headers["cache-control"]).toBe("no-store");
+    expect(response.headers["x-content-type-options"]).toBe("nosniff");
     const text = response.body;
     expect(text).toContain("beacon_search_nodes");
     expect(text).toContain("beacon_compare_observers");
@@ -215,6 +220,54 @@ describe("MCP HTTP integration", () => {
       },
     });
     expect(activity.body).toContain("Invalid");
+
+    const expensiveActivity = await rpc(app, "tools/call", {
+      name: "beacon_get_observer_activity",
+      arguments: {
+        id: "00000000-0000-4000-8000-000000000000",
+        range: "49h",
+        interval: "5m",
+      },
+    });
+    expect(expensiveActivity.body).toContain("48h or less");
+
+    const routeCursor = await rpc(app, "tools/call", {
+      name: "beacon_list_routes",
+      arguments: { cursorId: 1 },
+    });
+    expect(routeCursor.body).toContain("cursorId requires cursor");
+
+    const traceCursor = await rpc(app, "tools/call", {
+      name: "beacon_search_traces",
+      arguments: { cursorTag: "abcd" },
+    });
+    expect(traceCursor.body).toContain("cursorTag requires cursor");
+  });
+
+  it("rejects unknown and ambiguous filters instead of broadening queries", async () => {
+    const app = await start();
+    const unsupportedRegion = await rpc(app, "tools/call", {
+      name: "beacon_search_messages",
+      arguments: { region: "north" },
+    });
+    expect(unsupportedRegion.body).toContain("region");
+    expect(unsupportedRegion.body).toContain("Invalid");
+
+    const ambiguousRegion = await rpc(app, "tools/call", {
+      name: "beacon_search_packets",
+      arguments: { region: "north", regionId: 1 },
+    });
+    expect(ambiguousRegion.body).toContain(
+      "region and regionId are mutually exclusive",
+    );
+
+    const ambiguousType = await rpc(app, "tools/call", {
+      name: "beacon_search_nodes",
+      arguments: { type: 2, typeName: "repeater" },
+    });
+    expect(ambiguousType.body).toContain(
+      "type and typeName are mutually exclusive",
+    );
   });
 
   it("maps upstream 404, 429, 503, and timeout failures", async () => {

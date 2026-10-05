@@ -220,7 +220,7 @@ export class BeaconAdapter {
 
   async searchMessages(
     input: Input<
-      ScopedLocationFilters &
+      Pick<ScopedLocationFilters, "iatas" | "scope"> &
         OffsetPage & {
           since?: string;
           channelId?: number;
@@ -233,7 +233,8 @@ export class BeaconAdapter {
     return toPage(
       await this.client.request("listMessages", {
         query: {
-          ...scopedLocation(input),
+          iatas: normalizeIatas(input.iatas)?.join(","),
+          scope: input.scope,
           since: timeRange(input.since).since,
           ...page,
           channelID: input.channelId,
@@ -274,7 +275,10 @@ export class BeaconAdapter {
 
   async getChannelMessages(
     id: number,
-    input: Input<ScopedLocationFilters & OffsetPage & { since?: string }>,
+    input: Input<
+      Pick<ScopedLocationFilters, "iatas" | "scope"> &
+        OffsetPage & { since?: string }
+    >,
     signal?: AbortSignal,
   ): Promise<Page> {
     const page = offsetPage(input);
@@ -282,7 +286,8 @@ export class BeaconAdapter {
       await this.client.request("getChannelMessages", {
         path: { channelID: id },
         query: {
-          ...scopedLocation(input),
+          iatas: normalizeIatas(input.iatas)?.join(","),
+          scope: input.scope,
           since: timeRange(input.since).since,
           ...page,
         },

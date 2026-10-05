@@ -24,7 +24,7 @@ describe("pagination and errors", () => {
       items: [1, 2],
       pagination: {
         hasMore: true,
-        nextCursor: { nextCursor: 10, nextPageCursor: "opaque" },
+        nextCursor: { pageCursor: "opaque" },
       },
     });
   });
@@ -53,5 +53,12 @@ describe("pagination and errors", () => {
       content: [{ text: "Internal gateway error" }],
       structuredContent: { error: { type: "InternalError" } },
     });
+  });
+
+  it("does not disclose upstream 5xx response messages", () => {
+    const error = errorFromResponse(500, {
+      error: { code: "internal", message: "database secret" },
+    });
+    expect(error.message).toBe("Beacon request failed with HTTP 500");
   });
 });

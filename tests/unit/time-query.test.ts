@@ -10,6 +10,9 @@ describe("input normalization", () => {
   it("converts strict UTC RFC3339 timestamps", () => {
     expect(toEpochMilliseconds("2026-10-04T15:30:00Z")).toBe(1791127800000);
     expect(() => toEpochMilliseconds("2026-10-04 15:30")).toThrow("RFC3339");
+    expect(() => toEpochMilliseconds("2026-02-30T15:30:00Z")).toThrow(
+      "calendar",
+    );
     expect(() =>
       timeRange("2026-10-05T00:00:00Z", "2026-10-04T00:00:00Z"),
     ).toThrow("earlier");

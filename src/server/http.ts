@@ -15,7 +15,12 @@ export function buildHttpServer(
   adapter: BeaconAdapter,
   logger: Logger,
 ): FastifyInstance {
-  const app = Fastify();
+  const app = Fastify({ bodyLimit: 1_048_576 });
+
+  app.addHook("onRequest", async (_request, reply) => {
+    reply.raw.setHeader("Cache-Control", "no-store");
+    reply.raw.setHeader("X-Content-Type-Options", "nosniff");
+  });
 
   app.get("/healthz", async () => ({ status: "ok" }));
   app.get("/readyz", async () => ({ status: "ok" }));

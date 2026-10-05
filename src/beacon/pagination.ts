@@ -7,11 +7,7 @@ export interface Page {
   };
 }
 
-export function toPage(
-  value: unknown,
-  limit: number,
-  cursorKeys: readonly string[] = ["nextCursor", "nextPageCursor"],
-): Page {
+export function toPage(value: unknown, limit: number): Page {
   const record =
     value && typeof value === "object"
       ? (value as Record<string, unknown>)
@@ -22,11 +18,12 @@ export function toPage(
       ? record["items"]
       : [];
   const items = source.slice(0, limit);
-  const nextCursor = Object.fromEntries(
-    cursorKeys
-      .filter((key) => record[key] !== undefined)
-      .map((key) => [key, record[key]]),
-  );
+  const nextCursor =
+    record["nextPageCursor"] !== undefined
+      ? { pageCursor: record["nextPageCursor"] }
+      : record["nextCursor"] !== undefined
+        ? { cursor: record["nextCursor"] }
+        : {};
   const hasMore = Boolean(record["hasMore"]) || source.length > limit;
   return {
     items,

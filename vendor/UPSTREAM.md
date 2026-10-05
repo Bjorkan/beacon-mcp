@@ -1,7 +1,7 @@
 # Vendored Beacon OpenAPI contract
 
 - Repository: `https://github.com/MeshCore-Beacon/beacon-server`
-- Commit: `4db780894d5b053cedcf445a26c95581560df70a`
+- Commit: `041d9c1f45d8cb733c3f9233b7cfb7cd53c83b80`
 - Source: `docs/swagger.yaml`
 - Documentation repository: `https://github.com/MeshCore-Beacon/beacon-docs`
 - Documentation commit: `5a60f1e00b3e7c13c416382d4a53f4ea84b7b0f4`

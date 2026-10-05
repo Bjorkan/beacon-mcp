@@ -22,6 +22,7 @@ describe("Beacon HTTP contract", () => {
       expect(init?.headers).toMatchObject({
         "user-agent": "beacon-mcp/2.0.2",
       });
+      expect(init?.redirect).toBe("error");
       return Response.json({
         items: [{ id: "node-1", name: "Repeater", lastSeen: 1791127800000 }],
         hasMore: false,
@@ -130,5 +131,14 @@ describe("Beacon HTTP contract", () => {
     );
     await expect(client.request("admin" as never)).rejects.toThrow("Unsafe");
     expect(pending).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects oversized outbound URLs before making a request", async () => {
+    const fetchMock = vi.fn<typeof fetch>();
+    const client = new BeaconClient(config, { fetch: fetchMock });
+    await expect(
+      client.request("listNodes", { query: { name: "x".repeat(8_192) } }),
+    ).rejects.toThrow("filters are too large");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
