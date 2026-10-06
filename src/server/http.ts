@@ -26,7 +26,12 @@ export function buildHttpServer(
   app.get("/readyz", async () => ({ status: "ok" }));
 
   const handler = createMcpHandler(() => createMcpServer(adapter, logger), {
-    legacy: "reject",
+    // Modern MCP (2026-07-28) stays the default era. The SDK's stateless
+    // legacy fallback additionally negotiates older revisions over the same
+    // endpoint (2025-era and pre-2025 back to 2024-10-07) with a fresh MCP
+    // instance per POST, so no session state is added; legacy GET/DELETE
+    // session operations are answered with 405.
+    legacy: "stateless",
     onerror: (error) =>
       logger.error(
         { ...currentRequestContext(), error: error.message },

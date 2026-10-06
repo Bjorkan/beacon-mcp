@@ -30,7 +30,9 @@ so replicas can sit behind a round-robin load balancer.
 
 - Node.js 24 LTS, TypeScript, ESM, Fastify
 - MCP TypeScript SDK `@modelcontextprotocol/server` 2.3.0
-- MCP revision `2026-07-28` only, served statelessly; 2025-era requests are rejected
+- MCP era `2026-07-28` default, served statelessly; older clients negotiate over
+  the same endpoint via legacy `initialize` (SDK defaults: `2025-11-25`,
+  `2025-06-18`, `2025-03-26`, `2024-11-05`, `2024-10-07`), also statelessly
 - Beacon API version `2.0.2`, also advertised as the MCP server version
 - Beacon server commit `041d9c1f45d8cb733c3f9233b7cfb7cd53c83b80`
 - Beacon docs commit `5a60f1e00b3e7c13c416382d4a53f4ea84b7b0f4`
@@ -163,9 +165,10 @@ process.
 | `LOG_LEVEL`               |    `info` | Log level setting                                         |
 | `SHUTDOWN_GRACE_MS`       |   `10000` | Bounded shutdown grace period                             |
 
-The upstream response limit is fixed at 5 MiB. MCP is always public,
-modern-only, and stateless; these are service invariants rather than deployment
-settings.
+The upstream response limit is fixed at 5 MiB. MCP is always public and
+stateless; these are service invariants rather than deployment settings. The
+legacy-era fallback adds no session state: every POST is served by a fresh MCP
+instance, and legacy GET/DELETE session operations are answered with 405.
 
 ## MCP client and discovery
 

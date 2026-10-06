@@ -496,7 +496,7 @@ describe("MCP HTTP integration", () => {
     expect(timeout.body).toContain("BeaconTimeoutError");
   });
 
-  it("does not filter public hosts or origins and rejects legacy MCP", async () => {
+  it("does not filter public hosts or origins and serves legacy MCP", async () => {
     const app = await start();
     expect(
       (
@@ -517,18 +517,75 @@ describe("MCP HTTP integration", () => {
       ).statusCode,
     ).toBe(200);
 
-    expect(
-      (
-        await app.inject({
-          url: "/",
-          method: "POST",
-          headers: {
-            "content-type": "application/json",
-            accept: "application/json, text/event-stream",
+    const legacy = await app.inject({
+      url: "/",
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+      },
+      payload: { jsonrpc: "2.0", id: 1, method: "tools/list" },
+    });
+    expect(legacy.statusCode).toBe(200);
+    expect(legacy.body).toContain("beacon_list_iatas");
+  });
+
+  it("negotiates legacy and pre-2025 initialize requests statelessly", async () => {
+    const app = await start();
+    for (const requested of [
+      "2025-11-25",
+      "2025-06-18",
+      "2025-03-26",
+      "2024-11-05",
+      "2024-10-07",
+    ]) {
+      const response = await app.inject({
+        url: "/",
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          accept: "application/json, text/event-stream",
+          "mcp-protocol-version": requested,
+        },
+        payload: {
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: {
+            protocolVersion: requested,
+            capabilities: {},
+            clientInfo: { name: "vitest", version: "1.0.0" },
           },
-          payload: { jsonrpc: "2.0", id: 1, method: "tools/list" },
-        })
-      ).statusCode,
-    ).toBe(400);
+        },
+      });
+      expect(response.statusCode).toBe(200);
+      expect(response.body).toContain(`"protocolVersion":"${requested}"`);
+      expect(response.body).toContain('"name":"beacon-mcp"');
+      expect(response.body).toContain('"version":"2.0.2"');
+    }
+  });
+
+  it("downgrades unknown legacy revisions to the newest served one", async () => {
+    const app = await start();
+    const response = await app.inject({
+      url: "/",
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+      },
+      payload: {
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "1999-01-01",
+          capabilities: {},
+          clientInfo: { name: "vitest", version: "1.0.0" },
+        },
+      },
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toContain('"protocolVersion":"2025-11-25"');
   });
 });

@@ -37,9 +37,13 @@ Add that address as a remote MCP server in an MCP client that supports
 Streamable HTTP. Once connected, enable the Beacon tools and start asking
 questions—there is no separate Beacon MCP Server interface to learn.
 
+The service speaks the current MCP protocol revision and still accepts older
+clients: revisions back to `2024-10-07` negotiate automatically, so an MCP
+client that predates the current revision can usually connect as-is.
+
 If you run into a connection error, check that you are using the dedicated
-subdomain without an extra path and that your client supports current MCP
-servers. Access rules, if any, are set by the service operator.
+subdomain without an extra path and that your client supports MCP over
+Streamable HTTP. Access rules, if any, are set by the service operator.
 
 ## What to expect
 
