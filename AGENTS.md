@@ -304,3 +304,11 @@ Commit the vendor document, generated declarations, and updated
 - No admin endpoints, direct PostgreSQL/Redis/MQTT access, generic proxy
   operation, OAuth server, persistent cache, or local sessions are implemented.
 - Readiness intentionally does not report transient Beacon availability.
+- `swagger2openapi` is intentionally retained despite upstream abandonment
+  (last release 2021). It is the only maintained-enough Swagger 2.0 to
+  OpenAPI 3 converter for the build-time `openapi:generate`/`openapi:check`
+  scripts, is dev-only and absent from production images, is pinned exactly,
+  runs offline against the vendored document, and its output is verified
+  byte-identical by `openapi:check`. Renovate's abandoned-dependency report
+  for it is informational and requires no action; replace it only if upstream
+  Beacon ever publishes OpenAPI 3 directly.
