@@ -56,6 +56,21 @@ describe("Beacon adapter pagination", () => {
     });
   });
 
+  it("continues channel pages only with the opaque page cursor", async () => {
+    const urls: string[] = [];
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      urls.push(String(input));
+      return Response.json({ items: [], hasMore: false });
+    });
+    const adapter = new BeaconAdapter(
+      new BeaconClient(config, { fetch: fetchMock }),
+    );
+    await adapter.listChannels({ limit: 2, pageCursor: "v1:1000:7" });
+    expect(urls).toEqual([
+      "https://beacon.example/api/v1/channels?limit=2&pageCursor=v1%3A1000%3A7",
+    ]);
+  });
+
   it("normalizes canonical and legacy payload names to numeric filters", async () => {
     const urls: string[] = [];
     const fetchMock = vi.fn<typeof fetch>(async (input) => {

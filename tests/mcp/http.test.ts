@@ -22,6 +22,12 @@ interface StartOptions {
   fetchImpl?: typeof fetch;
 }
 
+interface ListedTool {
+  name: string;
+  description?: string;
+  inputSchema: Record<string, unknown>;
+}
+
 async function start(options: StartOptions = {}): Promise<FastifyInstance> {
   const defaultFetch = vi.fn<typeof fetch>(async (input) => {
     const path = new URL(String(input)).pathname;
@@ -123,6 +129,47 @@ describe("MCP HTTP integration", () => {
     expect(text.match(/"destructiveHint":false/g)).toHaveLength(21);
     expect(text.match(/"idempotentHint":true/g)).toHaveLength(21);
     expect(text.match(/"openWorldHint":true/g)).toHaveLength(21);
+    const listedTools = (response.json() as { result: { tools: ListedTool[] } })
+      .result.tools;
+    expect(listedTools).toHaveLength(21);
+    const listed = (name: string) => {
+      const tool = listedTools.find((candidate) => candidate.name === name);
+      expect(tool).toBeDefined();
+      return tool as ListedTool;
+    };
+    expect(JSON.stringify(listed("beacon_search_nodes").inputSchema)).toContain(
+      '"not":{"required":["type","typeName"]}',
+    );
+    expect(
+      JSON.stringify(listed("beacon_search_packets").inputSchema),
+    ).toContain('"not":{"required":["payloadTypeName","payloadType"]}');
+    expect(
+      JSON.stringify(listed("beacon_search_messages").inputSchema),
+    ).toContain('"not":{"required":["channelId","channelHash"]}');
+    expect(JSON.stringify(listed("beacon_list_routes").inputSchema)).toContain(
+      '"dependentRequired":{"cursorId":["cursor"]}',
+    );
+    expect(
+      JSON.stringify(listed("beacon_search_traces").inputSchema),
+    ).toContain('"dependentRequired":{"cursorTag":["cursor"]}');
+    expect(
+      JSON.stringify(listed("beacon_get_observer_activity").inputSchema),
+    ).toContain("43200m");
+    expect(
+      JSON.stringify(listed("beacon_get_observer_activity").inputSchema),
+    ).toContain('"if"');
+
+    const channelsInput = JSON.stringify(
+      listed("beacon_list_channels").inputSchema,
+    );
+    expect(channelsInput).toContain('"pageCursor"');
+    expect(channelsInput).not.toContain('"cursor"');
+    expect(listed("beacon_list_iatas").description).toContain(
+      "network partitions",
+    );
+    expect(listed("beacon_search_packets").description).toContain(
+      "does not persist or log",
+    );
     const discovery = await rpc(app, "server/discover");
     expect(discovery.statusCode, discovery.body).toBe(200);
     expect(discovery.body).toContain('"version":"2.0.2"');
@@ -219,7 +266,7 @@ describe("MCP HTTP integration", () => {
       name: "beacon_list_channels",
       arguments: { cursor: 1, pageCursor: "opaque" },
     });
-    expect(channels.body).toContain("pageCursor cannot be combined");
+    expect(channels.body).toContain('Unrecognized key: \\"cursor\\"');
 
     const activity = await rpc(app, "tools/call", {
       name: "beacon_get_observer_activity",

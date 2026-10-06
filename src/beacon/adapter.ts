@@ -259,7 +259,6 @@ export class BeaconAdapter {
   async listChannels(
     input: Input<{
       iatas?: string[];
-      cursor?: number;
       limit?: number;
       hash?: string;
       keyKnown?: boolean;
@@ -267,19 +266,19 @@ export class BeaconAdapter {
     }>,
     signal?: AbortSignal,
   ): Promise<Page> {
-    const page = offsetPage(input);
+    const limit = boundedLimit(input.limit);
     return toPage(
       await this.client.request("listChannels", {
         query: {
           iatas: normalizeIatas(input.iatas)?.join(","),
-          ...page,
+          limit,
           hash: input.hash,
           keyKnown: input.keyKnown,
           pageCursor: input.pageCursor,
         },
         signal,
       }),
-      page.limit,
+      limit,
     );
   }
 

@@ -190,6 +190,11 @@ that have no pagination mechanism, an over-limit response instead reports
 request a nonexistent next page. A list response is never allowed to grow
 beyond the requested bound.
 
+Keep cross-field constraints in both the emitted input JSON Schema and runtime
+validation. Channel pagination exposes only the precise opaque `pageCursor`
+returned at `pagination.nextCursor.pageCursor`, not Beacon's legacy numeric
+channel cursor.
+
 Packet hashes are exactly 16 hexadecimal characters, trace tags exactly 8, and
 exact node public keys exactly 64; `pubkeyPrefix` remains available for partial
 node-key matching. `payloadTypeName` uses the same canonical names returned in
