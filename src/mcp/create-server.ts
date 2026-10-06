@@ -19,10 +19,10 @@ const nameText = z.string().trim().min(1).max(256);
 const routeHash = z
   .string()
   .min(2)
-  .max(64)
+  .max(6)
   .regex(/^(?:[0-9a-fA-F]{2})+$/)
   .describe(
-    "Even-length hexadecimal prefix; at most 64 characters. Use 4 hex characters to match a full 2-byte hop hash exactly; shorter prefixes may match multiple hop hashes",
+    "Exact match on a hop hash: 2 hex characters for a 1-byte hash, 4 for a 2-byte hash, or 6 for a 3-byte hash. Shorter hashes are not treated as prefixes of longer ones",
   );
 const packetHash = z
   .string()
@@ -153,7 +153,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_list_iatas",
-    "List Beacon geographic areas identified by IATA-style codes. Codes represent network partitions and do not necessarily refer to the corresponding airport.",
+    "List Beacon geographic areas identified by IATA-style codes. This is a bounded enumeration with no server-side pagination; if the list exceeds the limit, the response reports truncation. Codes represent network partitions and do not necessarily refer to the corresponding airport.",
     z.strictObject({ limit }),
     outputSchemas.beacon_list_iatas,
     (a, s) => adapter.listIatas(a.limit, s),
@@ -442,7 +442,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_search_routes",
-    "Search routes by source and destination hash.",
+    "Search for route segments matching exact hop hashes. Results are segments of larger routes, not necessarily full routes; the same route may appear with different hop counts in segment vs full-route queries. This endpoint has no server-side pagination — if more than 50 results exist, later results are inaccessible; narrow the hashes to work around this.",
     z.strictObject({
       iata,
       from: routeHash,
@@ -456,7 +456,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_find_cross_iata_routes",
-    "Find routes crossing IATA boundaries.",
+    "Find routes crossing IATA boundaries by exact hop hashes. This endpoint has no server-side pagination — if more than 50 results exist, later results are inaccessible; narrow the hashes to work around this.",
     z.strictObject({
       fromHash: routeHash,
       fromIata: iata,
@@ -527,7 +527,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_get_network_series",
-    "Get hourly network analytics for an explicit time window. region and regionId are mutually exclusive.",
+    "Get hourly network analytics for an explicit time window. Beacon rounds since and until to whole-hour boundaries silently, so the response window may differ from the request. The upstream retains roughly 90 days of hourly data; windows beyond that are rejected or silently clamped. region and regionId are mutually exclusive.",
     z
       .strictObject({ ...location, since: timestamp, until: timestamp })
       .refine((a) => !(a.region && a.regionId), {

@@ -53,6 +53,13 @@ the comparison and call out any differences from the pinned local contract. Do
 not silently update the pinned schema or commit; use the OpenAPI update workflow
 below when intentionally adopting upstream changes.
 
+Upstream `GET /routes/search` returns route segments (subsets of full routes)
+using the same shape as list-routes; a single route may appear with fewer hops
+in a segment result. `GET /stats/series` silently rounds `since` and `until` to
+whole-hour boundaries and has a rolling ~90-day retention measured from the
+current time; windows beyond the retention window are rejected with a
+misleading "epoch milliseconds" error.
+
 The last comparison was made against `main` commit
 `041d9c1f45d8cb733c3f9233b7cfb7cd53c83b80` (Beacon 2.0.2) on 2026-10-06. Its
 Swagger document is byte-identical to the vendored contract. The upstream
@@ -216,9 +223,11 @@ to stay compatible with older clients that cannot interpret `not`, `allOf`,
 
 Packet hashes are exactly 16 hexadecimal characters, trace tags exactly 8, and
 exact node public keys exactly 64; `pubkeyPrefix` remains available for partial
-node-key matching. Route hash parameters (`from`, `to`, `fromHash`, `toHash`)
-require an even number of hexadecimal characters, at most 64; the canonical
-searchable form is 4 characters (the 2-byte hop prefix stored by Beacon).
+node-key matching. Route hash parameters (`from`, `to`, `fromHash`, `toHash`) are exact-match on
+stored hop hashes, not general-purpose prefixes. Accepted lengths are 2 hex
+characters (1-byte hash), 4 (2-byte), or 6 (3-byte); only these three exact
+lengths currently exist in Beacon. Shorter hashes do not match as prefixes of
+longer ones.
 `payloadTypeName` uses the same canonical names returned in packet responses,
 while `txt_msg`, `grp_txt`, and `anon_req` remain accepted as legacy aliases.
 The canonical `reserved` filter covers numeric types 12–14.
