@@ -442,7 +442,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_search_routes",
-    "Search for route segments matching exact hop hashes. Results are segments of larger routes, not necessarily full routes; the same route may appear with different hop counts in segment vs full-route queries. This endpoint has no server-side pagination — if more than 50 results exist, later results are inaccessible; narrow the hashes to work around this.",
+    "Search for route segments matching exact hop hashes. Results are segments of larger routes, not necessarily full routes; the same route may appear with different hop counts in segment vs full-route queries. This endpoint has no server-side pagination — results beyond the requested limit are truncated and at most 50 can be retrieved in total; narrow the hashes to work around this.",
     z.strictObject({
       iata,
       from: routeHash,

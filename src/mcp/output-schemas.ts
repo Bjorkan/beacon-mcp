@@ -195,7 +195,9 @@ const observerActivityRadio = z.looseObject({
 });
 
 const observerActivitySummary = z.looseObject({
-  lastCompleteHour: optionalInteger,
+  lastCompleteHour: optionalInteger.describe(
+    "Upstream field name is misleading: this value is the observation count for the latest complete hour, not an hour number or timestamp",
+  ),
   lastCompleteHourEnd: optionalInteger,
   lastCompleteHourStart: optionalInteger,
   latestRecordedAt: optionalInteger,
