@@ -22,7 +22,7 @@ const routeHash = z
   .max(64)
   .regex(/^(?:[0-9a-fA-F]{2})+$/)
   .describe(
-    "Hexadecimal node hash prefix with an even number of characters, at most 64; Beacon matches the stored 2-byte hop prefix, so the exact searchable form is 4 characters",
+    "Even-length hexadecimal prefix; at most 64 characters. Use 4 hex characters to match a full 2-byte hop hash exactly; shorter prefixes may match multiple hop hashes",
   );
 const packetHash = z
   .string()
