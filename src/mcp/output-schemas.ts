@@ -3,6 +3,11 @@ import { z } from "zod/v4";
 const optionalString = z.string().nullish();
 const optionalNumber = z.number().nullish();
 const optionalInteger = z.number().int().nullish();
+const epochMs = z
+  .number()
+  .int()
+  .nullish()
+  .describe("Unix epoch milliseconds (UTC)");
 const optionalBoolean = z.boolean().nullish();
 const optionalStrings = z.array(z.string()).nullish();
 const payloadTypeName = z
@@ -27,7 +32,7 @@ const payloadTypeName = z
 
 const nodeIata = z.looseObject({
   iata: optionalString,
-  lastHeard: optionalInteger,
+  lastHeard: epochMs,
 });
 
 const resolvedNode = z.looseObject({
@@ -106,10 +111,10 @@ const nodeSummary = z.looseObject({
 });
 
 const nodeNeighbor = z.looseObject({
-  firstSeen: optionalInteger,
+  firstSeen: epochMs,
   iata: optionalString,
   id: optionalString,
-  lastSeen: optionalInteger,
+  lastSeen: epochMs,
   lat: optionalNumber,
   lng: optionalNumber,
   name: optionalString,
@@ -122,12 +127,12 @@ const nodeNeighbor = z.looseObject({
 
 const node = z.looseObject({
   ...nodeSummary.shape,
-  clockCheckedAt: optionalInteger,
+  clockCheckedAt: epochMs,
   clockDriftSeconds: optionalNumber,
   clockOutOfSync: optionalBoolean,
-  firstSeen: optionalInteger,
-  lastAdvertAt: optionalInteger,
-  lastSeen: optionalInteger,
+  firstSeen: epochMs,
+  lastAdvertAt: epochMs,
+  lastSeen: epochMs,
   locationSource: optionalString,
   metadata: z.unknown().nullish(),
   minFirmwareVersion: optionalString,
@@ -145,8 +150,8 @@ const observerSummary = z.looseObject({
 });
 
 const observerBroker = z.looseObject({
-  lastPacketAt: optionalInteger,
-  lastSeenAt: optionalInteger,
+  lastPacketAt: epochMs,
+  lastSeenAt: epochMs,
   name: optionalString,
 });
 
@@ -156,10 +161,10 @@ const observer = z.looseObject({
   brokers: z.array(observerBroker).nullish(),
   firmwareBuild: optionalString,
   firmwareVersion: optionalString,
-  firstSeen: optionalInteger,
+  firstSeen: epochMs,
   hardwareModel: optionalString,
-  lastSeen: optionalInteger,
-  lastStatusAt: optionalInteger,
+  lastSeen: epochMs,
+  lastStatusAt: epochMs,
   observationCount: optionalInteger,
   publicKey: optionalString,
   radioBwKhz: optionalNumber,
@@ -183,7 +188,7 @@ const observerActivityPoint = z.looseObject({
   rssiAvg: optionalNumber,
   snrAvg: optionalNumber,
   snrMin: optionalNumber,
-  t: optionalInteger,
+  t: epochMs,
 });
 
 const observerActivityRadio = z.looseObject({
@@ -198,30 +203,30 @@ const observerActivitySummary = z.looseObject({
   lastCompleteHour: optionalInteger.describe(
     "Upstream field name is misleading: this value is the observation count for the latest complete hour, not an hour number or timestamp",
   ),
-  lastCompleteHourEnd: optionalInteger,
-  lastCompleteHourStart: optionalInteger,
-  latestRecordedAt: optionalInteger,
+  lastCompleteHourEnd: epochMs,
+  lastCompleteHourStart: epochMs,
+  latestRecordedAt: epochMs,
   recordedPackets: optionalInteger,
 });
 
 const observerActivity = z.looseObject({
-  generatedAt: optionalInteger,
+  generatedAt: epochMs,
   interval: optionalString,
   payloadTypes: z.array(payloadBreakdownItem).nullish(),
   points: z.array(observerActivityPoint).nullish(),
   radio: observerActivityRadio.nullish(),
   range: optionalString,
-  rawFrom: optionalInteger,
-  rolledUntil: optionalInteger,
+  rawFrom: epochMs,
+  rolledUntil: epochMs,
   source: optionalString,
   summary: observerActivitySummary.nullish(),
-  windowEnd: optionalInteger,
-  windowStart: optionalInteger,
+  windowEnd: epochMs,
+  windowStart: epochMs,
 });
 
 const packetSummary = z.looseObject({
-  firstHeardAt: optionalInteger,
-  lastHeardAt: optionalInteger,
+  firstHeardAt: epochMs,
+  lastHeardAt: epochMs,
   latestObserver: packetLatestObserver.nullish(),
   observationCount: optionalInteger,
   packetHash: optionalString,
@@ -250,7 +255,7 @@ const packetRadio = z.looseObject({
 });
 
 const packetObservation = z.looseObject({
-  heardAt: optionalInteger,
+  heardAt: epochMs,
   iata: optionalString,
   id: optionalInteger,
   observerId: optionalString,
@@ -270,10 +275,10 @@ const packetObservation = z.looseObject({
 const packet = z.looseObject({
   channelHash: optionalString,
   decrypted: optionalBoolean,
-  firstHeardAt: optionalInteger,
+  firstHeardAt: epochMs,
   firstToLastMs: optionalNumber,
   header: packetHeader.nullish(),
-  lastHeardAt: optionalInteger,
+  lastHeardAt: epochMs,
   observationCount: optionalInteger,
   observations: z.array(packetObservation).nullish(),
   originPubkey: optionalString,
@@ -301,7 +306,7 @@ const channelMessage = z.looseObject({
     .enum(["matched", "unscoped", "unknown", "unavailable"])
     .nullish(),
   senderName: optionalString,
-  sentAt: optionalInteger,
+  sentAt: epochMs,
 });
 
 const channelSummary = z.looseObject({
@@ -309,17 +314,17 @@ const channelSummary = z.looseObject({
   id: optionalInteger,
   isHashtag: optionalBoolean,
   keyKnown: optionalBoolean,
-  lastSeen: optionalInteger,
+  lastSeen: epochMs,
   name: optionalString,
 });
 
 const knownRoute = z.looseObject({
-  firstSeen: optionalInteger,
+  firstSeen: epochMs,
   hopCount: optionalInteger,
   hops: z.array(routeHop).nullish(),
   iata: optionalString,
   id: optionalInteger,
-  lastSeen: optionalInteger,
+  lastSeen: epochMs,
   observationCount: optionalInteger,
   pathKey: optionalString,
 });
@@ -329,7 +334,7 @@ const crossIataRoute = z.looseObject({
     .looseObject({
       fromIata: optionalString,
       fromNode: resolvedNode.nullish(),
-      lastSeen: optionalInteger,
+      lastSeen: epochMs,
       toIata: optionalString,
       toNode: resolvedNode.nullish(),
     })
@@ -340,9 +345,9 @@ const crossIataRoute = z.looseObject({
 });
 
 const traceSummary = z.looseObject({
-  firstHeardAt: optionalInteger,
+  firstHeardAt: epochMs,
   iataCount: optionalInteger,
-  lastHeardAt: optionalInteger,
+  lastHeardAt: epochMs,
   packetCount: optionalInteger,
   pathHashes: optionalStrings,
   snrValues: z.array(z.number()).nullish(),
@@ -354,8 +359,8 @@ const traceDetail = z.looseObject({
   packets: z
     .array(
       z.looseObject({
-        firstHeardAt: optionalInteger,
-        lastHeardAt: optionalInteger,
+        firstHeardAt: epochMs,
+        lastHeardAt: epochMs,
         packetHash: optionalString,
         rawPath: z
           .array(
@@ -378,10 +383,10 @@ const traceDetail = z.looseObject({
 const statsOverview = z.looseObject({
   activeIatas: optionalInteger,
   activeObservers: optionalInteger,
-  since: optionalInteger,
+  since: epochMs,
   totalObservations: optionalInteger,
   totalPackets: optionalInteger,
-  until: optionalInteger,
+  until: epochMs,
   windowHours: optionalInteger,
 });
 
@@ -401,20 +406,20 @@ const statsSeriesValues = z.looseObject({
 
 const statsSeries = z.looseObject({
   completeHours: optionalInteger,
-  earliestComplete: optionalInteger,
+  earliestComplete: epochMs,
   hours: z
     .array(
       z.looseObject({
-        hour: optionalInteger,
+        hour: epochMs,
         status: z.enum(["complete", "partial", "missing"]).nullish(),
         values: statsSeriesValues.nullish(),
       }),
     )
     .nullish(),
   revision: optionalInteger,
-  since: optionalInteger,
+  since: epochMs,
   summary: statsSeriesValues.nullish(),
-  until: optionalInteger,
+  until: epochMs,
 });
 
 const observerComparison = z.looseObject({
@@ -423,20 +428,20 @@ const observerComparison = z.looseObject({
   observerB: optionalString,
   onlyA: optionalInteger,
   onlyB: optionalInteger,
-  since: optionalInteger,
+  since: epochMs,
   totalPackets: optionalInteger,
-  until: optionalInteger,
+  until: epochMs,
 });
 
 const numericCursor = z
   .strictObject({
-    cursor: z.number().int(),
+    cursor: z.number().int().nonnegative(),
   })
   .describe("Continuation page cursor; pass the value to the next call as-is");
 
 const routeCursor = z
   .strictObject({
-    cursor: z.number().int(),
+    cursor: z.number().int().nonnegative(),
     cursorId: z.number().int(),
   })
   .describe(
@@ -445,7 +450,7 @@ const routeCursor = z
 
 const traceCursor = z
   .strictObject({
-    cursor: z.number().int(),
+    cursor: z.number().int().nonnegative(),
     cursorTag: z.string(),
   })
   .describe(

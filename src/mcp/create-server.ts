@@ -74,7 +74,11 @@ const observerRange = z
 const observerInterval = z.enum(["5m", "15m", "1h", "6h", "24h"]);
 const location = {
   iatas,
-  region: shortText.optional(),
+  region: shortText
+    .optional()
+    .describe(
+      "Exact case-sensitive region slug as returned by beacon_list_regions.slug; the display name (e.g. Sverige) will not match",
+    ),
   regionId: z.number().int().positive().max(MAX_INT32).optional(),
 };
 const scopedLocation = {
@@ -252,7 +256,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_get_observer_activity",
-    "Get heard-activity history for one observer. When interval is 5m or 15m, including when interval is omitted, range must be 48h or less.",
+    "Get heard-activity history for one observer. The points array is sparse: intervals with no recorded observations may be omitted rather than returned as zero. When interval is 5m or 15m, including when interval is omitted, range must be 48h or less.",
     z
       .strictObject({
         id: z.uuid(),
@@ -344,7 +348,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_search_messages",
-    "Search decrypted public channel messages. channelId and channelHash are mutually exclusive.",
+    "Search decrypted public channel messages. Messages carry only a channelHash, not a channelId; hash collisions exist (the same hash may map to multiple channel IDs). channelId and channelHash are mutually exclusive.",
     z
       .strictObject({
         iatas,
