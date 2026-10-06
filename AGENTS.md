@@ -61,6 +61,11 @@ handlers currently ignore the documented `region` and `regionId` parameters on
 tools intentionally expose only `iatas` and `scope` until upstream implements
 those region filters.
 
+Upstream `GET /routes/search` and `cross` endpoints use `hex.DecodeString` on
+the hash parameters; odd-length hexadecimal input (e.g. `e72ba`) reaches the
+handler and produces an unhandled panic that surfaces as HTTP 500 instead of 400. The local tool input schemas reject odd-length hex at the Zod layer to
+avoid this upstream defect.
+
 ## Run locally
 
 ```sh
@@ -184,26 +189,39 @@ curl -sS https://mcp.example.org \
 
 Times are strict RFC3339 UTC inputs and become Beacon epoch milliseconds. IATAs
 are uppercased. `since` must be earlier than `until`. Lists default to 20 and
-reject limits above 50. Results use
-`{ items, pagination: { hasMore, nextCursor } }` when Beacon supplies a cursor
-or the gateway can derive one. `beacon_list_scopes` uses a local offset cursor
-over the complete, sorted upstream array. For other upstream array endpoints
-that have no pagination mechanism, an over-limit response instead reports
-`{ hasMore: false, truncated: true }`; clients can narrow the filters but cannot
-request a nonexistent next page. A list response is never allowed to grow
-beyond the requested bound.
+reject limits above 50. A list response is never allowed to grow beyond the
+requested bound.
 
-Every tool publishes an output schema for its structured result. Keep
-cross-field constraints in both the emitted input JSON Schema and runtime
-validation. Channel pagination exposes only the precise opaque `pageCursor`
-returned at `pagination.nextCursor.pageCursor`, not Beacon's legacy numeric
-channel cursor.
+Paginated results use `{ items, pagination: { hasMore, nextCursor? } }`. The
+shape of `nextCursor` varies by endpoint:
+
+- Numeric `cursor` for `list_scopes`, `search_nodes`, `search_observers`,
+  `search_packets`, `search_messages`, and `get_channel_messages`.
+- Compound `{ cursor, cursorId }` for `list_routes`.
+- Compound `{ cursor, cursorTag }` for `search_traces`.
+- Opaque `pageCursor` for `list_channels` (Beacon's legacy numeric channel
+  cursor is intentionally not exposed).
+
+Endpoints backed by upstream arrays with no pagination mechanism
+(`list_iatas`, `list_regions`, `search_routes`, `find_cross_iata_routes`)
+return `{ hasMore: false, truncated?: true }` with no `nextCursor`; clients
+can narrow the filters but cannot request a nonexistent next page.
+
+Every tool publishes an output schema for its structured result. Cross-field
+input constraints are enforced at runtime and documented in plain English in
+each tool description; the emitted MCP input JSON Schema uses only core
+keywords (`type`, `properties`, `required`, `enum`, `pattern`, numeric bounds)
+to stay compatible with older clients that cannot interpret `not`, `allOf`,
+`if`, or `dependentRequired`.
 
 Packet hashes are exactly 16 hexadecimal characters, trace tags exactly 8, and
 exact node public keys exactly 64; `pubkeyPrefix` remains available for partial
-node-key matching. `payloadTypeName` uses the same canonical names returned in
-packet responses, while `txt_msg`, `grp_txt`, and `anon_req` remain accepted as
-legacy aliases. The canonical `reserved` filter covers numeric types 12–14.
+node-key matching. Route hash parameters (`from`, `to`, `fromHash`, `toHash`)
+require an even number of hexadecimal characters, at most 64; the canonical
+searchable form is 4 characters (the 2-byte hop prefix stored by Beacon).
+`payloadTypeName` uses the same canonical names returned in packet responses,
+while `txt_msg`, `grp_txt`, and `anon_req` remain accepted as legacy aliases.
+The canonical `reserved` filter covers numeric types 12–14.
 
 In packet details, packet-level `firstHeardAt` and `lastHeardAt` are Beacon
 server receive/upsert times. Each `observations[].heardAt` is the timestamp

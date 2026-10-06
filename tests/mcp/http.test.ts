@@ -141,42 +141,76 @@ describe("MCP HTTP integration", () => {
       expect(tool).toBeDefined();
       return tool as ListedTool;
     };
-    expect(JSON.stringify(listed("beacon_search_nodes").inputSchema)).toContain(
-      '"not":{"required":["type","typeName"]}',
+    for (const name of [
+      "beacon_search_nodes",
+      "beacon_search_observers",
+      "beacon_search_packets",
+      "beacon_search_messages",
+      "beacon_search_traces",
+      "beacon_get_network_overview",
+      "beacon_get_network_series",
+      "beacon_compare_observers",
+    ]) {
+      const serialized = JSON.stringify(listed(name).inputSchema);
+      expect(serialized).not.toContain('"not"');
+      expect(serialized).not.toContain('"allOf"');
+      expect(serialized).not.toContain('"if"');
+      expect(serialized).not.toContain('"dependentRequired"');
+    }
+    expect(JSON.stringify(listed("beacon_search_nodes").description)).toContain(
+      "region and regionId are mutually exclusive",
     );
-    expect(
-      JSON.stringify(listed("beacon_search_packets").inputSchema),
-    ).toContain('"not":{"required":["payloadTypeName","payloadType"]}');
-    expect(
-      JSON.stringify(listed("beacon_search_messages").inputSchema),
-    ).toContain('"not":{"required":["channelId","channelHash"]}');
-    expect(JSON.stringify(listed("beacon_list_routes").inputSchema)).toContain(
-      '"dependentRequired":{"cursorId":["cursor"]}',
+    expect(JSON.stringify(listed("beacon_search_nodes").description)).toContain(
+      "type and typeName",
     );
-    expect(
-      JSON.stringify(listed("beacon_search_traces").inputSchema),
-    ).toContain('"dependentRequired":{"cursorTag":["cursor"]}');
     expect(
       JSON.stringify(listed("beacon_get_observer_activity").inputSchema),
     ).toContain("43200m");
     expect(
-      JSON.stringify(listed("beacon_get_observer_activity").inputSchema),
-    ).toContain('"if"');
+      JSON.stringify(listed("beacon_get_observer_activity").description),
+    ).toContain("48h or less");
 
     const channelsInput = JSON.stringify(
       listed("beacon_list_channels").inputSchema,
     );
     expect(channelsInput).toContain('"pageCursor"');
     expect(channelsInput).not.toContain('"cursor"');
-    expect(
-      JSON.stringify(listed("beacon_list_channels").outputSchema),
-    ).toContain('"pageCursor"');
+
+    const listIatasOutput = JSON.stringify(
+      listed("beacon_list_iatas").outputSchema,
+    );
+    expect(listIatasOutput).toContain('"hasMore"');
+    expect(listIatasOutput).not.toContain('"nextCursor"');
+
+    const nodesOutput = JSON.stringify(
+      listed("beacon_search_nodes").outputSchema,
+    );
+    expect(nodesOutput).toContain('"pagination"');
+    expect(nodesOutput).toContain('"cursor"');
+    expect(nodesOutput).not.toContain('"cursorTag"');
+    expect(nodesOutput).not.toContain('"pageCursor"');
+
+    const channelsOutput = JSON.stringify(
+      listed("beacon_list_channels").outputSchema,
+    );
+    expect(channelsOutput).toContain('"pageCursor"');
+    expect(channelsOutput).not.toContain('"cursorTag"');
+
+    const tracesOutput = JSON.stringify(
+      listed("beacon_search_traces").outputSchema,
+    );
+    expect(tracesOutput).toContain('"cursorTag"');
+    expect(tracesOutput).toContain('"cursor"');
+
+    const routesOutput = JSON.stringify(
+      listed("beacon_list_routes").outputSchema,
+    );
+    expect(routesOutput).toContain('"cursorId"');
+    expect(routesOutput).toContain('"cursor"');
+
     expect(JSON.stringify(listed("beacon_get_packet").outputSchema)).toContain(
       '"packetHash"',
     );
-    expect(
-      JSON.stringify(listed("beacon_search_nodes").outputSchema),
-    ).toContain('"pagination"');
     expect(
       JSON.stringify(listed("beacon_search_packets").outputSchema),
     ).toContain('"text_message"');
@@ -349,6 +383,52 @@ describe("MCP HTTP integration", () => {
       });
       expect(response.body).not.toContain("Invalid");
     }
+
+    for (const [name, args] of [
+      [
+        "beacon_search_routes",
+        { iata: "ARN", from: "e7", to: "e72b", limit: 1 },
+      ],
+      [
+        "beacon_find_cross_iata_routes",
+        {
+          fromHash: "e72b",
+          fromIata: "ARN",
+          toHash: "abcd",
+          toIata: "LHR",
+          limit: 1,
+        },
+      ],
+    ] as const) {
+      const response = await rpc(app, "tools/call", {
+        name,
+        arguments: args,
+      });
+      expect(response.body).not.toContain("Invalid");
+    }
+
+    for (const [name, args] of [
+      [
+        "beacon_search_routes",
+        { iata: "ARN", from: "e72ba", to: "e72b", limit: 1 },
+      ],
+      [
+        "beacon_find_cross_iata_routes",
+        {
+          fromHash: "dbg",
+          fromIata: "ARN",
+          toHash: "e72b",
+          toIata: "LHR",
+          limit: 1,
+        },
+      ],
+    ] as const) {
+      const response = await rpc(app, "tools/call", {
+        name,
+        arguments: args,
+      });
+      expect(response.body).toContain("Invalid");
+    }
   });
 
   it("rejects unknown and ambiguous filters instead of broadening queries", async () => {
@@ -372,9 +452,7 @@ describe("MCP HTTP integration", () => {
       name: "beacon_search_nodes",
       arguments: { type: 2, typeName: "repeater" },
     });
-    expect(ambiguousType.body).toContain(
-      "type and typeName are mutually exclusive",
-    );
+    expect(ambiguousType.body).toContain("type and typeName");
   });
 
   it("maps upstream 404, 429, 503, and timeout failures", async () => {

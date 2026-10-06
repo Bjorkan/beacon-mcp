@@ -426,44 +426,79 @@ const observerComparison = z.looseObject({
   until: optionalInteger,
 });
 
-const nextCursor = z
+const numericCursor = z
   .strictObject({
-    cursor: z.number().int().optional(),
-    cursorId: z.number().int().optional(),
-    cursorTag: z.string().optional(),
-    pageCursor: z.string().optional(),
+    cursor: z.number().int(),
   })
-  .describe("Continuation fields to pass to the next call");
+  .describe("Continuation page cursor; pass the value to the next call as-is");
 
-function page<T extends z.ZodType>(item: T) {
+const routeCursor = z
+  .strictObject({
+    cursor: z.number().int(),
+    cursorId: z.number().int(),
+  })
+  .describe(
+    "Continuation compound cursor; pass both values to the next call as-is",
+  );
+
+const traceCursor = z
+  .strictObject({
+    cursor: z.number().int(),
+    cursorTag: z.string(),
+  })
+  .describe(
+    "Continuation compound cursor; pass both values to the next call as-is",
+  );
+
+const channelCursor = z
+  .strictObject({
+    pageCursor: z.string(),
+  })
+  .describe(
+    "Continuation opaque page cursor; pass the value to the next call as-is",
+  );
+
+function finitePage<T extends z.ZodType>(item: T) {
   return z.strictObject({
     items: z.array(item),
     pagination: z.strictObject({
       hasMore: z.boolean(),
-      nextCursor: nextCursor.optional(),
       truncated: z.boolean().optional(),
     }),
   });
 }
 
+function cursorPage<T extends z.ZodType, C extends z.ZodType>(
+  item: T,
+  cursor: C,
+) {
+  return z.strictObject({
+    items: z.array(item),
+    pagination: z.strictObject({
+      hasMore: z.boolean(),
+      nextCursor: cursor.optional(),
+    }),
+  });
+}
+
 export const outputSchemas = {
-  beacon_list_iatas: page(iataArea),
-  beacon_list_regions: page(regionSummary),
-  beacon_list_scopes: page(z.string()),
-  beacon_search_nodes: page(nodeSummary),
+  beacon_list_iatas: finitePage(iataArea),
+  beacon_list_regions: finitePage(regionSummary),
+  beacon_list_scopes: cursorPage(z.string(), numericCursor),
+  beacon_search_nodes: cursorPage(nodeSummary, numericCursor),
   beacon_get_node: node,
-  beacon_search_observers: page(observerSummary),
+  beacon_search_observers: cursorPage(observerSummary, numericCursor),
   beacon_get_observer: observer,
   beacon_get_observer_activity: observerActivity,
-  beacon_search_packets: page(packetSummary),
+  beacon_search_packets: cursorPage(packetSummary, numericCursor),
   beacon_get_packet: packet,
-  beacon_search_messages: page(channelMessage),
-  beacon_list_channels: page(channelSummary),
-  beacon_get_channel_messages: page(channelMessage),
-  beacon_list_routes: page(knownRoute),
-  beacon_search_routes: page(knownRoute),
-  beacon_find_cross_iata_routes: page(crossIataRoute),
-  beacon_search_traces: page(traceSummary),
+  beacon_search_messages: cursorPage(channelMessage, numericCursor),
+  beacon_list_channels: cursorPage(channelSummary, channelCursor),
+  beacon_get_channel_messages: cursorPage(channelMessage, numericCursor),
+  beacon_list_routes: cursorPage(knownRoute, routeCursor),
+  beacon_search_routes: finitePage(knownRoute),
+  beacon_find_cross_iata_routes: finitePage(crossIataRoute),
+  beacon_search_traces: cursorPage(traceSummary, traceCursor),
   beacon_get_trace: traceDetail,
   beacon_get_network_overview: statsOverview,
   beacon_get_network_series: statsSeries,
