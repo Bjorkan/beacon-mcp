@@ -1,0 +1,471 @@
+import { z } from "zod/v4";
+
+const optionalString = z.string().nullish();
+const optionalNumber = z.number().nullish();
+const optionalInteger = z.number().int().nullish();
+const optionalBoolean = z.boolean().nullish();
+const optionalStrings = z.array(z.string()).nullish();
+const payloadTypeName = z
+  .enum([
+    "request",
+    "response",
+    "text_message",
+    "acknowledgement",
+    "advert",
+    "group_text",
+    "group_data",
+    "anonymous_request",
+    "path",
+    "trace",
+    "multipart",
+    "control",
+    "reserved",
+    "raw_custom",
+    "unknown",
+  ])
+  .nullish();
+
+const nodeIata = z.looseObject({
+  iata: optionalString,
+  lastHeard: optionalInteger,
+});
+
+const resolvedNode = z.looseObject({
+  id: optionalString,
+  latitude: optionalNumber,
+  longitude: optionalNumber,
+  name: optionalString,
+  publicKey: optionalString,
+});
+
+const resolvedHop = z.looseObject({
+  confidence: optionalString,
+  nodes: z.array(resolvedNode).nullish(),
+  snr: optionalNumber,
+});
+
+const routeHop = z.looseObject({
+  hashBytes: optionalString,
+  node: resolvedNode.nullish(),
+  nodeId: optionalString,
+});
+
+const packetPathLength = z.looseObject({
+  hashSize: optionalInteger,
+  hopCount: optionalInteger,
+  raw: optionalString,
+});
+
+const packetLatestObserver = z.looseObject({
+  displayName: optionalString,
+  iata: optionalString,
+  id: optionalString,
+  pathBytes: optionalString,
+  pathLength: packetPathLength.nullish(),
+  resolvedDestination: resolvedHop.nullish(),
+  resolvedPath: z.array(resolvedHop).nullish(),
+  resolvedSource: resolvedHop.nullish(),
+});
+
+const iataArea = z
+  .looseObject({
+    displayName: optionalString,
+    iata: optionalString,
+    lat: optionalNumber,
+    lon: optionalNumber,
+  })
+  .describe(
+    "Beacon geographic area identified by an IATA-style code; it is a network partition and not necessarily an airport",
+  );
+
+const regionSummary = z.looseObject({
+  id: optionalInteger,
+  name: optionalString,
+  slug: optionalString,
+});
+
+const nodeSummary = z.looseObject({
+  defaultScope: optionalString,
+  iatas: z.array(nodeIata).nullish(),
+  id: optionalString,
+  isObserver: optionalBoolean,
+  knownNeighborCount: optionalInteger,
+  lat: optionalNumber,
+  lng: optionalNumber,
+  name: optionalString,
+  neighborIds: optionalStrings,
+  nodeType: optionalInteger,
+  nodeTypeName: optionalString,
+  observerId: optionalString,
+  possiblyForeign: optionalBoolean,
+  publicKey: optionalString,
+  radio: optionalString,
+  stale: optionalBoolean,
+  supportsMultibytePaths: optionalBoolean,
+  supportsMultibyteTraces: optionalBoolean,
+});
+
+const nodeNeighbor = z.looseObject({
+  firstSeen: optionalInteger,
+  iata: optionalString,
+  id: optionalString,
+  lastSeen: optionalInteger,
+  lat: optionalNumber,
+  lng: optionalNumber,
+  name: optionalString,
+  nodeType: optionalInteger,
+  nodeTypeName: optionalString,
+  observationCount: optionalInteger,
+  publicKey: optionalString,
+  snr: optionalNumber,
+});
+
+const node = z.looseObject({
+  ...nodeSummary.shape,
+  clockCheckedAt: optionalInteger,
+  clockDriftSeconds: optionalNumber,
+  clockOutOfSync: optionalBoolean,
+  firstSeen: optionalInteger,
+  lastAdvertAt: optionalInteger,
+  lastSeen: optionalInteger,
+  locationSource: optionalString,
+  metadata: z.unknown().nullish(),
+  minFirmwareVersion: optionalString,
+  neighbors: z.array(nodeNeighbor).nullish(),
+});
+
+const observerSummary = z.looseObject({
+  displayName: optionalString,
+  iata: optionalString,
+  id: optionalString,
+  observerType: optionalString,
+  radio: optionalString,
+  scopes: optionalStrings,
+  status: optionalString,
+});
+
+const observerBroker = z.looseObject({
+  lastPacketAt: optionalInteger,
+  lastSeenAt: optionalInteger,
+  name: optionalString,
+});
+
+const observer = z.looseObject({
+  ...observerSummary.shape,
+  batteryLevel: optionalNumber,
+  brokers: z.array(observerBroker).nullish(),
+  firmwareBuild: optionalString,
+  firmwareVersion: optionalString,
+  firstSeen: optionalInteger,
+  hardwareModel: optionalString,
+  lastSeen: optionalInteger,
+  lastStatusAt: optionalInteger,
+  observationCount: optionalInteger,
+  publicKey: optionalString,
+  radioBwKhz: optionalNumber,
+  radioCr: optionalInteger,
+  radioFreqMhz: optionalNumber,
+  radioSf: optionalInteger,
+  softwareVersion: optionalString,
+  statusMetadata: z.unknown().nullish(),
+  uptimeSeconds: optionalInteger,
+});
+
+const payloadBreakdownItem = z.looseObject({
+  count: optionalInteger,
+  payloadType: optionalInteger,
+  payloadTypeName,
+});
+
+const observerActivityPoint = z.looseObject({
+  airtimeMs: optionalNumber,
+  observations: optionalInteger,
+  rssiAvg: optionalNumber,
+  snrAvg: optionalNumber,
+  snrMin: optionalNumber,
+  t: optionalInteger,
+});
+
+const observerActivityRadio = z.looseObject({
+  bwKhz: optionalNumber,
+  cr: optionalInteger,
+  freqMhz: optionalNumber,
+  preambleSymbols: optionalInteger,
+  sf: optionalInteger,
+});
+
+const observerActivitySummary = z.looseObject({
+  lastCompleteHour: optionalInteger,
+  lastCompleteHourEnd: optionalInteger,
+  lastCompleteHourStart: optionalInteger,
+  latestRecordedAt: optionalInteger,
+  recordedPackets: optionalInteger,
+});
+
+const observerActivity = z.looseObject({
+  generatedAt: optionalInteger,
+  interval: optionalString,
+  payloadTypes: z.array(payloadBreakdownItem).nullish(),
+  points: z.array(observerActivityPoint).nullish(),
+  radio: observerActivityRadio.nullish(),
+  range: optionalString,
+  rawFrom: optionalInteger,
+  rolledUntil: optionalInteger,
+  source: optionalString,
+  summary: observerActivitySummary.nullish(),
+  windowEnd: optionalInteger,
+  windowStart: optionalInteger,
+});
+
+const packetSummary = z.looseObject({
+  firstHeardAt: optionalInteger,
+  lastHeardAt: optionalInteger,
+  latestObserver: packetLatestObserver.nullish(),
+  observationCount: optionalInteger,
+  packetHash: optionalString,
+  payloadType: optionalInteger,
+  payloadTypeName,
+  routeType: optionalInteger,
+  routeTypeName: optionalString,
+  scope: optionalString,
+  summary: optionalString,
+});
+
+const packetHeader = z.looseObject({
+  payloadType: optionalInteger,
+  payloadTypeName,
+  payloadVersion: optionalInteger,
+  raw: optionalString,
+  routeType: optionalInteger,
+  routeTypeName: optionalString,
+});
+
+const packetRadio = z.looseObject({
+  bandwidthKhz: optionalNumber,
+  codingRate: optionalInteger,
+  freqMhz: optionalNumber,
+  spreadFactor: optionalInteger,
+});
+
+const packetObservation = z.looseObject({
+  heardAt: optionalInteger,
+  iata: optionalString,
+  id: optionalInteger,
+  observerId: optionalString,
+  observerName: optionalString,
+  pathBytes: optionalString,
+  pathLength: packetPathLength.nullish(),
+  propagationTimeMs: optionalNumber,
+  radio: packetRadio.nullish(),
+  resolvedDestination: resolvedHop.nullish(),
+  resolvedPath: z.array(resolvedHop).nullish(),
+  resolvedSource: resolvedHop.nullish(),
+  rssi: optionalNumber,
+  snr: optionalNumber,
+  sourceBroker: optionalString,
+});
+
+const packet = z.looseObject({
+  channelHash: optionalString,
+  decrypted: optionalBoolean,
+  firstHeardAt: optionalInteger,
+  firstToLastMs: optionalNumber,
+  header: packetHeader.nullish(),
+  lastHeardAt: optionalInteger,
+  observationCount: optionalInteger,
+  observations: z.array(packetObservation).nullish(),
+  originPubkey: optionalString,
+  packetHash: optionalString,
+  parsedPayload: z.unknown().nullish(),
+  rawPayload: optionalString,
+  resolvedRoute: z.array(resolvedHop).nullish(),
+  scope: optionalString,
+  transportCodes: z
+    .looseObject({
+      regionCode: optionalInteger,
+      subRegionCode: optionalInteger,
+    })
+    .nullish(),
+});
+
+const channelMessage = z.looseObject({
+  channelHash: optionalString,
+  content: optionalString,
+  id: optionalInteger,
+  observationCount: optionalInteger,
+  packetHash: optionalString,
+  scope: optionalString,
+  scopeStatus: z
+    .enum(["matched", "unscoped", "unknown", "unavailable"])
+    .nullish(),
+  senderName: optionalString,
+  sentAt: optionalInteger,
+});
+
+const channelSummary = z.looseObject({
+  channelHash: optionalString,
+  id: optionalInteger,
+  isHashtag: optionalBoolean,
+  keyKnown: optionalBoolean,
+  lastSeen: optionalInteger,
+  name: optionalString,
+});
+
+const knownRoute = z.looseObject({
+  firstSeen: optionalInteger,
+  hopCount: optionalInteger,
+  hops: z.array(routeHop).nullish(),
+  iata: optionalString,
+  id: optionalInteger,
+  lastSeen: optionalInteger,
+  observationCount: optionalInteger,
+  pathKey: optionalString,
+});
+
+const crossIataRoute = z.looseObject({
+  crossHop: z
+    .looseObject({
+      fromIata: optionalString,
+      fromNode: resolvedNode.nullish(),
+      lastSeen: optionalInteger,
+      toIata: optionalString,
+      toNode: resolvedNode.nullish(),
+    })
+    .nullish(),
+  sourceSegment: z.array(routeHop).nullish(),
+  targetSegment: z.array(routeHop).nullish(),
+  totalHops: optionalInteger,
+});
+
+const traceSummary = z.looseObject({
+  firstHeardAt: optionalInteger,
+  iataCount: optionalInteger,
+  lastHeardAt: optionalInteger,
+  packetCount: optionalInteger,
+  pathHashes: optionalStrings,
+  snrValues: z.array(z.number()).nullish(),
+  traceTag: optionalString,
+  traceType: z.enum(["TRACE", "PING"]).nullish(),
+});
+
+const traceDetail = z.looseObject({
+  packets: z
+    .array(
+      z.looseObject({
+        firstHeardAt: optionalInteger,
+        lastHeardAt: optionalInteger,
+        packetHash: optionalString,
+        rawPath: z
+          .array(
+            z.looseObject({
+              hash: optionalString,
+              snr: optionalNumber,
+            }),
+          )
+          .nullish(),
+        resolvedRoute: z.array(resolvedHop).nullish(),
+        routeType: optionalInteger,
+        routeTypeName: optionalString,
+        scope: optionalString,
+      }),
+    )
+    .nullish(),
+  traceTag: optionalString,
+});
+
+const statsOverview = z.looseObject({
+  activeIatas: optionalInteger,
+  activeObservers: optionalInteger,
+  since: optionalInteger,
+  totalObservations: optionalInteger,
+  totalPackets: optionalInteger,
+  until: optionalInteger,
+  windowHours: optionalInteger,
+});
+
+const statsSeriesValues = z.looseObject({
+  activeIatas: optionalInteger,
+  activeObservers: optionalInteger,
+  activeScopes: optionalInteger,
+  maxPathEntries: optionalInteger,
+  observations: optionalInteger,
+  rssiSamples: optionalInteger,
+  rssiSum: optionalNumber,
+  scopedPackets: optionalInteger,
+  snrSamples: optionalInteger,
+  snrSum: optionalNumber,
+  uniquePackets: optionalInteger,
+});
+
+const statsSeries = z.looseObject({
+  completeHours: optionalInteger,
+  earliestComplete: optionalInteger,
+  hours: z
+    .array(
+      z.looseObject({
+        hour: optionalInteger,
+        status: z.enum(["complete", "partial", "missing"]).nullish(),
+        values: statsSeriesValues.nullish(),
+      }),
+    )
+    .nullish(),
+  revision: optionalInteger,
+  since: optionalInteger,
+  summary: statsSeriesValues.nullish(),
+  until: optionalInteger,
+});
+
+const observerComparison = z.looseObject({
+  both: optionalInteger,
+  observerA: optionalString,
+  observerB: optionalString,
+  onlyA: optionalInteger,
+  onlyB: optionalInteger,
+  since: optionalInteger,
+  totalPackets: optionalInteger,
+  until: optionalInteger,
+});
+
+const nextCursor = z
+  .strictObject({
+    cursor: z.number().int().optional(),
+    cursorId: z.number().int().optional(),
+    cursorTag: z.string().optional(),
+    pageCursor: z.string().optional(),
+  })
+  .describe("Continuation fields to pass to the next call");
+
+function page<T extends z.ZodType>(item: T) {
+  return z.strictObject({
+    items: z.array(item),
+    pagination: z.strictObject({
+      hasMore: z.boolean(),
+      nextCursor: nextCursor.optional(),
+      truncated: z.boolean().optional(),
+    }),
+  });
+}
+
+export const outputSchemas = {
+  beacon_list_iatas: page(iataArea),
+  beacon_list_regions: page(regionSummary),
+  beacon_list_scopes: page(z.string()),
+  beacon_search_nodes: page(nodeSummary),
+  beacon_get_node: node,
+  beacon_search_observers: page(observerSummary),
+  beacon_get_observer: observer,
+  beacon_get_observer_activity: observerActivity,
+  beacon_search_packets: page(packetSummary),
+  beacon_get_packet: packet,
+  beacon_search_messages: page(channelMessage),
+  beacon_list_channels: page(channelSummary),
+  beacon_get_channel_messages: page(channelMessage),
+  beacon_list_routes: page(knownRoute),
+  beacon_search_routes: page(knownRoute),
+  beacon_find_cross_iata_routes: page(crossIataRoute),
+  beacon_search_traces: page(traceSummary),
+  beacon_get_trace: traceDetail,
+  beacon_get_network_overview: statsOverview,
+  beacon_get_network_series: statsSeries,
+  beacon_compare_observers: observerComparison,
+} as const;

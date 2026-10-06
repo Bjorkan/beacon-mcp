@@ -26,6 +26,7 @@ interface ListedTool {
   name: string;
   description?: string;
   inputSchema: Record<string, unknown>;
+  outputSchema?: Record<string, unknown>;
 }
 
 async function start(options: StartOptions = {}): Promise<FastifyInstance> {
@@ -132,6 +133,9 @@ describe("MCP HTTP integration", () => {
     const listedTools = (response.json() as { result: { tools: ListedTool[] } })
       .result.tools;
     expect(listedTools).toHaveLength(21);
+    expect(listedTools.every((tool) => tool.outputSchema !== undefined)).toBe(
+      true,
+    );
     const listed = (name: string) => {
       const tool = listedTools.find((candidate) => candidate.name === name);
       expect(tool).toBeDefined();
@@ -164,6 +168,18 @@ describe("MCP HTTP integration", () => {
     );
     expect(channelsInput).toContain('"pageCursor"');
     expect(channelsInput).not.toContain('"cursor"');
+    expect(
+      JSON.stringify(listed("beacon_list_channels").outputSchema),
+    ).toContain('"pageCursor"');
+    expect(JSON.stringify(listed("beacon_get_packet").outputSchema)).toContain(
+      '"packetHash"',
+    );
+    expect(
+      JSON.stringify(listed("beacon_search_nodes").outputSchema),
+    ).toContain('"pagination"');
+    expect(
+      JSON.stringify(listed("beacon_search_packets").outputSchema),
+    ).toContain('"text_message"');
     expect(listed("beacon_list_iatas").description).toContain(
       "network partitions",
     );

@@ -190,7 +190,8 @@ that have no pagination mechanism, an over-limit response instead reports
 request a nonexistent next page. A list response is never allowed to grow
 beyond the requested bound.
 
-Keep cross-field constraints in both the emitted input JSON Schema and runtime
+Every tool publishes an output schema for its structured result. Keep
+cross-field constraints in both the emitted input JSON Schema and runtime
 validation. Channel pagination exposes only the precise opaque `pageCursor`
 returned at `pagination.nextCursor.pageCursor`, not Beacon's legacy numeric
 channel cursor.

@@ -10,6 +10,7 @@ import { BeaconError, BeaconInputError } from "../beacon/errors.js";
 import { PAYLOAD_TYPE_FILTER_NAMES } from "../beacon/payload.js";
 import { BEACON_API_VERSION } from "../beacon/version.js";
 import type { Logger } from "../logging/logger.js";
+import { outputSchemas } from "./output-schemas.js";
 import { toolError, toolResult } from "./result.js";
 
 const MAX_INT32 = 2_147_483_647;
@@ -99,12 +100,16 @@ const mutuallyExclusive = (left: string, right: string) => ({
 
 const regionLocationRule = mutuallyExclusive("region", "regionId");
 
-function register<S extends z.ZodType<Record<string, unknown>>>(
+function register<
+  S extends z.ZodType<Record<string, unknown>>,
+  O extends z.ZodType,
+>(
   server: McpServer,
   logger: Logger,
   name: string,
   description: string,
   schema: S,
+  outputSchema: O,
   run: (args: z.output<S>, signal: AbortSignal) => Promise<unknown>,
 ): void {
   const callback = (async (
@@ -132,6 +137,7 @@ function register<S extends z.ZodType<Record<string, unknown>>>(
     {
       description,
       inputSchema: schema,
+      outputSchema,
       annotations: readOnlyToolAnnotations,
     },
     callback,
@@ -153,6 +159,7 @@ export function createMcpServer(
     "beacon_list_iatas",
     "List Beacon geographic areas identified by IATA-style codes. Codes represent network partitions and do not necessarily refer to the corresponding airport.",
     z.strictObject({ limit }),
+    outputSchemas.beacon_list_iatas,
     (a, s) => adapter.listIatas(a.limit, s),
   );
   register(
@@ -161,6 +168,7 @@ export function createMcpServer(
     "beacon_list_regions",
     "List configured Beacon geographic regions.",
     z.strictObject({ limit }),
+    outputSchemas.beacon_list_regions,
     (a, s) => adapter.listRegions(a.limit, s),
   );
   register(
@@ -174,6 +182,7 @@ export function createMcpServer(
         message: "region and regionId are mutually exclusive",
       })
       .meta(regionLocationRule),
+    outputSchemas.beacon_list_scopes,
     (a, s) => adapter.listScopes(a, s),
   );
 
@@ -205,6 +214,7 @@ export function createMcpServer(
       .meta({
         allOf: [regionLocationRule, mutuallyExclusive("type", "typeName")],
       }),
+    outputSchemas.beacon_search_nodes,
     (a, s) => adapter.searchNodes(a, s),
   );
   register(
@@ -213,6 +223,7 @@ export function createMcpServer(
     "beacon_get_node",
     "Get one node by its Beacon node UUID.",
     z.strictObject({ id: z.uuid() }),
+    outputSchemas.beacon_get_node,
     (a, s) => adapter.getNode(a.id, s),
   );
 
@@ -234,6 +245,7 @@ export function createMcpServer(
         message: "region and regionId are mutually exclusive",
       })
       .meta(regionLocationRule),
+    outputSchemas.beacon_search_observers,
     (a, s) => adapter.searchObservers(a, s),
   );
   register(
@@ -242,6 +254,7 @@ export function createMcpServer(
     "beacon_get_observer",
     "Get one observer by UUID.",
     z.strictObject({ id: z.uuid() }),
+    outputSchemas.beacon_get_observer,
     (a, s) => adapter.getObserver(a.id, s),
   );
   register(
@@ -283,6 +296,7 @@ export function createMcpServer(
           },
         ],
       }),
+    outputSchemas.beacon_get_observer_activity,
     (a, s) => adapter.getObserverActivity(a.id, a, s),
   );
 
@@ -349,6 +363,7 @@ export function createMcpServer(
           mutuallyExclusive("scope", "scopes"),
         ],
       }),
+    outputSchemas.beacon_search_packets,
     (a, s) => adapter.searchPackets(a, s),
   );
   register(
@@ -357,6 +372,7 @@ export function createMcpServer(
     "beacon_get_packet",
     "Get full public packet detail by hex packet hash. Packet firstHeardAt/lastHeardAt are Beacon server receive times; observations[].heardAt is observer-reported time and may differ.",
     z.strictObject({ hash: packetHash }),
+    outputSchemas.beacon_get_packet,
     (a, s) => adapter.getPacket(a.hash, s),
   );
 
@@ -382,6 +398,7 @@ export function createMcpServer(
         "channelId and channelHash are mutually exclusive",
       )
       .meta(mutuallyExclusive("channelId", "channelHash")),
+    outputSchemas.beacon_search_messages,
     (a, s) => adapter.searchMessages(a, s),
   );
   register(
@@ -406,6 +423,7 @@ export function createMcpServer(
           "Opaque continuation token returned as pagination.nextCursor.pageCursor",
         ),
     }),
+    outputSchemas.beacon_list_channels,
     (a, s) => adapter.listChannels(a, s),
   );
   register(
@@ -420,6 +438,7 @@ export function createMcpServer(
       since: timestamp.optional(),
       ...pagination,
     }),
+    outputSchemas.beacon_get_channel_messages,
     (a, s) => adapter.getChannelMessages(a.channelId, a, s),
   );
 
@@ -454,6 +473,7 @@ export function createMcpServer(
         message: "cursorId requires cursor",
       })
       .meta({ dependentRequired: { cursorId: ["cursor"] } }),
+    outputSchemas.beacon_list_routes,
     (a, s) => adapter.listRoutes(a, s),
   );
   register(
@@ -467,6 +487,7 @@ export function createMcpServer(
       to: hexString,
       limit,
     }),
+    outputSchemas.beacon_search_routes,
     (a, s) => adapter.searchRoutes(a, s),
   );
   register(
@@ -481,6 +502,7 @@ export function createMcpServer(
       toIata: iata,
       limit,
     }),
+    outputSchemas.beacon_find_cross_iata_routes,
     (a, s) => adapter.findCrossIataRoutes(a, s),
   );
 
@@ -519,6 +541,7 @@ export function createMcpServer(
         allOf: [regionLocationRule],
         dependentRequired: { cursorTag: ["cursor"] },
       }),
+    outputSchemas.beacon_search_traces,
     (a, s) => adapter.searchTraces(a, s),
   );
   register(
@@ -527,6 +550,7 @@ export function createMcpServer(
     "beacon_get_trace",
     "Get trace detail by hex tag.",
     z.strictObject({ tag: traceTag }),
+    outputSchemas.beacon_get_trace,
     (a, s) => adapter.getTrace(a.tag, s),
   );
 
@@ -541,6 +565,7 @@ export function createMcpServer(
         message: "region and regionId are mutually exclusive",
       })
       .meta(regionLocationRule),
+    outputSchemas.beacon_get_network_overview,
     (a, s) => adapter.getNetworkOverview(a, s),
   );
   register(
@@ -554,6 +579,7 @@ export function createMcpServer(
         message: "region and regionId are mutually exclusive",
       })
       .meta(regionLocationRule),
+    outputSchemas.beacon_get_network_series,
     (a, s) => adapter.getNetworkSeries(a, s),
   );
   register(
@@ -576,6 +602,7 @@ export function createMcpServer(
         message: "observerA and observerB must be different",
       })
       .meta(regionLocationRule),
+    outputSchemas.beacon_compare_observers,
     (a, s) => adapter.compareObservers(a, s),
   );
 
