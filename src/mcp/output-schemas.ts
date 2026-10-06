@@ -442,7 +442,7 @@ const numericCursor = z
 const routeCursor = z
   .strictObject({
     cursor: z.number().int().nonnegative(),
-    cursorId: z.number().int(),
+    cursorId: z.number().int().positive(),
   })
   .describe(
     "Continuation compound cursor; pass both values to the next call as-is",
