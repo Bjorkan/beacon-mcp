@@ -85,6 +85,12 @@ const timeWindow = {
   since: timestamp.optional(),
   until: timestamp.optional(),
 };
+const readOnlyToolAnnotations = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const;
 
 function register<S extends z.ZodType<Record<string, unknown>>>(
   server: McpServer,
@@ -114,7 +120,15 @@ function register<S extends z.ZodType<Record<string, unknown>>>(
       return toolError(error);
     }
   }) as unknown as ToolCallback<S>;
-  server.registerTool(name, { description, inputSchema: schema }, callback);
+  server.registerTool(
+    name,
+    {
+      description,
+      inputSchema: schema,
+      annotations: readOnlyToolAnnotations,
+    },
+    callback,
+  );
 }
 
 export function createMcpServer(

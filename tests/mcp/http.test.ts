@@ -119,6 +119,10 @@ describe("MCP HTTP integration", () => {
     expect(text).toContain("beacon_search_nodes");
     expect(text).toContain("beacon_compare_observers");
     expect(text).not.toContain("admin");
+    expect(text.match(/"readOnlyHint":true/g)).toHaveLength(21);
+    expect(text.match(/"destructiveHint":false/g)).toHaveLength(21);
+    expect(text.match(/"idempotentHint":true/g)).toHaveLength(21);
+    expect(text.match(/"openWorldHint":true/g)).toHaveLength(21);
     const discovery = await rpc(app, "server/discover");
     expect(discovery.statusCode, discovery.body).toBe(200);
     expect(discovery.body).toContain('"version":"2.0.2"');

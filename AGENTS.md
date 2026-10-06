@@ -206,6 +206,9 @@ required to match. `firstToLastMs` is calculated from observation timestamps.
 - The client accepts an operation enum, not a caller-provided URL or path. Only
   compiled public `GET` operations exist; `/api/v1/admin/*` is excluded at the
   generated-type boundary and runtime boundary.
+- Every tool is explicitly annotated as read-only, non-destructive, idempotent,
+  and open-world. The open-world hint reflects access to a public external
+  Beacon deployment; it does not imply write access.
 - Callers cannot choose the upstream protocol, host, port, path, headers, or
   credentials.
 - The MCP endpoint is public by design. Apply access control, rate limiting, or
