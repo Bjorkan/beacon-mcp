@@ -4,7 +4,7 @@ import {
   toCursorPage,
   toOffsetArrayPage,
   toPage,
-  toTruncatedPage,
+  truncatedArrayPage,
   type Page,
 } from "./pagination.js";
 import { payloadTypesForName } from "./payload.js";
@@ -52,16 +52,24 @@ export class BeaconAdapter {
   constructor(private readonly client: BeaconClient) {}
 
   async listIatas(limit = 20, signal?: AbortSignal): Promise<Page> {
-    return toTruncatedPage(
-      await this.client.request("listIatas", { signal }),
-      boundedLimit(limit),
+    const bounded = boundedLimit(limit);
+    return truncatedArrayPage(
+      await this.client.requestArrayPage("listIatas", {
+        signal,
+        maxItems: bounded + 1,
+      }),
+      bounded,
     );
   }
 
   async listRegions(limit = 20, signal?: AbortSignal): Promise<Page> {
-    return toTruncatedPage(
-      await this.client.request("listRegions", { signal }),
-      boundedLimit(limit),
+    const bounded = boundedLimit(limit);
+    return truncatedArrayPage(
+      await this.client.requestArrayPage("listRegions", {
+        signal,
+        maxItems: bounded + 1,
+      }),
+      bounded,
     );
   }
 
@@ -342,17 +350,18 @@ export class BeaconAdapter {
     }>,
     signal?: AbortSignal,
   ): Promise<Page> {
-    const limit = boundedLimit(input.limit);
-    return toTruncatedPage(
-      await this.client.request("searchRoutes", {
+    const bounded = boundedLimit(input.limit);
+    return truncatedArrayPage(
+      await this.client.requestArrayPage("searchRoutes", {
         query: {
           iata: normalizeIatas([input.iata])?.[0] ?? input.iata,
           from: input.from,
           to: input.to,
         },
         signal,
+        maxItems: bounded + 1,
       }),
-      limit,
+      bounded,
     );
   }
 
@@ -366,9 +375,9 @@ export class BeaconAdapter {
     }>,
     signal?: AbortSignal,
   ): Promise<Page> {
-    const limit = boundedLimit(input.limit);
-    return toTruncatedPage(
-      await this.client.request("crossRoutes", {
+    const bounded = boundedLimit(input.limit);
+    return truncatedArrayPage(
+      await this.client.requestArrayPage("crossRoutes", {
         query: {
           fromHash: input.fromHash,
           fromIata: normalizeIatas([input.fromIata])?.[0] ?? input.fromIata,
@@ -376,8 +385,9 @@ export class BeaconAdapter {
           toIata: normalizeIatas([input.toIata])?.[0] ?? input.toIata,
         },
         signal,
+        maxItems: bounded + 1,
       }),
-      limit,
+      bounded,
     );
   }
 

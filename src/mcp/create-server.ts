@@ -61,8 +61,12 @@ const iatas = z
 const timestamp = z
   .string()
   .max(24)
-  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/)
-  .describe("RFC3339 UTC timestamp, for example 2026-10-04T15:30:00Z");
+  .regex(
+    /^\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\d|3[01])T(?:[01]\d|2[0-3]):[0-5]\d:[0-5]\d(?:\.\d{1,3})?Z$/,
+  )
+  .describe(
+    "RFC3339 UTC timestamp with a valid calendar date, for example 2026-10-04T15:30:00Z",
+  );
 const observerRangePattern =
   /^(?:(?:[1-9]\d{0,3}|[1-3]\d{4}|4[0-2]\d{3}|43[01]\d{2}|43200)m|(?:[1-9]\d?|[1-6]\d{2}|7[01]\d|720)h)$/;
 const observerRange = z
@@ -81,9 +85,14 @@ const location = {
     ),
   regionId: z.number().int().positive().max(MAX_INT32).optional(),
 };
+const scope = shortText
+  .optional()
+  .describe(
+    'Transport scope name such as "#se13"; matching is case-sensitive, so the exact casing used by the network matters, unlike IATA inputs which are normalized to uppercase',
+  );
 const scopedLocation = {
   ...location,
-  scope: shortText.optional(),
+  scope,
 };
 const pagination = {
   cursor: z.number().int().nonnegative().optional(),
@@ -282,7 +291,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_search_packets",
-    "Search packet summaries. Beacon MCP Server does not persist or log packet payloads; upstream Beacon may store and return them through beacon_get_packet. region and regionId are mutually exclusive, as are scope and scopes, payloadType and payloadTypes, and routeType and routeTypes; payloadTypeName cannot be combined with payloadType or payloadTypes.",
+    "Search packet summaries. The window is half-open: a packet is included when firstHeardAt is at or after since and it was last heard before until — since is inclusive, until is exclusive (the exact until boundary is inconsistent upstream when iatas filters are used). Beacon MCP Server does not persist or log packet payloads; upstream Beacon may store and return them through beacon_get_packet. region and regionId are mutually exclusive, as are scope and scopes, payloadType and payloadTypes, and routeType and routeTypes; payloadTypeName cannot be combined with payloadType or payloadTypes.",
     z
       .strictObject({
         ...scopedLocation,
@@ -306,7 +315,14 @@ export function createMcpServer(
           .min(1)
           .max(20)
           .optional(),
-        scopes: z.array(shortText).min(1).max(20).optional(),
+        scopes: z
+          .array(shortText)
+          .min(1)
+          .max(20)
+          .optional()
+          .describe(
+            "Transport scope names; matching is case-sensitive and matches any of the listed scopes",
+          ),
       })
       .refine((a) => !(a.region && a.regionId), {
         message: "region and regionId are mutually exclusive",
@@ -338,7 +354,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_get_packet",
-    "Get full public packet detail by hex packet hash. Packet firstHeardAt/lastHeardAt are Beacon server receive times; observations[].heardAt is observer-reported time and may differ.",
+    "Get full public packet detail by hex packet hash. Packet firstHeardAt/lastHeardAt are Beacon server receive times; observations[].heardAt is observer-reported time and may differ. firstToLastMs is the span between the earliest and latest observer-reported heardAt values (observer clock span), not the difference between firstHeardAt and lastHeardAt.",
     z.strictObject({ hash: packetHash }),
     outputSchemas.beacon_get_packet,
     (a, s) => adapter.getPacket(a.hash, s),
@@ -348,11 +364,11 @@ export function createMcpServer(
     server,
     logger,
     "beacon_search_messages",
-    "Search decrypted public channel messages. Messages carry only a channelHash, not a channelId; hash collisions exist (the same hash may map to multiple channel IDs). channelId and channelHash are mutually exclusive.",
+    "Search decrypted public channel messages. Messages carry only a channelHash, not a channelId; hash collisions exist (the same hash may map to multiple channel IDs). since is an inclusive lower bound on sentAt and there is no upper bound. channelId and channelHash are mutually exclusive.",
     z
       .strictObject({
         iatas,
-        scope: shortText.optional(),
+        scope,
         since: timestamp.optional(),
         ...pagination,
         channelId: z.number().int().positive().max(MAX_INT32).optional(),
@@ -397,11 +413,11 @@ export function createMcpServer(
     server,
     logger,
     "beacon_get_channel_messages",
-    "List messages for a channel ID.",
+    "List messages for a channel ID. since is an inclusive lower bound on sentAt and there is no upper bound.",
     z.strictObject({
       channelId: z.number().int().positive().max(MAX_INT32),
       iatas,
-      scope: shortText.optional(),
+      scope,
       since: timestamp.optional(),
       ...pagination,
     }),
@@ -460,7 +476,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_find_cross_iata_routes",
-    "Find routes crossing IATA boundaries by exact hop hashes. This endpoint has no server-side pagination — if more than 50 results exist, later results are inaccessible; narrow the hashes to work around this.",
+    "Find routes crossing IATA boundaries by exact hop hashes. The upstream computes the full result set before streaming, so beacon-mcp stops reading as soon as the requested limit is satisfied, but very broad hash pairs can still be slow or time out — use the longest hash prefixes available. This endpoint has no server-side pagination — if more than 50 results exist, later results are inaccessible; narrow the hashes to work around this.",
     z.strictObject({
       fromHash: routeHash,
       fromIata: iata,
@@ -476,7 +492,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_search_traces",
-    "Search trace or ping tags with the timestamp/tag cursor preserved. region and regionId are mutually exclusive; cursorTag requires cursor.",
+    "Search trace or ping tags with the timestamp/tag cursor preserved. Both window bounds apply to firstHeardAt and upstream treats until inclusively (since <= firstHeardAt <= until); reported timestamps are truncated to whole milliseconds, so exact-boundary membership can vary. region and regionId are mutually exclusive; cursorTag requires cursor.",
     z
       .strictObject({
         ...scopedLocation,
@@ -531,7 +547,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_get_network_series",
-    "Get hourly network analytics for an explicit time window. Beacon rounds since and until to whole-hour boundaries silently, so the response window may differ from the request. The upstream retains roughly 90 days of hourly data; windows beyond that are rejected or silently clamped. region and regionId are mutually exclusive.",
+    "Get hourly network analytics for an explicit time window. Hours are half-open: hour >= since and hour < until, both applied after Beacon's silent whole-hour rounding of the inputs. The upstream retains roughly 90 days of hourly data; windows beyond that are rejected or silently clamped. region and regionId are mutually exclusive.",
     z
       .strictObject({ ...location, since: timestamp, until: timestamp })
       .refine((a) => !(a.region && a.regionId), {
@@ -544,7 +560,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_compare_observers",
-    "Compare distinct flood packets reported by two observers. region and regionId are mutually exclusive; observerA and observerB must be different.",
+    "Compare distinct flood packets reported by two observers over the half-open window [since, until). region and regionId are mutually exclusive; observerA and observerB must be different.",
     z
       .strictObject({
         ...location,

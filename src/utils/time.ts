@@ -9,19 +9,22 @@ export function toEpochMilliseconds(value: string, field = "time"): number {
     throw new BeaconInputError(`${field} must be an RFC3339 UTC timestamp`);
   }
   const result = Date.parse(value);
-  if (!Number.isSafeInteger(result))
-    throw new BeaconInputError(`${field} is outside the supported range`);
+  // Impossible calendar dates (for example month 13 or February 30) roll
+  // over or become NaN; both are calendar errors, not range errors.
   const parsed = new Date(result);
-  const [, year, month, day, hour, minute, second] = match;
   if (
-    parsed.getUTCFullYear() !== Number(year) ||
-    parsed.getUTCMonth() + 1 !== Number(month) ||
-    parsed.getUTCDate() !== Number(day) ||
-    parsed.getUTCHours() !== Number(hour) ||
-    parsed.getUTCMinutes() !== Number(minute) ||
-    parsed.getUTCSeconds() !== Number(second)
+    Number.isNaN(result) ||
+    parsed.getUTCFullYear() !== Number(match[1]) ||
+    parsed.getUTCMonth() + 1 !== Number(match[2]) ||
+    parsed.getUTCDate() !== Number(match[3]) ||
+    parsed.getUTCHours() !== Number(match[4]) ||
+    parsed.getUTCMinutes() !== Number(match[5]) ||
+    parsed.getUTCSeconds() !== Number(match[6])
   ) {
     throw new BeaconInputError(`${field} must be a valid calendar timestamp`);
+  }
+  if (!Number.isSafeInteger(result)) {
+    throw new BeaconInputError(`${field} is outside the supported range`);
   }
   return result;
 }

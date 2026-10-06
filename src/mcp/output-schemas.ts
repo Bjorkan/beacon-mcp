@@ -90,7 +90,6 @@ const regionSummary = z.looseObject({
 });
 
 const nodeSummary = z.looseObject({
-  defaultScope: optionalString,
   iatas: z.array(nodeIata).nullish(),
   id: optionalString,
   isObserver: optionalBoolean,
@@ -98,7 +97,6 @@ const nodeSummary = z.looseObject({
   lat: optionalNumber,
   lng: optionalNumber,
   name: optionalString,
-  neighborIds: optionalStrings,
   nodeType: optionalInteger,
   nodeTypeName: optionalString,
   observerId: optionalString,
@@ -106,8 +104,6 @@ const nodeSummary = z.looseObject({
   publicKey: optionalString,
   radio: optionalString,
   stale: optionalBoolean,
-  supportsMultibytePaths: optionalBoolean,
-  supportsMultibyteTraces: optionalBoolean,
 });
 
 const nodeNeighbor = z.looseObject({
@@ -126,7 +122,23 @@ const nodeNeighbor = z.looseObject({
 });
 
 const node = z.looseObject({
-  ...nodeSummary.shape,
+  defaultScope: optionalString,
+  iatas: z.array(nodeIata).nullish(),
+  id: optionalString,
+  isObserver: optionalBoolean,
+  knownNeighborCount: optionalInteger,
+  lat: optionalNumber,
+  lng: optionalNumber,
+  name: optionalString,
+  nodeType: optionalInteger,
+  nodeTypeName: optionalString,
+  observerId: optionalString,
+  possiblyForeign: optionalBoolean,
+  publicKey: optionalString,
+  radio: optionalString,
+  stale: optionalBoolean,
+  supportsMultibytePaths: optionalBoolean,
+  supportsMultibyteTraces: optionalBoolean,
   clockCheckedAt: epochMs,
   clockDriftSeconds: optionalNumber,
   clockOutOfSync: optionalBoolean,
@@ -276,7 +288,9 @@ const packet = z.looseObject({
   channelHash: optionalString,
   decrypted: optionalBoolean,
   firstHeardAt: epochMs,
-  firstToLastMs: optionalNumber,
+  firstToLastMs: optionalNumber.describe(
+    "Span between the earliest and latest observer-reported heardAt across the packet's observations, using observer device clocks. It is not the difference between the server-side firstHeardAt and lastHeardAt receive times; absent when the packet has fewer than two observations",
+  ),
   header: packetHeader.nullish(),
   lastHeardAt: epochMs,
   observationCount: optionalInteger,

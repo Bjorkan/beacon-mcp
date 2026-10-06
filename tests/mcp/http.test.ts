@@ -496,6 +496,117 @@ describe("MCP HTTP integration", () => {
     expect(timeout.body).toContain("BeaconTimeoutError");
   });
 
+  it("publishes canonical error codes in tool error results", async () => {
+    const app = await start({
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        Response.json(
+          { error: { code: "not_found", message: "packet not found" } },
+          { status: 404 },
+        ),
+      ),
+    });
+    const response = await rpc(app, "tools/call", {
+      name: "beacon_get_packet",
+      arguments: { hash: "0123456789abcdef" },
+    });
+    const parsed = JSON.parse(response.body) as {
+      result: { structuredContent: { error: Record<string, unknown> } };
+    };
+    expect(parsed.result.structuredContent.error).toMatchObject({
+      code: "NOT_FOUND",
+      type: "BeaconNotFoundError",
+      status: 404,
+      upstreamCode: "not_found",
+    });
+  });
+
+  it("protects cross-IATA queries with the limit while streaming", async () => {
+    const route = {
+      sourceSegment: [],
+      crossHop: { fromIata: "MMX", toIata: "HAD" },
+      totalHops: 5,
+    };
+    const app = await start({
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        Response.json([route, route, route]),
+      ),
+    });
+    const response = await rpc(app, "tools/call", {
+      name: "beacon_find_cross_iata_routes",
+      arguments: {
+        fromHash: "88a9",
+        fromIata: "MMX",
+        toHash: "3ad1",
+        toIata: "HAD",
+        limit: 1,
+      },
+    });
+    const parsed = JSON.parse(response.body) as {
+      result: {
+        isError?: boolean;
+        structuredContent: unknown;
+      };
+    };
+    expect(parsed.result.isError).toBeUndefined();
+    expect(parsed.result.structuredContent).toEqual({
+      items: [route],
+      pagination: { hasMore: false, truncated: true },
+    });
+  });
+
+  it("rejects impossible calendar timestamps at the schema layer", async () => {
+    const app = await start();
+    const response = await rpc(app, "tools/call", {
+      name: "beacon_search_packets",
+      arguments: { since: "2026-13-01T00:00:00Z" },
+    });
+    const parsed = JSON.parse(response.body) as {
+      result: { isError: boolean; content: { text: string }[] };
+    };
+    expect(parsed.result.isError).toBe(true);
+    const text = parsed.result.content[0]?.text ?? "";
+    expect(text).toContain("since");
+    expect(text).toContain("pattern");
+  });
+
+  it("documents window bounds, scope casing, and streaming in metadata", async () => {
+    const app = await start();
+    const response = await rpc(app, "tools/list");
+    const tools = (response.json() as { result: { tools: ListedTool[] } })
+      .result.tools;
+    const listed = (name: string) => {
+      const tool = tools.find((candidate) => candidate.name === name);
+      expect(tool).toBeDefined();
+      return tool as ListedTool;
+    };
+    expect(JSON.stringify(listed("beacon_search_packets"))).toContain(
+      "half-open",
+    );
+    expect(
+      JSON.stringify(listed("beacon_search_packets").inputSchema),
+    ).toContain("case-sensitive");
+    expect(
+      JSON.stringify(listed("beacon_search_traces").description),
+    ).toContain("inclusively");
+    expect(
+      JSON.stringify(listed("beacon_find_cross_iata_routes").description),
+    ).toContain("stops reading as soon as the requested limit is satisfied");
+    expect(JSON.stringify(listed("beacon_get_packet").outputSchema)).toContain(
+      "observer device clocks",
+    );
+    const nodesOutput = JSON.stringify(
+      listed("beacon_search_nodes").outputSchema,
+    );
+    expect(nodesOutput).not.toContain("supportsMultibytePaths");
+    expect(nodesOutput).not.toContain("supportsMultibyteTraces");
+    expect(nodesOutput).not.toContain("neighborIds");
+    expect(nodesOutput).not.toContain("defaultScope");
+    const nodeOutput = JSON.stringify(listed("beacon_get_node").outputSchema);
+    expect(nodeOutput).toContain("supportsMultibytePaths");
+    expect(nodeOutput).toContain("defaultScope");
+    expect(nodeOutput).not.toContain("neighborIds");
+  });
+
   it("does not filter public hosts or origins and serves legacy MCP", async () => {
     const app = await start();
     expect(

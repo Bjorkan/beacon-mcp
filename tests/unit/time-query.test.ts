@@ -13,6 +13,13 @@ describe("input normalization", () => {
     expect(() => toEpochMilliseconds("2026-02-30T15:30:00Z")).toThrow(
       "calendar",
     );
+    expect(() => toEpochMilliseconds("2026-13-01T00:00:00Z")).toThrow(
+      "calendar",
+    );
+    expect(() => toEpochMilliseconds("2026-02-29T00:00:00Z")).toThrow(
+      "calendar",
+    );
+    expect(toEpochMilliseconds("2024-02-29T00:00:00Z")).toBe(1709164800000);
     expect(() =>
       timeRange("2026-10-05T00:00:00Z", "2026-10-04T00:00:00Z"),
     ).toThrow("earlier");

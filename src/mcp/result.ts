@@ -3,6 +3,7 @@ import {
   BeaconError,
   BeaconInputError,
   BeaconRateLimitError,
+  errorCode,
 } from "../beacon/errors.js";
 
 function structured(value: unknown): Record<string, unknown> {
@@ -37,16 +38,17 @@ export function toolError(error: unknown): CallToolResult {
   const details =
     error instanceof BeaconError
       ? {
+          code: errorCode(error),
           type: error.name,
           ...(error.status === undefined ? {} : { status: error.status }),
-          ...(error.code === undefined ? {} : { code: error.code }),
+          ...(error.code === undefined ? {} : { upstreamCode: error.code }),
           ...(error instanceof BeaconRateLimitError && error.retryAfter
             ? { retryAfter: error.retryAfter }
             : {}),
         }
       : error instanceof BeaconInputError
-        ? { type: "ValidationError" }
-        : { type: "InternalError" };
+        ? { code: "INVALID_ARGUMENT", type: "ValidationError" }
+        : { code: "INTERNAL", type: "InternalError" };
   return {
     isError: true,
     content: [{ type: "text", text: message }],

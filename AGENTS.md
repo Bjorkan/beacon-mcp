@@ -75,6 +75,47 @@ the hash parameters; odd-length hexadecimal input (e.g. `e72ba`) reaches the
 handler and produces an unhandled panic that surfaces as HTTP 500 instead of 400. The local tool input schemas reject odd-length hex at the Zod layer to
 avoid this upstream defect.
 
+`GET /routes/cross` builds the entire result list in memory — for every hop of
+every stored route containing the source node it queries cross-IATA neighbors —
+so realistic hash pairs routinely produce multi-megabyte responses (one pair
+returned 5551 items / 14.5 MiB live) and can take seconds before the first
+byte. Upstream exposes no limit parameter, so the MCP layer reads the response
+incrementally and stops as soon as the tool's limit is satisfied (see the
+streaming contract below); the operation shares the analytics timeout budget.
+
+Further pinned-commit findings verified live against `beacon.meshat.se`:
+
+- Node list items (`api.NodeSummary` projection in `db/nodes.go`) never carry
+  `defaultScope`, `supportsMultibytePaths`, or `supportsMultibyteTraces`;
+  `neighborIds` is populated only when the list request opts in with
+  `?neighbors=true`, which the MCP tool does not expose. The node detail
+  endpoint (`api.Node`) carries the multibyte flags and, when set,
+  `defaultScope`, `observerId`, and `radio`, but never `neighborIds` (detail
+  exposes full `neighbors` objects instead). The output schemas mirror this.
+- Time-window bounds are endpoint-specific. Packets: `firstHeardAt >= since`
+  and `lastHeardAt < until` on the unfiltered path, but only
+  `firstHeardAt <= until` on the IATA-filtered path, so the exact `until`
+  boundary is inconsistent upstream. Traces: `firstHeardAt >= since` and
+  `firstHeardAt <= until` — an inclusive upper bound. Stats series:
+  hours in `[since, until)`. Observer comparison: `heard_at` in
+  `[since, until)`. Messages: `sentAt >= since` only. Packet
+  `firstToLastMs` is `max(observations[].heardAt) - min(...)` over
+  observer-reported clocks, not the server `firstHeardAt`/`lastHeardAt`
+  delta; fewer than two observations leave it zero.
+- Scope filters compare with SQL equality, so scope names are case-sensitive
+  (`#se13` matches, `#SE13` does not) across nodes, packets, traces, and
+  messages — unlike IATA inputs, which the MCP layer normalizes to uppercase.
+- Exact-ID lookups return HTTP 404 with an upstream `not_found` code for
+  well-formed but unknown node, packet, and trace identifiers.
+
+The official web UI lives in
+[`MeshCore-Beacon/beacon-web`](https://github.com/MeshCore-Beacon/beacon-web).
+Clone it when a question concerns how the official UI displays data (field
+semantics, labels, formats) rather than what the REST API returns; for
+example it labels packet `firstToLastMs` as "Heard over" next to the
+first/last server timestamps. It is an upstream consumer, not part of this
+repository, and never blocks a change here.
+
 ## Run locally
 
 ```sh
@@ -161,7 +202,7 @@ process.
 | `PORT`                    |    `3000` | Unprivileged listen port                                  |
 | `BEACON_BASE_URL`         |  required | Fixed upstream base; credentials/query/fragment forbidden |
 | `BEACON_TIMEOUT_MS`       |   `10000` | Normal request timeout, 100–120000 ms                     |
-| `BEACON_STATS_TIMEOUT_MS` |   `20000` | Analytics timeout, 100–300000 ms                          |
+| `BEACON_STATS_TIMEOUT_MS` |   `20000` | Analytics and cross-IATA route timeout, 100–300000 ms     |
 | `LOG_LEVEL`               |    `info` | Log level setting                                         |
 | `SHUTDOWN_GRACE_MS`       |   `10000` | Bounded shutdown grace period                             |
 
@@ -198,8 +239,9 @@ curl -sS https://mcp.example.org \
 | Analytics         | `beacon_get_network_overview`, `beacon_get_network_series`, `beacon_compare_observers` |
 
 Times are strict RFC3339 UTC inputs and become Beacon epoch milliseconds. IATAs
-are uppercased. `since` must be earlier than `until`. Lists default to 20 and
-reject limits above 50. A list response is never allowed to grow beyond the
+are uppercased. `since` must be earlier than `until`. Scope names are
+case-sensitive upstream and are passed through as written. Lists default to 20
+and reject limits above 50. A list response is never allowed to grow beyond the
 requested bound.
 
 Paginated results use `{ items, pagination: { hasMore, nextCursor? } }`. The
@@ -215,7 +257,26 @@ shape of `nextCursor` varies by endpoint:
 Endpoints backed by upstream arrays with no pagination mechanism
 (`list_iatas`, `list_regions`, `search_routes`, `find_cross_iata_routes`)
 return `{ hasMore: false, truncated?: true }` with no `nextCursor`; clients
-can narrow the filters but cannot request a nonexistent next page.
+can narrow the filters but cannot request a nonexistent next page. These four
+tools also read the upstream array incrementally: the HTTP transfer is
+cancelled as soon as the requested limit of complete elements has been parsed,
+so the limit bounds the actual work (upstream exposes no limit parameter on
+`/routes/search` or `/routes/cross`, and both can return tens of megabytes).
+`truncated: true` therefore also appears when the read stopped before the
+upstream array terminator was seen — including when the fixed 5 MiB upstream
+body cap was hit after at least one complete element; hitting the cap with no
+complete element remains a `RESPONSE_TOO_LARGE` error. Time-window semantics
+are per endpoint and documented in each tool description; see the upstream
+comparison section for the exact upstream bounds.
+
+Tool errors carry a canonical classification in `structuredContent.error.code`
+following the gRPC code vocabulary: `INVALID_ARGUMENT` (local validation and
+upstream 400), `NOT_FOUND` (upstream 404), `DEADLINE_EXCEEDED` (upstream
+timeout), `RESPONSE_TOO_LARGE` (bounded response cap),
+`RESOURCE_EXHAUSTED` (upstream 429), `UNAVAILABLE` (other upstream failures),
+and `INTERNAL` (unexpected gateway errors). `type` keeps the exception class
+name, `status` the upstream HTTP status when present, `upstreamCode` the
+upstream error-envelope code when present, and `retryAfter` the 429 header.
 
 Every tool publishes an output schema for its structured result. Cross-field
 input constraints are enforced at runtime and documented in plain English in
@@ -238,7 +299,10 @@ The canonical `reserved` filter covers numeric types 12–14.
 In packet details, packet-level `firstHeardAt` and `lastHeardAt` are Beacon
 server receive/upsert times. Each `observations[].heardAt` is the timestamp
 reported by that observer (with Beacon's drift clamp), so the extrema are not
-required to match. `firstToLastMs` is calculated from observation timestamps.
+required to match. `firstToLastMs` is the span between the earliest and latest
+observer-reported `heardAt` values — an observer clock span, not the
+difference between the two packet-level timestamps — and is absent below two
+observations.
 
 ## Security model
 

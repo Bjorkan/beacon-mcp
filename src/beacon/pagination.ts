@@ -1,3 +1,5 @@
+import type { ArrayPage } from "./client.js";
+
 export interface Page {
   items: unknown[];
   pagination: {
@@ -34,13 +36,19 @@ export function toPage(value: unknown, limit: number): Page {
   };
 }
 
-export function toTruncatedPage(value: unknown, limit: number): Page {
-  const source = Array.isArray(value) ? value : [];
+/**
+ * Build a truncated page from a bounded incremental read of a top-level
+ * upstream array. truncated is reported both when more items existed than
+ * the requested limit and when the read stopped before the upstream array
+ * terminator was seen, so data was deliberately left unread.
+ */
+export function truncatedArrayPage(page: ArrayPage, limit: number): Page {
+  const truncated = !page.complete || page.items.length > limit;
   return {
-    items: source.slice(0, limit),
+    items: page.items.slice(0, limit),
     pagination: {
       hasMore: false,
-      ...(source.length > limit ? { truncated: true } : {}),
+      ...(truncated ? { truncated: true } : {}),
     },
   };
 }

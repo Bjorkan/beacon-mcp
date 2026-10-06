@@ -44,6 +44,74 @@ describe("Beacon adapter pagination", () => {
     });
   });
 
+  it("marks reads that stopped before the array terminator as truncated", async () => {
+    // A dropped connection mid-array: one complete element, no closing ']'.
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        const encoder = new TextEncoder();
+        controller.enqueue(encoder.encode('[{"iata":"ARN"}'));
+        controller.close();
+      },
+    });
+    const fetchMock = vi.fn<typeof fetch>(
+      async () =>
+        new Response(stream, {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+    );
+    const adapter = new BeaconAdapter(
+      new BeaconClient(config, { fetch: fetchMock }),
+    );
+    await expect(adapter.listIatas(5)).resolves.toEqual({
+      items: [{ iata: "ARN" }],
+      pagination: { hasMore: false, truncated: true },
+    });
+  });
+
+  it("applies the cross-IATA limit while streaming, not after download", async () => {
+    const route = {
+      sourceSegment: [{ hashBytes: "88a9" }],
+      crossHop: { fromIata: "MMX", toIata: "HAD" },
+      totalHops: 5,
+    };
+    const urls: string[] = [];
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      urls.push(String(input));
+      return Response.json([route, route, route]);
+    });
+    const adapter = new BeaconAdapter(
+      new BeaconClient(config, { fetch: fetchMock }),
+    );
+    const page = await adapter.findCrossIataRoutes({
+      fromHash: "88a9",
+      fromIata: "mmx",
+      toHash: "3ad1",
+      toIata: "HAD",
+      limit: 1,
+    });
+    expect(page).toEqual({
+      items: [route],
+      pagination: { hasMore: false, truncated: true },
+    });
+    expect(urls).toEqual([
+      "https://beacon.example/api/v1/routes/cross?fromHash=88a9&fromIata=MMX&toHash=3ad1&toIata=HAD",
+    ]);
+  });
+
+  it("reports a full bounded array without truncation", async () => {
+    const page = await adapterReturning([{ id: 1 }, { id: 2 }]).searchRoutes({
+      iata: "ARN",
+      from: "88a9",
+      to: "3ad1",
+      limit: 2,
+    });
+    expect(page).toEqual({
+      items: [{ id: 1 }, { id: 2 }],
+      pagination: { hasMore: false },
+    });
+  });
+
   it("paginates the complete upstream scope array locally", async () => {
     const adapter = adapterReturning(["#a", "#b", "#c"]);
     await expect(adapter.listScopes({ limit: 2 })).resolves.toEqual({

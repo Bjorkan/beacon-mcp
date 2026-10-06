@@ -89,6 +89,18 @@ export interface BeaconClientOptions {
   logger?: Logger;
 }
 
+/** Result of a bounded incremental read of a top-level JSON array. */
+export interface ArrayPage {
+  items: unknown[];
+  /**
+   * True when the upstream array terminator was seen, so the items are the
+   * complete result set. False when reading stopped early because the item
+   * budget was reached, the byte cap was hit, or the stream ended
+   * prematurely with elements already parsed.
+   */
+  complete: boolean;
+}
+
 function resultCount(body: unknown): number | undefined {
   if (Array.isArray(body)) return body.length;
   if (body && typeof body === "object") {
@@ -155,6 +167,159 @@ async function responseJson(
   }
 }
 
+/**
+ * Incremental scanner for top-level JSON arrays. Reads chunk by chunk,
+ * parses each complete array element as it closes, and stops reading as
+ * soon as maxItems elements are available, so a huge upstream array never
+ * has to be transferred or buffered in full. Non-array bodies fall back to
+ * whole-body buffering with the same byte cap.
+ */
+async function readArrayPage(
+  response: Response,
+  maxBytes: number,
+  maxItems: number,
+): Promise<ArrayPage> {
+  if (response.status === 204) return { items: [], complete: true };
+  if (!response.body) return { items: [], complete: true };
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  const items: unknown[] = [];
+  let byteCount = 0;
+  let buffer = "";
+  // JSON lexer state, carried across chunks.
+  let started = false; // opening '[' seen
+  let closed = false; // closing ']' seen
+  let depth = 0; // nesting depth of the element currently being read
+  let inString = false;
+  let escaped = false;
+  let itemStart = -1; // index of the first character of the current element
+  let resume = 0; // index within buffer where scanning resumes next chunk
+  let truncated = false;
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      byteCount += value.byteLength;
+      if (byteCount > maxBytes) {
+        await reader.cancel();
+        if (items.length > 0) {
+          return { items, complete: false };
+        }
+        throw new BeaconResponseTooLargeError(
+          `Beacon response exceeded the ${maxBytes} byte limit`,
+          response.status,
+        );
+      }
+      buffer += decoder.decode(value, { stream: true });
+      for (let i = resume; i < buffer.length; i += 1) {
+        const char = buffer.charAt(i);
+        if (inString) {
+          if (escaped) {
+            escaped = false;
+          } else if (char === "\\") {
+            escaped = true;
+          } else if (char === '"') {
+            inString = false;
+          }
+          continue;
+        }
+        if (!started) {
+          if (char === "[") {
+            started = true;
+          } else if (!/\s/.test(char)) {
+            // Not an array response; the whole-body path below handles it.
+            started = true;
+            depth = -1;
+            itemStart = 0;
+          }
+          continue;
+        }
+        if (depth === -1) continue; // draining a non-array body
+        if (depth === 0) {
+          if (char === "]") {
+            if (itemStart >= 0) {
+              items.push(JSON.parse(buffer.slice(itemStart, i)));
+              itemStart = -1;
+            }
+            closed = true;
+            break;
+          }
+          if (itemStart < 0) {
+            if (char === "," || /\s/.test(char)) continue;
+            itemStart = i;
+          } else if (char === ",") {
+            items.push(JSON.parse(buffer.slice(itemStart, i)));
+            itemStart = -1;
+            if (items.length >= maxItems) break;
+            continue;
+          }
+          if (char === '"' || char === "{" || char === "[") {
+            if (char === '"') inString = true;
+            else depth = 1;
+          }
+        } else {
+          if (char === '"') {
+            inString = true;
+          } else if (char === "{" || char === "[") {
+            depth += 1;
+          } else if (char === "}" || char === "]") {
+            depth -= 1;
+            if (depth === 0) {
+              items.push(JSON.parse(buffer.slice(itemStart, i + 1)));
+              itemStart = -1;
+              if (items.length >= maxItems) break;
+            }
+          }
+        }
+      }
+      if (closed || items.length >= maxItems) {
+        if (!closed) truncated = true;
+        break;
+      }
+      // Keep only the unconsumed tail to bound memory across chunks: either
+      // an unfinished element (depth non-zero or a scalar element in
+      // progress) or nothing at all. Chars inside the kept tail were
+      // already scanned, so scanning resumes past them.
+      const keep = itemStart >= 0 ? itemStart : buffer.length;
+      resume = buffer.length - keep;
+      buffer = keep < buffer.length ? buffer.slice(keep) : "";
+      if (itemStart >= 0) itemStart = 0;
+    }
+    if (closed) {
+      return { items, complete: true };
+    }
+    if (truncated || items.length > 0) {
+      return { items, complete: false };
+    }
+    // The stream ended without a single complete element and without an
+    // array terminator: treat it like any other body and parse it whole.
+    let fallback: unknown;
+    try {
+      fallback = JSON.parse(`${buffer}${decoder.decode()}`);
+    } catch {
+      throw new BeaconUpstreamError(
+        "Beacon returned an invalid JSON response",
+        response.status,
+      );
+    }
+    if (Array.isArray(fallback)) return { items: fallback, complete: true };
+    if (
+      fallback &&
+      typeof fallback === "object" &&
+      Array.isArray((fallback as Record<string, unknown>)["items"])
+    ) {
+      return {
+        items: (fallback as Record<string, unknown>)["items"] as unknown[],
+        complete: true,
+      };
+    }
+    return { items: [], complete: true };
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 export class BeaconClient {
   private readonly fetchImpl: typeof fetch;
   private readonly sleep: (ms: number) => Promise<void>;
@@ -174,10 +339,43 @@ export class BeaconClient {
     this.logger = options.logger;
   }
 
+  /**
+   * Fetch one pinned public GET operation and parse the JSON body.
+   */
   async request<O extends BeaconOperation>(
     operation: O,
     options: BeaconRequest<O> = {},
   ): Promise<BeaconResponse<O>> {
+    return this.execute(operation, options, (response) =>
+      responseJson(response, BEACON_MAX_RESPONSE_BYTES),
+    ) as Promise<BeaconResponse<O>>;
+  }
+
+  /**
+   * Fetch an operation whose upstream response is a top-level JSON array,
+   * reading at most maxItems elements before cancelling the transfer. Use
+   * this for array endpoints without server-side pagination so the MCP
+   * tool's limit bounds the actual work instead of only slicing the
+   * already-downloaded result.
+   */
+  async requestArrayPage<O extends BeaconOperation>(
+    operation: O,
+    options: BeaconRequest<O> & { maxItems: number },
+  ): Promise<ArrayPage> {
+    const { maxItems, ...rest } = options;
+    if (!Number.isInteger(maxItems) || maxItems < 1) {
+      throw new BeaconInputError("maxItems must be a positive integer");
+    }
+    return this.execute(operation, rest, (response) =>
+      readArrayPage(response, BEACON_MAX_RESPONSE_BYTES, maxItems),
+    );
+  }
+
+  private async execute<O extends BeaconOperation, R>(
+    operation: O,
+    options: BeaconRequest<O>,
+    consume: (response: Response) => Promise<R>,
+  ): Promise<R> {
     const selected: string | undefined = endpoints[operation];
     if (!selected) throw new Error("Unsafe or unknown Beacon operation");
     let pathname = selected;
@@ -201,11 +399,14 @@ export class BeaconClient {
     if (url.href.length > BEACON_MAX_URL_LENGTH) {
       throw new BeaconInputError("Beacon request filters are too large");
     }
-    const analytics =
+    // Cross-IATA route search is an expensive upstream join over whole
+    // stored routes, so it shares the analytics timeout budget.
+    const expensive =
       operation === "networkOverview" ||
       operation === "networkSeries" ||
-      operation === "compareObservers";
-    const timeoutMs = analytics
+      operation === "compareObservers" ||
+      operation === "crossRoutes";
+    const timeoutMs = expensive
       ? this.config.beaconStatsTimeoutMs
       : this.config.beaconTimeoutMs;
 
@@ -228,7 +429,11 @@ export class BeaconClient {
           signal,
         });
         upstreamStatus = response.status;
-        const body = await responseJson(response, BEACON_MAX_RESPONSE_BYTES);
+        // Non-ok bodies are only read to extract the error envelope and are
+        // never returned, so the cast below is sound.
+        const body: R = response.ok
+          ? await consume(response)
+          : ((await responseJson(response, BEACON_MAX_RESPONSE_BYTES)) as R);
         this.logger?.info(
           {
             ...currentRequestContext(),
@@ -246,7 +451,7 @@ export class BeaconClient {
           "Beacon upstream request",
         );
         logged = true;
-        if (response.ok) return body as BeaconResponse<O>;
+        if (response.ok) return body;
         if (attempt === 1 && [502, 503, 504].includes(response.status)) {
           await this.sleep(25 + Math.floor(Math.random() * 50));
           if (options.signal?.aborted) throw options.signal.reason;
