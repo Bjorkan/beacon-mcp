@@ -1,8 +1,14 @@
 .git
 .github
+.agents
+.codex
 .env
 .env.*
 !.env.example
+AGENTS.md
+compose.yaml
+renovate.json
+README.md
 node_modules
 dist
 coverage

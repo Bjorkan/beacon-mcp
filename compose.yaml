@@ -21,6 +21,11 @@ services:
     pids_limit: 100
     stop_grace_period: 15s
     restart: unless-stopped
+    logging:
+      driver: local
+      options:
+        max-size: 10m
+        max-file: "3"
     healthcheck:
       test: ["CMD", "node", "scripts/healthcheck.mjs"]
       interval: 30s

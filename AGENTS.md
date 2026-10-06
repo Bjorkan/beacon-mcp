@@ -121,12 +121,15 @@ docker run --rm --name beacon-mcp \
 ```
 
 The final `node:24-bookworm-slim` stage contains compiled JavaScript,
-production dependencies, package metadata, and the Node healthcheck only. It
-runs as the image's `node` user (UID/GID 1000), uses exec-form `CMD`, and writes
-no application files. Logs go to stdout/stderr. Set `BEACON_MCP_IMAGE` to an
-immutable semantic-version tag, Git SHA tag, or image digest in production;
-Compose defaults to the matching `2.0.2` release tag. Use `edge` only to
-evaluate the latest `main` branch.
+production dependencies, package metadata, and the Node healthcheck only. The
+official base image is pinned to its multi-architecture digest and maintained
+by Renovate. BuildKit cache mounts accelerate npm downloads without adding the
+cache to an image layer. The runtime runs as the image's `node` user (UID/GID
+1000), uses exec-form `CMD`, and writes no application files. Logs go to
+stdout/stderr; Compose uses the rotating local log driver. Set
+`BEACON_MCP_IMAGE` to an immutable semantic-version tag, Git SHA tag, or image
+digest in production; Compose defaults to the matching `2.0.2` release tag. Use
+`edge` only to evaluate the latest `main` branch.
 
 All direct dependencies are JavaScript-only and support both targets. CI builds
 both platforms, publishes only from `main` or `vX.Y.Z` tags, and attaches SBOM
@@ -271,9 +274,13 @@ MCP-to-mocked-Beacon connectivity, UID, read-only filesystem, dropped
 capabilities, no-new-privileges, resource bounds, and SIGTERM exit. Compose
 demonstrates the same hardening.
 
-CI also runs a production dependency audit. Release systems can additionally
-scan with Trivy/Grype and sign/verify with Cosign without changing the
-application.
+CI also runs a production dependency audit. Workflow actions are pinned to
+full commit SHAs, checkout credentials are not persisted, token permissions
+are least-privilege, and jobs have bounded runtimes. Renovate maintains npm,
+Docker, and GitHub Actions dependencies using its best-practices preset;
+updates must be at least 14 days old before Renovate creates them.
+Release systems can additionally scan with Trivy/Grype and sign/verify with
+Cosign without changing the application.
 
 ## Updating Beacon OpenAPI
 

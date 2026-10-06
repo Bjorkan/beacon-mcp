@@ -12,12 +12,15 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-docker build -t "$image" .
+docker build --pull -t "$image" .
 test "$(docker run --rm --entrypoint id "$image" -u)" != "0"
 docker run --rm --entrypoint sh "$image" -c \
   "test ! -e /app/src && test ! -e /app/tests && node -e \"try { require.resolve('typescript'); process.exit(1) } catch {}\" && node -e \"try { require.resolve('vitest'); process.exit(1) } catch {}\""
 docker network create "$network" >/dev/null
-docker run -d --name "$mock" --network "$network" -v "$PWD/tests/container/mock-beacon.mjs:/mock.mjs:ro" node:24-bookworm-slim node /mock.mjs >/dev/null
+docker run -d --name "$mock" --network "$network" \
+  --no-healthcheck \
+  -v "$PWD/tests/container/mock-beacon.mjs:/mock.mjs:ro" \
+  --entrypoint node "$image" /mock.mjs >/dev/null
 docker run -d --name "$gateway" --network "$network" -p 127.0.0.1::3000 \
   --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m --cap-drop=ALL \
   --security-opt=no-new-privileges:true --memory=256m --cpus=0.5 --pids-limit=100 \

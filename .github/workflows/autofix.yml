@@ -6,25 +6,35 @@ on:
   pull_request:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   autofix:
+    name: Apply lint and formatting fixes
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 24
           cache: npm
-      - run: npm ci --ignore-scripts
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Apply ESLint fixes
         run: npm exec -- eslint . --fix
       - name: Apply Prettier formatting
         run: npm exec -- prettier --write .
-      - uses: autofix-ci/action@c5b2d67aa2274e7b5a18224e8171550871fc7e4a
+      - name: Upload fixes to autofix.ci
+        uses: autofix-ci/action@c5b2d67aa2274e7b5a18224e8171550871fc7e4a # v1.3.4
         with:
           commit-message: Apply ESLint and Prettier fixes
