@@ -2,10 +2,12 @@ import { BeaconInputError } from "./errors.js";
 import type { BeaconClient, BeaconResponse } from "./client.js";
 import {
   toCursorPage,
+  toOffsetArrayPage,
   toPage,
   toTruncatedPage,
   type Page,
 } from "./pagination.js";
+import { payloadTypesForName } from "./payload.js";
 import { boundedLimit, normalizeIatas } from "./query.js";
 import { timeRange } from "../utils/time.js";
 
@@ -64,16 +66,17 @@ export class BeaconAdapter {
   }
 
   async listScopes(
-    input: Input<LocationFilters & { limit?: number }>,
+    input: Input<LocationFilters & OffsetPage>,
     signal?: AbortSignal,
   ): Promise<Page> {
     const limit = boundedLimit(input.limit);
-    return toTruncatedPage(
+    return toOffsetArrayPage(
       await this.client.request("listScopes", {
         query: location(input),
         signal,
       }),
       limit,
+      input.cursor,
     );
   }
 
@@ -189,6 +192,12 @@ export class BeaconAdapter {
     signal?: AbortSignal,
   ): Promise<Page> {
     const page = offsetPage(input);
+    const namedPayloadTypes = input.payloadTypeName
+      ? payloadTypesForName(input.payloadTypeName)
+      : undefined;
+    if (input.payloadTypeName && !namedPayloadTypes) {
+      throw new BeaconInputError("Unknown payload type name");
+    }
     return toPage(
       await this.client.request("listPackets", {
         query: {
@@ -196,8 +205,9 @@ export class BeaconAdapter {
           ...timeRange(input.since, input.until),
           ...page,
           payloadType: input.payloadType,
-          payloadTypes: input.payloadTypes?.join(","),
-          payloadTypeName: input.payloadTypeName,
+          payloadTypes:
+            input.payloadTypes?.join(",") ?? namedPayloadTypes?.join(","),
+          payloadTypeName: undefined,
           routeType: input.routeType,
           routeTypes: input.routeTypes?.join(","),
           scopes: input.scopes?.join(","),

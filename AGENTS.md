@@ -183,11 +183,23 @@ Times are strict RFC3339 UTC inputs and become Beacon epoch milliseconds. IATAs
 are uppercased. `since` must be earlier than `until`. Lists default to 20 and
 reject limits above 50. Results use
 `{ items, pagination: { hasMore, nextCursor } }` when Beacon supplies a cursor
-or the gateway can derive one. For upstream array endpoints that have no
-pagination mechanism, an over-limit response instead reports
+or the gateway can derive one. `beacon_list_scopes` uses a local offset cursor
+over the complete, sorted upstream array. For other upstream array endpoints
+that have no pagination mechanism, an over-limit response instead reports
 `{ hasMore: false, truncated: true }`; clients can narrow the filters but cannot
 request a nonexistent next page. A list response is never allowed to grow
 beyond the requested bound.
+
+Packet hashes are exactly 16 hexadecimal characters, trace tags exactly 8, and
+exact node public keys exactly 64; `pubkeyPrefix` remains available for partial
+node-key matching. `payloadTypeName` uses the same canonical names returned in
+packet responses, while `txt_msg`, `grp_txt`, and `anon_req` remain accepted as
+legacy aliases. The canonical `reserved` filter covers numeric types 12–14.
+
+In packet details, packet-level `firstHeardAt` and `lastHeardAt` are Beacon
+server receive/upsert times. Each `observations[].heardAt` is the timestamp
+reported by that observer (with Beacon's drift clamp), so the extrema are not
+required to match. `firstToLastMs` is calculated from observation timestamps.
 
 ## Security model
 

@@ -43,4 +43,35 @@ describe("Beacon adapter pagination", () => {
       pagination: { hasMore: false, truncated: true },
     });
   });
+
+  it("paginates the complete upstream scope array locally", async () => {
+    const adapter = adapterReturning(["#a", "#b", "#c"]);
+    await expect(adapter.listScopes({ limit: 2 })).resolves.toEqual({
+      items: ["#a", "#b"],
+      pagination: { hasMore: true, nextCursor: { cursor: 2 } },
+    });
+    await expect(adapter.listScopes({ cursor: 2, limit: 2 })).resolves.toEqual({
+      items: ["#c"],
+      pagination: { hasMore: false },
+    });
+  });
+
+  it("normalizes canonical and legacy payload names to numeric filters", async () => {
+    const urls: string[] = [];
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      urls.push(String(input));
+      return Response.json({ items: [], hasMore: false });
+    });
+    const adapter = new BeaconAdapter(
+      new BeaconClient(config, { fetch: fetchMock }),
+    );
+    await adapter.searchPackets({ payloadTypeName: "group_text" });
+    await adapter.searchPackets({ payloadTypeName: "grp_txt" });
+    await adapter.searchPackets({ payloadTypeName: "reserved" });
+    expect(urls).toEqual([
+      "https://beacon.example/api/v1/packets?limit=20&payloadTypes=5",
+      "https://beacon.example/api/v1/packets?limit=20&payloadTypes=5",
+      "https://beacon.example/api/v1/packets?limit=20&payloadTypes=12%2C13%2C14",
+    ]);
+  });
 });

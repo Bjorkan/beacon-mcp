@@ -163,7 +163,7 @@ describe("MCP HTTP integration", () => {
     const packet = (
       await rpc(app, "tools/call", {
         name: "beacon_get_packet",
-        arguments: { hash: "abcd" },
+        arguments: { hash: "0123456789abcdef" },
       })
     ).body;
     expect(packet).toContain("packetHash");
@@ -205,6 +205,12 @@ describe("MCP HTTP integration", () => {
     });
     expect(packets.body).toContain("mutually exclusive");
 
+    const namedPackets = await rpc(app, "tools/call", {
+      name: "beacon_search_packets",
+      arguments: { payloadType: 5, payloadTypeName: "group_text" },
+    });
+    expect(namedPackets.body).toContain("payloadTypeName cannot be combined");
+
     const channels = await rpc(app, "tools/call", {
       name: "beacon_list_channels",
       arguments: { cursor: 1, pageCursor: "opaque" },
@@ -239,9 +245,43 @@ describe("MCP HTTP integration", () => {
 
     const traceCursor = await rpc(app, "tools/call", {
       name: "beacon_search_traces",
-      arguments: { cursorTag: "abcd" },
+      arguments: { cursorTag: "0123abcd" },
     });
     expect(traceCursor.body).toContain("cursorTag requires cursor");
+  });
+
+  it("publishes exact identifier constraints and keeps prefix search separate", async () => {
+    const app = await start();
+    for (const [name, args] of [
+      ["beacon_get_packet", { hash: "f" }],
+      ["beacon_get_trace", { tag: "e" }],
+      ["beacon_search_nodes", { pubkey: "8e" }],
+    ] as const) {
+      const response = await rpc(app, "tools/call", {
+        name,
+        arguments: args,
+      });
+      expect(response.body).toContain("Invalid");
+    }
+
+    const prefix = await rpc(app, "tools/call", {
+      name: "beacon_search_nodes",
+      arguments: { pubkeyPrefix: "8e" },
+    });
+    expect(prefix.body).toContain("Node");
+
+    for (const payloadTypeName of [
+      "group_data",
+      "anonymous_request",
+      "reserved",
+      "grp_txt",
+    ]) {
+      const response = await rpc(app, "tools/call", {
+        name: "beacon_search_packets",
+        arguments: { payloadTypeName },
+      });
+      expect(response.body).not.toContain("Invalid");
+    }
   });
 
   it("rejects unknown and ambiguous filters instead of broadening queries", async () => {
@@ -286,7 +326,7 @@ describe("MCP HTTP integration", () => {
       });
       const response = await rpc(app, "tools/call", {
         name: "beacon_get_packet",
-        arguments: { hash: "abcd" },
+        arguments: { hash: "0123456789abcdef" },
       });
       expect(response.body).toContain(expected);
     }
@@ -306,7 +346,7 @@ describe("MCP HTTP integration", () => {
     });
     const timeout = await rpc(timeoutApp, "tools/call", {
       name: "beacon_get_packet",
-      arguments: { hash: "abcd" },
+      arguments: { hash: "0123456789abcdef" },
     });
     expect(timeout.body).toContain("BeaconTimeoutError");
   });

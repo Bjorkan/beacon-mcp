@@ -7,6 +7,7 @@ import {
 import { z } from "zod/v4";
 import type { BeaconAdapter } from "../beacon/adapter.js";
 import { BeaconError, BeaconInputError } from "../beacon/errors.js";
+import { PAYLOAD_TYPE_FILTER_NAMES } from "../beacon/payload.js";
 import { BEACON_API_VERSION } from "../beacon/version.js";
 import type { Logger } from "../logging/logger.js";
 import { toolError, toolResult } from "./result.js";
@@ -18,9 +19,23 @@ const hexString = z
   .string()
   .max(256)
   .regex(/^[0-9a-fA-F]+$/);
-const byteHexString = hexString.refine((value) => value.length % 2 === 0, {
-  message: "Must contain a whole number of bytes",
-});
+const packetHash = z
+  .string()
+  .regex(/^[0-9a-fA-F]{16}$/)
+  .describe("Exact 8-byte Beacon packet hash as 16 hexadecimal characters");
+const traceTag = z
+  .string()
+  .regex(/^[0-9a-fA-F]{8}$/)
+  .describe("Exact 4-byte trace tag as 8 hexadecimal characters");
+const nodePublicKey = z
+  .string()
+  .regex(/^[0-9a-fA-F]{64}$/)
+  .describe("Exact 32-byte MeshCore public key as 64 hexadecimal characters");
+const nodePublicKeyPrefix = z
+  .string()
+  .max(64)
+  .regex(/^[0-9a-fA-F]+$/)
+  .describe("Hexadecimal prefix of a MeshCore public key");
 const limit = z
   .number()
   .int()
@@ -133,7 +148,7 @@ export function createMcpServer(
     "beacon_list_scopes",
     "List public MeshCore transport scopes.",
     z
-      .strictObject({ ...location, limit })
+      .strictObject({ ...location, ...pagination })
       .refine((a) => !(a.region && a.regionId), {
         message: "region and regionId are mutually exclusive",
       }),
@@ -154,8 +169,8 @@ export function createMcpServer(
         typeName: z
           .enum(["companion", "repeater", "room_server", "sensor"])
           .optional(),
-        pubkey: byteHexString.optional(),
-        pubkeyPrefix: hexString.optional(),
+        pubkey: nodePublicKey.optional(),
+        pubkeyPrefix: nodePublicKeyPrefix.optional(),
         supportsMultibytePaths: z.boolean().optional(),
         supportsMultibyteTraces: z.boolean().optional(),
       })
@@ -245,8 +260,11 @@ export function createMcpServer(
           .max(20)
           .optional(),
         payloadTypeName: z
-          .enum(["advert", "grp_txt", "txt_msg", "trace", "anon_req"])
-          .optional(),
+          .enum(PAYLOAD_TYPE_FILTER_NAMES)
+          .optional()
+          .describe(
+            "Canonical payload type name; txt_msg, grp_txt, and anon_req remain supported as legacy aliases",
+          ),
         routeType: z.number().int().min(0).max(3).optional(),
         routeTypes: z
           .array(z.number().int().min(0).max(3))
@@ -261,6 +279,17 @@ export function createMcpServer(
       .refine((a) => !(a.payloadType !== undefined && a.payloadTypes), {
         message: "payloadType and payloadTypes are mutually exclusive",
       })
+      .refine(
+        (a) =>
+          !(
+            a.payloadTypeName !== undefined &&
+            (a.payloadType !== undefined || a.payloadTypes !== undefined)
+          ),
+        {
+          message:
+            "payloadTypeName cannot be combined with payloadType or payloadTypes",
+        },
+      )
       .refine((a) => !(a.routeType !== undefined && a.routeTypes), {
         message: "routeType and routeTypes are mutually exclusive",
       })
@@ -273,8 +302,8 @@ export function createMcpServer(
     server,
     logger,
     "beacon_get_packet",
-    "Get full public packet detail by hex packet hash.",
-    z.strictObject({ hash: byteHexString }),
+    "Get full public packet detail by hex packet hash. Packet firstHeardAt/lastHeardAt are Beacon server receive times; observations[].heardAt is observer-reported time and may differ.",
+    z.strictObject({ hash: packetHash }),
     (a, s) => adapter.getPacket(a.hash, s),
   );
 
@@ -398,7 +427,7 @@ export function createMcpServer(
         ...timeWindow,
         ...pagination,
         type: z.enum(["TRACE", "PING"]).optional(),
-        cursorTag: hexString.optional(),
+        cursorTag: traceTag.optional(),
       })
       .refine((a) => !(a.region && a.regionId), {
         message: "region and regionId are mutually exclusive",
@@ -413,7 +442,7 @@ export function createMcpServer(
     logger,
     "beacon_get_trace",
     "Get trace detail by hex tag.",
-    z.strictObject({ tag: hexString }),
+    z.strictObject({ tag: traceTag }),
     (a, s) => adapter.getTrace(a.tag, s),
   );
 

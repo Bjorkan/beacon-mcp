@@ -45,6 +45,24 @@ export function toTruncatedPage(value: unknown, limit: number): Page {
   };
 }
 
+export function toOffsetArrayPage(
+  value: unknown,
+  limit: number,
+  cursor = 0,
+): Page {
+  const source = Array.isArray(value) ? value : [];
+  const items = source.slice(cursor, cursor + limit);
+  const nextOffset = cursor + items.length;
+  const hasMore = nextOffset < source.length;
+  return {
+    items,
+    pagination: {
+      hasMore,
+      ...(hasMore ? { nextCursor: { cursor: nextOffset } } : {}),
+    },
+  };
+}
+
 export function toCursorPage(
   value: unknown,
   limit: number,
