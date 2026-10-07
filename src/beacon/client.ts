@@ -18,6 +18,7 @@ const BEACON_MAX_URL_LENGTH = 8_192;
 type PublicApiPath = Exclude<keyof paths, `/admin/${string}`>;
 
 const endpoints = {
+  serverInfo: "/info",
   listIatas: "/iatas",
   listRegions: "/regions",
   listScopes: "/scopes",

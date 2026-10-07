@@ -51,6 +51,10 @@ function offsetPage(input: Input<OffsetPage>) {
 export class BeaconAdapter {
   constructor(private readonly client: BeaconClient) {}
 
+  getServerInfo(signal?: AbortSignal): Promise<BeaconResponse<"serverInfo">> {
+    return this.client.request("serverInfo", { signal });
+  }
+
   async listIatas(limit = 20, signal?: AbortSignal): Promise<Page> {
     const bounded = boundedLimit(limit);
     return truncatedArrayPage(

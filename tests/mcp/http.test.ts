@@ -32,6 +32,11 @@ interface ListedTool {
 async function start(options: StartOptions = {}): Promise<FastifyInstance> {
   const defaultFetch = vi.fn<typeof fetch>(async (input) => {
     const path = new URL(String(input)).pathname;
+    if (path.endsWith("/info"))
+      return Response.json({
+        minAppVersion: null,
+        serverVersion: "2.0.3",
+      });
     if (path.endsWith("/nodes"))
       return Response.json({
         items: [{ id: "n1", name: "Node" }],
@@ -124,15 +129,16 @@ describe("MCP HTTP integration", () => {
     expect(response.headers["x-content-type-options"]).toBe("nosniff");
     const text = response.body;
     expect(text).toContain("beacon_search_nodes");
+    expect(text).toContain("beacon_get_server_info");
     expect(text).toContain("beacon_compare_observers");
     expect(text).not.toContain("admin");
-    expect(text.match(/"readOnlyHint":true/g)).toHaveLength(21);
-    expect(text.match(/"destructiveHint":false/g)).toHaveLength(21);
-    expect(text.match(/"idempotentHint":true/g)).toHaveLength(21);
-    expect(text.match(/"openWorldHint":true/g)).toHaveLength(21);
+    expect(text.match(/"readOnlyHint":true/g)).toHaveLength(22);
+    expect(text.match(/"destructiveHint":false/g)).toHaveLength(22);
+    expect(text.match(/"idempotentHint":true/g)).toHaveLength(22);
+    expect(text.match(/"openWorldHint":true/g)).toHaveLength(22);
     const listedTools = (response.json() as { result: { tools: ListedTool[] } })
       .result.tools;
-    expect(listedTools).toHaveLength(21);
+    expect(listedTools).toHaveLength(22);
     expect(listedTools.every((tool) => tool.outputSchema !== undefined)).toBe(
       true,
     );
@@ -222,7 +228,7 @@ describe("MCP HTTP integration", () => {
     );
     const discovery = await rpc(app, "server/discover");
     expect(discovery.statusCode, discovery.body).toBe(200);
-    expect(discovery.body).toContain('"version":"2.0.2"');
+    expect(discovery.body).toContain('"version":"2.0.3"');
     const modern = await app.inject({
       url: "/",
       method: "POST",
@@ -252,8 +258,15 @@ describe("MCP HTTP integration", () => {
     expect(modern.body).toContain("beacon_search_nodes");
   });
 
-  it("calls node and packet tools through the actual handler", async () => {
+  it("calls server-info, node, and packet tools through the actual handler", async () => {
     const app = await start();
+    const info = await rpc(app, "tools/call", {
+      name: "beacon_get_server_info",
+      arguments: {},
+    });
+    expect(info.body).toContain('"serverVersion":"2.0.3"');
+    expect(info.body).toContain('"minAppVersion":null');
+
     const nodes = (
       await rpc(app, "tools/call", {
         name: "beacon_search_nodes",
@@ -672,7 +685,7 @@ describe("MCP HTTP integration", () => {
       expect(response.statusCode).toBe(200);
       expect(response.body).toContain(`"protocolVersion":"${requested}"`);
       expect(response.body).toContain('"name":"beacon-mcp"');
-      expect(response.body).toContain('"version":"2.0.2"');
+      expect(response.body).toContain('"version":"2.0.3"');
     }
   });
 

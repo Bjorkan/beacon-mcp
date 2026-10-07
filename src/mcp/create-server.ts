@@ -165,6 +165,16 @@ export function createMcpServer(
   register(
     server,
     logger,
+    "beacon_get_server_info",
+    "Get the connected Beacon server version and its minimum supported BEACON Mobile app version. minAppVersion is null when the server has no minimum requirement.",
+    z.strictObject({}),
+    outputSchemas.beacon_get_server_info,
+    (_a, s) => adapter.getServerInfo(s),
+  );
+
+  register(
+    server,
+    logger,
     "beacon_list_iatas",
     "List Beacon geographic areas identified by IATA-style codes. This is a bounded enumeration with no server-side pagination; if the list exceeds the limit, the response reports truncation. Codes represent network partitions and do not necessarily refer to the corresponding airport.",
     z.strictObject({ limit }),

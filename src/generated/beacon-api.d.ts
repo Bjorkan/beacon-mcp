@@ -1039,6 +1039,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Server info and minimum mobile app version
+         * @description minAppVersion is null when the server sets no requirement.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.Info"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/messages": {
         parameters: {
             query?: never;
@@ -3712,6 +3751,7 @@ export interface components {
             auth?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminAuthConfig"];
             cors?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminCORSConfig"];
             ingest?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminIngestConfig"];
+            mobile?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminMobileConfig"];
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.AdminIngestConfig": {
             /**
@@ -3719,6 +3759,10 @@ export interface components {
              *     or a configurable processing-worker pool.
              */
             broker_count?: number;
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.AdminMobileConfig": {
+            /** @description empty means no requirement */
+            min_app_version?: string;
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.AdvertObservation": {
             /** @description epoch ms */
@@ -3833,6 +3877,15 @@ export interface components {
             iata?: string;
             lat?: number;
             lon?: number;
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.Info": {
+            /**
+             * @description MinAppVersion is the oldest allowed app version (X.Y.Z); null means no requirement.
+             * @example 0.1.1
+             */
+            minAppVersion?: string;
+            /** @example 2.0.2 */
+            serverVersion?: string;
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.KnownRoute": {
             /** @description epoch ms */

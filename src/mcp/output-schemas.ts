@@ -10,6 +10,17 @@ const epochMs = z
   .describe("Unix epoch milliseconds (UTC)");
 const optionalBoolean = z.boolean().nullish();
 const optionalStrings = z.array(z.string()).nullish();
+const serverInfo = z.looseObject({
+  minAppVersion: z
+    .string()
+    .regex(/^\d+\.\d+\.\d+$/)
+    .nullable()
+    .optional(),
+  serverVersion: z
+    .string()
+    .regex(/^\d+\.\d+\.\d+$/)
+    .optional(),
+});
 const payloadTypeName = z
   .enum([
     "request",
@@ -503,6 +514,7 @@ function cursorPage<T extends z.ZodType, C extends z.ZodType>(
 }
 
 export const outputSchemas = {
+  beacon_get_server_info: serverInfo,
   beacon_list_iatas: finitePage(iataArea),
   beacon_list_regions: finitePage(regionSummary),
   beacon_list_scopes: cursorPage(z.string(), numericCursor),

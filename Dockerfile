@@ -28,7 +28,7 @@ FROM node:24-bookworm-slim@sha256:d6aa754f16b3197301076f047b5def2f02ea1dbbc2ca92
 LABEL org.opencontainers.image.title="Beacon MCP Server" \
       org.opencontainers.image.description="Read-only MCP gateway for MeshCore Beacon" \
       org.opencontainers.image.source="https://github.com/Bjorkan/beacon-mcp" \
-      org.opencontainers.image.version="2.0.2"
+      org.opencontainers.image.version="2.0.3"
 ENV NODE_ENV=production \
     HOST=0.0.0.0 \
     PORT=3000

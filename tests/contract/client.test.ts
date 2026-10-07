@@ -20,7 +20,7 @@ describe("Beacon HTTP contract", () => {
         "https://beacon.example/api/v1/nodes?iatas=ARN&limit=20",
       );
       expect(init?.headers).toMatchObject({
-        "user-agent": "beacon-mcp/2.0.2",
+        "user-agent": "beacon-mcp/2.0.3",
       });
       expect(init?.redirect).toBe("error");
       return Response.json({
@@ -32,6 +32,21 @@ describe("Beacon HTTP contract", () => {
     await expect(
       client.request("listNodes", { query: { iatas: "ARN", limit: 20 } }),
     ).resolves.toMatchObject({ items: [{ id: "node-1" }] });
+  });
+
+  it("calls the v2.0.3 public server-info endpoint", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      expect(String(input)).toBe("https://beacon.example/api/v1/info");
+      return Response.json({
+        minAppVersion: null,
+        serverVersion: "2.0.3",
+      });
+    });
+    const client = new BeaconClient(config, { fetch: fetchMock });
+    await expect(client.request("serverInfo")).resolves.toEqual({
+      minAppVersion: null,
+      serverVersion: "2.0.3",
+    });
   });
 
   it("rejects successful invalid JSON and oversized response streams", async () => {

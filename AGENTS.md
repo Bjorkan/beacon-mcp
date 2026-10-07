@@ -33,9 +33,9 @@ so replicas can sit behind a round-robin load balancer.
 - MCP era `2026-07-28` default, served statelessly; older clients negotiate over
   the same endpoint via legacy `initialize` (SDK defaults: `2025-11-25`,
   `2025-06-18`, `2025-03-26`, `2024-11-05`, `2024-10-07`), also statelessly
-- Beacon API version `2.0.2`, also advertised as the MCP server version
-- Beacon server commit `041d9c1f45d8cb733c3f9233b7cfb7cd53c83b80`
-- Beacon docs commit `5a60f1e00b3e7c13c416382d4a53f4ea84b7b0f4`
+- Beacon API version `2.0.3`, also advertised as the MCP server version
+- Beacon server release `v2.0.3`, commit `768889243c4f8ecb685751aa1b9af231eab07513`
+- Beacon docs commit `9e4298d5897184f1875e3d6be97164f40d208000`
 
 The exact upstream Swagger 2.0 document is committed at
 `vendor/beacon-openapi.yaml`. Build-time tooling converts it to OpenAPI 3 and
@@ -43,11 +43,14 @@ generates `src/generated/beacon-api.d.ts`; production never downloads a schema.
 
 ## Upstream API comparison
 
-Before reviewing or changing the Beacon API integration, compare the local API
-implementation against the `main` branch of
+Before reviewing or changing the Beacon API integration, identify the latest
+published GitHub release of
 [`MeshCore-Beacon/beacon-server`](https://github.com/MeshCore-Beacon/beacon-server),
-which is the upstream Beacon server. This applies to the REST client, adapter,
-MCP tool schemas, vendored OpenAPI document, and generated declarations.
+resolve its tag to the full immutable commit, and compare the local API
+implementation against that release—not `main` or `dev`. This applies to the
+REST client, adapter, MCP tool schemas, vendored OpenAPI document, and generated
+declarations. Only use an unreleased branch as the adoption target when the
+task explicitly requests it.
 
 Inspect the upstream handlers and request/response types rather than relying
 only on its generated API documentation. Record the upstream commit used for
@@ -62,9 +65,15 @@ whole-hour boundaries and has a rolling ~90-day retention measured from the
 current time; windows beyond the retention window are rejected with a
 misleading "epoch milliseconds" error.
 
-The last comparison was made against `main` commit
-`041d9c1f45d8cb733c3f9233b7cfb7cd53c83b80` (Beacon 2.0.2) on 2026-10-06. Its
-Swagger document is byte-identical to the vendored contract. The upstream
+The last comparison was made against release `v2.0.3`, commit
+`768889243c4f8ecb685751aa1b9af231eab07513`, on 2026-10-07. Its Swagger document
+is byte-identical to the vendored contract. Compared with `v2.0.2`, it adds the
+public `GET /info` endpoint for the server version and optional minimum BEACON
+Mobile version; this is exposed as `beacon_get_server_info`. The upstream
+handler returns `minAppVersion: null` when unset, although Swagger does not mark
+the field nullable, and Swagger's `serverVersion` example remains `2.0.2`; the
+runtime value comes from Swagger's current API version (`2.0.3`). The MCP output
+schema intentionally reflects the handler behavior. The upstream
 handlers currently ignore the documented `region` and `regionId` parameters on
 `GET /messages` and `GET /channels/{channelID}/messages`; the corresponding MCP
 tools intentionally expose only `iatas` and `scope` until upstream implements
@@ -153,12 +162,12 @@ Deployment and Compose must always use an image published at
 host. Pull and run:
 
 ```sh
-docker pull ghcr.io/bjorkan/beacon-mcp:2.0.2
+docker pull ghcr.io/bjorkan/beacon-mcp:2.0.3
 
 docker run --rm -p 127.0.0.1:3000:3000 \
   --stop-timeout 15 \
   -e BEACON_BASE_URL=https://beacon.example.org \
-  ghcr.io/bjorkan/beacon-mcp:2.0.2
+  ghcr.io/bjorkan/beacon-mcp:2.0.3
 ```
 
 Hardened example:
@@ -172,7 +181,7 @@ docker run --rm --name beacon-mcp \
   --memory=256m --cpus=0.5 --pids-limit=100 \
   -p 127.0.0.1:3000:3000 \
   -e BEACON_BASE_URL=https://beacon.example.org \
-  ghcr.io/bjorkan/beacon-mcp:2.0.2
+  ghcr.io/bjorkan/beacon-mcp:2.0.3
 ```
 
 The final `node:24-bookworm-slim` stage contains compiled JavaScript,
@@ -183,7 +192,7 @@ cache to an image layer. The runtime runs as the image's `node` user (UID/GID
 1000), uses exec-form `CMD`, and writes no application files. Logs go to
 stdout/stderr; Compose uses the rotating local log driver. Set
 `BEACON_MCP_IMAGE` to an immutable semantic-version tag, Git SHA tag, or image
-digest in production; Compose defaults to the matching `2.0.2` release tag. Use
+digest in production; Compose defaults to the matching `2.0.3` release tag. Use
 `edge` only to evaluate the latest `main` branch.
 
 All direct dependencies are JavaScript-only and support both targets. CI builds
@@ -229,6 +238,7 @@ curl -sS https://mcp.example.org \
 
 | Area              | Tools                                                                                  |
 | ----------------- | -------------------------------------------------------------------------------------- |
+| Server            | `beacon_get_server_info`                                                               |
 | Geography         | `beacon_list_iatas`, `beacon_list_regions`, `beacon_list_scopes`                       |
 | Nodes             | `beacon_search_nodes`, `beacon_get_node`                                               |
 | Observers         | `beacon_search_observers`, `beacon_get_observer`, `beacon_get_observer_activity`       |
@@ -378,7 +388,9 @@ Cosign without changing the application.
 
 ## Updating Beacon OpenAPI
 
-Review the server and docs changes first, then pin a full immutable commit:
+Identify the latest published Beacon release, review that release's handlers,
+request/response types, Swagger contract, and matching docs changes, then pin
+the release tag's full immutable commit:
 
 ```sh
 npm run openapi:sync -- 0123456789abcdef0123456789abcdef01234567

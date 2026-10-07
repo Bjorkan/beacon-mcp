@@ -1,6 +1,6 @@
 services:
   beacon-mcp:
-    image: ${BEACON_MCP_IMAGE:-ghcr.io/bjorkan/beacon-mcp:2.0.2}
+    image: ${BEACON_MCP_IMAGE:-ghcr.io/bjorkan/beacon-mcp:2.0.3}
     pull_policy: always
     environment:
       BEACON_BASE_URL: ${BEACON_BASE_URL:?Set BEACON_BASE_URL}
