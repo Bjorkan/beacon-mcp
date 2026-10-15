@@ -25,16 +25,29 @@ if (
   );
 }
 
+const apiVersion = /^ {2}version: ['"]?(\d+\.\d+\.\d+)['"]?\s*$/m.exec(document)?.[1];
+if (!apiVersion) {
+  throw new Error("Upstream Swagger document has no recognizable API version");
+}
+
 await writeFile(resolve("vendor/beacon-openapi.yaml"), document, "utf8");
 const metadataPath = resolve("vendor/UPSTREAM.md");
 const metadata = await readFile(metadataPath, "utf8");
 await writeFile(
   metadataPath,
   metadata
-    .replace(/- Commit: `[0-9a-f]{40}`/, `- Commit: \`${commit}\``)
+    .replace(/^- Commit: .*$/m, "- Commit: `" + commit + "`")
     .replace(
       /- Synchronized: \d{4}-\d{2}-\d{2}/,
       `- Synchronized: ${new Date().toISOString().slice(0, 10)}`,
+    )
+    .replace(
+      /^- Source contract version: .*$/m,
+      "- Source contract version: `" + apiVersion + "` (from pinned upstream commit)",
+    )
+    .replace(
+      /^- Note: .*$/m,
+      "- Note: The Beacon source contract is pinned to the commit above; the separately pinned documentation commit may lag behind it.",
     ),
   "utf8",
 );
