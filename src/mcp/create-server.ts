@@ -18,11 +18,9 @@ const shortText = z.string().trim().min(1).max(128);
 const nameText = z.string().trim().min(1).max(256);
 const routeHash = z
   .string()
-  .min(2)
-  .max(6)
-  .regex(/^(?:[0-9a-fA-F]{2})+$/)
+  .regex(/^(?:[0-9a-fA-F]{2}){1,4}$/)
   .describe(
-    "Exact match on a hop hash: 2 hex characters for a 1-byte hash, 4 for a 2-byte hash, or 6 for a 3-byte hash. Shorter hashes are not treated as prefixes of longer ones",
+    "Route hop hash of 1-4 bytes (2, 4, 6, or 8 hexadecimal characters). Matches the specified hash length; shorter hashes are not treated as prefixes of longer ones",
   );
 const packetHashPrefix = z
   .string()
@@ -64,6 +62,12 @@ const iatas = z
   .max(20)
   .optional()
   .describe("IATA identifiers; normalized to uppercase");
+const routeIatas = z
+  .array(iata)
+  .min(1)
+  .max(100)
+  .optional()
+  .describe("Up to 100 IATA codes to search; normalized to uppercase");
 const timestamp = z
   .string()
   .max(24)
@@ -479,13 +483,18 @@ export function createMcpServer(
     server,
     logger,
     "beacon_search_routes",
-    "Search for route segments matching exact hop hashes. Results are segments of larger routes, not necessarily full routes; the same route may appear with different hop counts in segment vs full-route queries. This endpoint has no server-side pagination — results beyond the requested limit are truncated and at most 50 can be retrieved in total; narrow the hashes to work around this.",
-    z.strictObject({
-      iata,
-      from: routeHash,
-      to: routeHash,
-      limit,
-    }),
+    "Search for route segments matching 1-4-byte hop hashes, across all IATAs by default. Use iata or iatas to restrict the search (not both). Results are segments of larger routes, not necessarily full routes; the same route may appear with different hop counts in segment vs full-route queries. This endpoint has no server-side pagination — results beyond the requested limit are truncated and at most 50 can be retrieved in total; narrow the hashes or IATAs to work around this.",
+    z
+      .strictObject({
+        iata: iata.optional(),
+        iatas: routeIatas,
+        from: routeHash,
+        to: routeHash,
+        limit,
+      })
+      .refine((a) => !(a.iata && a.iatas), {
+        message: "iata and iatas are mutually exclusive",
+      }),
     outputSchemas.beacon_search_routes,
     (a, s) => adapter.searchRoutes(a, s),
   );
@@ -493,14 +502,26 @@ export function createMcpServer(
     server,
     logger,
     "beacon_find_cross_iata_routes",
-    "Find routes crossing IATA boundaries by exact hop hashes. The upstream computes the full result set before streaming, so beacon-mcp stops reading as soon as the requested limit is satisfied, but very broad hash pairs can still be slow or time out — use the longest hash prefixes available. This endpoint has no server-side pagination — if more than 50 results exist, later results are inaccessible; narrow the hashes to work around this.",
-    z.strictObject({
-      fromHash: routeHash,
-      fromIata: iata,
-      toHash: routeHash,
-      toIata: iata,
-      limit,
-    }),
+    "Find routes crossing IATA boundaries by 1-4-byte hop hashes. Supply a directed fromIata/toIata pair, or iatas with at least two distinct codes (not both); omit both to search all IATAs. The upstream computes the full result set before streaming; beacon-mcp stops reading as soon as the requested limit is satisfied, but broad searches can still be slow or time out. This endpoint has no server-side pagination — if more than 50 results exist, later results are inaccessible; narrow the hashes or IATAs.",
+    z
+      .strictObject({
+        fromHash: routeHash,
+        fromIata: iata.optional(),
+        toHash: routeHash,
+        toIata: iata.optional(),
+        iatas: routeIatas,
+        limit,
+      })
+      .refine((a) => (a.fromIata === undefined) === (a.toIata === undefined), {
+        message: "fromIata and toIata must be given together",
+      })
+      .refine((a) => !(a.iatas && a.fromIata), {
+        message: "use iatas or fromIata/toIata, not both",
+      })
+      .refine(
+        (a) => !a.iatas || new Set(a.iatas.map((code) => code.toUpperCase())).size >= 2,
+        { message: "iatas must contain at least two distinct codes" },
+      ),
     outputSchemas.beacon_find_cross_iata_routes,
     (a, s) => adapter.findCrossIataRoutes(a, s),
   );

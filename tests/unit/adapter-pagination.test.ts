@@ -112,6 +112,29 @@ describe("Beacon adapter pagination", () => {
     });
   });
 
+  it("supports all-IATA, multi-IATA, and directed route searches", async () => {
+    const urls: string[] = [];
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      urls.push(String(input));
+      return Response.json([]);
+    });
+    const adapter = new BeaconAdapter(
+      new BeaconClient(config, { fetch: fetchMock }),
+    );
+    await adapter.searchRoutes({ from: "aabbccdd", to: "ff" });
+    await adapter.searchRoutes({ from: "aa", to: "bb", iatas: ["arn", "mmx"] });
+    await adapter.findCrossIataRoutes({ fromHash: "aa", toHash: "bb" });
+    await adapter.findCrossIataRoutes({
+      fromHash: "aabbccdd", toHash: "cc", iatas: ["arn", "mmx"],
+    });
+    expect(urls).toEqual([
+      "https://beacon.example/api/v1/routes/search?from=aabbccdd&to=ff",
+      "https://beacon.example/api/v1/routes/search?iatas=ARN%2CMMX&from=aa&to=bb",
+      "https://beacon.example/api/v1/routes/cross?fromHash=aa&toHash=bb",
+      "https://beacon.example/api/v1/routes/cross?fromHash=aabbccdd&toHash=cc&iatas=ARN%2CMMX",
+    ]);
+  });
+
   it("paginates the complete upstream scope array locally", async () => {
     const adapter = adapterReturning(["#a", "#b", "#c"]);
     await expect(adapter.listScopes({ limit: 2 })).resolves.toEqual({

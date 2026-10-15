@@ -349,7 +349,8 @@ export class BeaconAdapter {
 
   async searchRoutes(
     input: Input<{
-      iata: string;
+      iata?: string;
+      iatas?: string[];
       from: string;
       to: string;
       limit?: number;
@@ -360,7 +361,8 @@ export class BeaconAdapter {
     return truncatedArrayPage(
       await this.client.requestArrayPage("searchRoutes", {
         query: {
-          iata: normalizeIatas([input.iata])?.[0] ?? input.iata,
+          iata: input.iata ? normalizeIatas([input.iata])?.[0] : undefined,
+          iatas: normalizeIatas(input.iatas)?.join(","),
           from: input.from,
           to: input.to,
         },
@@ -374,9 +376,10 @@ export class BeaconAdapter {
   async findCrossIataRoutes(
     input: Input<{
       fromHash: string;
-      fromIata: string;
+      fromIata?: string;
       toHash: string;
-      toIata: string;
+      toIata?: string;
+      iatas?: string[];
       limit?: number;
     }>,
     signal?: AbortSignal,
@@ -386,9 +389,14 @@ export class BeaconAdapter {
       await this.client.requestArrayPage("crossRoutes", {
         query: {
           fromHash: input.fromHash,
-          fromIata: normalizeIatas([input.fromIata])?.[0] ?? input.fromIata,
+          fromIata: input.fromIata
+            ? normalizeIatas([input.fromIata])?.[0]
+            : undefined,
           toHash: input.toHash,
-          toIata: normalizeIatas([input.toIata])?.[0] ?? input.toIata,
+          toIata: input.toIata
+            ? normalizeIatas([input.toIata])?.[0]
+            : undefined,
+          iatas: normalizeIatas(input.iatas)?.join(","),
         },
         signal,
         maxItems: bounded + 1,

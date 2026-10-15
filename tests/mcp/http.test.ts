@@ -208,6 +208,9 @@ describe("MCP HTTP integration", () => {
     expect(tracesOutput).toContain('"cursorTag"');
     expect(tracesOutput).toContain('"cursor"');
 
+    expect(JSON.stringify(listed("beacon_search_routes").inputSchema)).toContain('"iatas"');
+    expect(JSON.stringify(listed("beacon_find_cross_iata_routes").inputSchema)).toContain('"iatas"');
+
     const routesOutput = JSON.stringify(
       listed("beacon_list_routes").outputSchema,
     );
