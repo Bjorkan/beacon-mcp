@@ -228,7 +228,7 @@ describe("MCP HTTP integration", () => {
     );
     const discovery = await rpc(app, "server/discover");
     expect(discovery.statusCode, discovery.body).toBe(200);
-    expect(discovery.body).toContain('"version":"2.0.3"');
+    expect(discovery.body).toContain('"version":"2.0.7"');
     const modern = await app.inject({
       url: "/",
       method: "POST",
@@ -685,7 +685,7 @@ describe("MCP HTTP integration", () => {
       expect(response.statusCode).toBe(200);
       expect(response.body).toContain(`"protocolVersion":"${requested}"`);
       expect(response.body).toContain('"name":"beacon-mcp"');
-      expect(response.body).toContain('"version":"2.0.3"');
+      expect(response.body).toContain('"version":"2.0.7"');
     }
   });
 

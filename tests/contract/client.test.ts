@@ -20,7 +20,7 @@ describe("Beacon HTTP contract", () => {
         "https://beacon.example/api/v1/nodes?iatas=ARN&limit=20",
       );
       expect(init?.headers).toMatchObject({
-        "user-agent": "beacon-mcp/2.0.3",
+        "user-agent": "beacon-mcp/2.0.7",
       });
       expect(init?.redirect).toBe("error");
       return Response.json({
@@ -34,7 +34,7 @@ describe("Beacon HTTP contract", () => {
     ).resolves.toMatchObject({ items: [{ id: "node-1" }] });
   });
 
-  it("calls the v2.0.3 public server-info endpoint", async () => {
+  it("calls the v2.0.7 public server-info endpoint", async () => {
     const fetchMock = vi.fn<typeof fetch>(async (input) => {
       expect(String(input)).toBe("https://beacon.example/api/v1/info");
       return Response.json({

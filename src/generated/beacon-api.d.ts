@@ -1047,8 +1047,9 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Server info and minimum mobile app version
-         * @description minAppVersion is null when the server sets no requirement.
+         * Server info and minimum client versions
+         * @description minAppVersion (BEACON Mobile) and minWebVersion (Beacon Web) are null when the
+         *     server sets no requirement. Each is the higher of the built-in floor and config.
          */
         get: {
             parameters: {
@@ -1957,6 +1958,8 @@ export interface paths {
                     cursor?: number;
                     /** @description Max results (default 50); must be positive, values above 200 are clamped */
                     limit?: number;
+                    /** @description Match packets whose hash starts with this hex prefix (4-16 chars). Ordering and cursor use global last_heard_at even when iatas is set */
+                    hashPrefix?: string;
                 };
                 header?: never;
                 path?: never;
@@ -2405,18 +2408,24 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search for routes that cross IATA boundaries */
+        /**
+         * Search for routes that cross IATA boundaries
+         * @description Pass iatas (comma-separated, optional; omitted searches every IATA) or the
+         *     single directed pair fromIata/toIata, not both.
+         */
         get: {
             parameters: {
                 query: {
-                    /** @description Source node hash prefix (hex) */
+                    /** @description Source node hash prefix (hex, 1-4 bytes) */
                     fromHash: string;
-                    /** @description Source IATA code */
-                    fromIata: string;
-                    /** @description Destination node hash prefix (hex) */
+                    /** @description Destination node hash prefix (hex, 1-4 bytes) */
                     toHash: string;
-                    /** @description Destination IATA code */
-                    toIata: string;
+                    /** @description Comma-separated IATA codes to search (2-100) */
+                    iatas?: string;
+                    /** @description Source IATA code (with toIata) */
+                    fromIata?: string;
+                    /** @description Destination IATA code (with fromIata) */
+                    toIata?: string;
                 };
                 header?: never;
                 path?: never;
@@ -2451,6 +2460,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -2468,15 +2486,22 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Search known routes by source and destination hash */
+        /**
+         * Search known routes by source and destination hash
+         * @description Routes within one IATA that run from the source hash to the destination hash,
+         *     trimmed to that span. iatas is optional (omitted searches every IATA); the single
+         *     iata is still accepted. At most 500, shortest first.
+         */
         get: {
             parameters: {
                 query: {
-                    /** @description IATA code to search within */
-                    iata: string;
-                    /** @description Source node hash prefix (hex) */
+                    /** @description Comma-separated IATA codes to search (max 100) */
+                    iatas?: string;
+                    /** @description Single IATA code (when iatas is omitted) */
+                    iata?: string;
+                    /** @description Source node hash prefix (hex, 1-4 bytes) */
                     from: string;
-                    /** @description Destination node hash prefix (hex) */
+                    /** @description Destination node hash prefix (hex, 1-4 bytes) */
                     to: string;
                 };
                 header?: never;
@@ -2505,6 +2530,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3369,12 +3403,12 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Top N nodes by distinct ADVERT packet count (last 24h by default)
-         * @description Each advert counts once per hour heard, however many requested IATAs heard it. nodeId is null when the node row has been deleted.
+         * Top N nodes by distinct flood or direct ADVERT packet count (last 24h by default)
+         * @description Ranks by the sort count, ties broken by total adverts then public key. Each advert counts once per hour heard, however many requested IATAs heard it. nodeId is null when the node row has been deleted.
          */
         get: {
             parameters: {
-                query?: {
+                query: {
                     /** @description Comma-separated IATA codes */
                     iatas?: string;
                     /** @description Filter by region ID, expands to member IATAs */
@@ -3385,6 +3419,8 @@ export interface paths {
                     since?: number;
                     /** @description Max results (default 10); must be positive, values above 200 are clamped */
                     limit?: number;
+                    /** @description Rank by flood or direct advert count */
+                    sort: "flood" | "direct";
                 };
                 header?: never;
                 path?: never;
@@ -3399,6 +3435,15 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.TopAdvertiser"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
                 /** @description Internal Server Error */
@@ -3752,6 +3797,7 @@ export interface components {
             cors?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminCORSConfig"];
             ingest?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminIngestConfig"];
             mobile?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminMobileConfig"];
+            web?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminWebConfig"];
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.AdminIngestConfig": {
             /**
@@ -3761,8 +3807,12 @@ export interface components {
             broker_count?: number;
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.AdminMobileConfig": {
-            /** @description empty means no requirement */
+            /** @description effective floor; empty means no requirement */
             min_app_version?: string;
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.AdminWebConfig": {
+            /** @description effective floor; empty means no requirement */
+            min_web_version?: string;
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.AdvertObservation": {
             /** @description epoch ms */
@@ -3884,6 +3934,11 @@ export interface components {
              * @example 0.1.1
              */
             minAppVersion?: string;
+            /**
+             * @description MinWebVersion is the oldest allowed Beacon Web version (X.Y.Z); null means no requirement.
+             * @example 2.0.3
+             */
+            minWebVersion?: string;
             /** @example 2.0.2 */
             serverVersion?: string;
         };
@@ -3899,6 +3954,52 @@ export interface components {
             observationCount?: number;
             /** @description stable identity within this IATA; use for route evidence links */
             pathKey?: string;
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.MeshMapperDefaultScope": {
+            name?: string;
+            /** @description advert or reported */
+            source?: string;
+            /** @description named, unknown (set but not nameable yet) or none */
+            state?: string;
+            updatedAt?: number;
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.MeshMapperRepeater": {
+            admins?: string[];
+            /** @description mobile repeater: its position moves */
+            carpeater?: boolean;
+            defaultScope?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.MeshMapperDefaultScope"];
+            /** @description when Beacon last fetched this list */
+            fetchedAt?: number;
+            /** @description region of its latest advert, per MeshMapper */
+            iata?: string;
+            scopes?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.MeshMapperScope"][];
+            /** @description set (with empty scopes) when it answered with none */
+            scopesCheckedAt?: number;
+            site?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.MeshMapperSite"];
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.MeshMapperScope": {
+            /** @description seen forwarding scoped traffic */
+            observedAt?: number;
+            observedPackets?: number;
+            /** @description multibyte or floor */
+            proof?: string;
+            /** @description an observer asked it */
+            reportedAt?: number;
+            scope?: string;
+            /** @description a wardriver's app asked it */
+            uploadedAt?: number;
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.MeshMapperSite": {
+            antenna?: string;
+            hardware?: string;
+            /** @description antenna above mean sea level */
+            heightAslM?: number;
+            /** @description antenna above ground */
+            heightM?: number;
+            notes?: string;
+            power?: string;
+            /** @description mains, solar, battery or poe */
+            powerSource?: string;
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.Node": {
             clockCheckedAt?: number;
@@ -3932,6 +4033,11 @@ export interface components {
             lng?: number;
             /** @description "advert" or "manual" */
             locationSource?: string;
+            /**
+             * @description MeshMapper is what MeshMapper's repeater list says about this key; omitted when
+             *     the import is off or MeshMapper doesn't list it.
+             */
+            meshmapper?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.MeshMapperRepeater"];
             /** @description raw JSONB metadata */
             metadata?: unknown;
             /** @description derived from capability flags */
