@@ -226,6 +226,9 @@ describe("MCP HTTP integration", () => {
     expect(listed("beacon_search_packets").description).toContain(
       "does not persist or log",
     );
+    expect(
+      JSON.stringify(listed("beacon_search_packets").inputSchema),
+    ).toContain('"hashPrefix"');
     const discovery = await rpc(app, "server/discover");
     expect(discovery.statusCode, discovery.body).toBe(200);
     expect(discovery.body).toContain('"version":"2.0.7"');

@@ -24,6 +24,12 @@ const routeHash = z
   .describe(
     "Exact match on a hop hash: 2 hex characters for a 1-byte hash, 4 for a 2-byte hash, or 6 for a 3-byte hash. Shorter hashes are not treated as prefixes of longer ones",
   );
+const packetHashPrefix = z
+  .string()
+  .regex(/^[0-9a-fA-F]{4,16}$/)
+  .describe(
+    "Case-insensitive packet hash prefix (4-16 hexadecimal characters); odd-length prefixes are accepted. With this filter, cursor uses global lastHeardAt even when iatas are set",
+  );
 const packetHash = z
   .string()
   .regex(/^[0-9a-fA-F]{16}$/)
@@ -301,7 +307,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_search_packets",
-    "Search packet summaries. The window is half-open: a packet is included when firstHeardAt is at or after since and it was last heard before until — since is inclusive, until is exclusive (the exact until boundary is inconsistent upstream when iatas filters are used). Beacon MCP Server does not persist or log packet payloads; upstream Beacon may store and return them through beacon_get_packet. region and regionId are mutually exclusive, as are scope and scopes, payloadType and payloadTypes, and routeType and routeTypes; payloadTypeName cannot be combined with payloadType or payloadTypes.",
+    "Search packet summaries; hashPrefix matches the beginning of an 8-byte packet hash and switches ordering/cursor to global lastHeardAt (also with IATA filters). The window is half-open: a packet is included when firstHeardAt is at or after since and it was last heard before until — since is inclusive, until is exclusive (the exact until boundary is inconsistent upstream when iatas filters are used). Beacon MCP Server does not persist or log packet payloads; upstream Beacon may store and return them through beacon_get_packet. region and regionId are mutually exclusive, as are scope and scopes, payloadType and payloadTypes, and routeType and routeTypes; payloadTypeName cannot be combined with payloadType or payloadTypes.",
     z
       .strictObject({
         ...scopedLocation,
@@ -319,6 +325,7 @@ export function createMcpServer(
           .describe(
             "Canonical payload type name; txt_msg, grp_txt, and anon_req remain supported as legacy aliases",
           ),
+        hashPrefix: packetHashPrefix.optional(),
         routeType: z.number().int().min(0).max(3).optional(),
         routeTypes: z
           .array(z.number().int().min(0).max(3))

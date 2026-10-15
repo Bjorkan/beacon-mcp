@@ -139,6 +139,21 @@ describe("Beacon adapter pagination", () => {
     ]);
   });
 
+  it("forwards packet hash prefixes, including odd-length and mixed-case hex", async () => {
+    const urls: string[] = [];
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      urls.push(String(input));
+      return Response.json({ items: [], hasMore: false });
+    });
+    const adapter = new BeaconAdapter(
+      new BeaconClient(config, { fetch: fetchMock }),
+    );
+    await adapter.searchPackets({ hashPrefix: "aBcDe", iatas: ["arn"] });
+    expect(urls).toEqual([
+      "https://beacon.example/api/v1/packets?iatas=ARN&limit=20&hashPrefix=aBcDe",
+    ]);
+  });
+
   it("normalizes canonical and legacy payload names to numeric filters", async () => {
     const urls: string[] = [];
     const fetchMock = vi.fn<typeof fetch>(async (input) => {

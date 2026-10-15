@@ -199,6 +199,7 @@ export class BeaconAdapter {
           routeType?: number;
           routeTypes?: number[];
           scopes?: string[];
+          hashPrefix?: string;
         }
     >,
     signal?: AbortSignal,
@@ -223,6 +224,7 @@ export class BeaconAdapter {
           routeType: input.routeType,
           routeTypes: input.routeTypes?.join(","),
           scopes: input.scopes?.join(","),
+          hashPrefix: input.hashPrefix,
         },
         signal,
       }),
