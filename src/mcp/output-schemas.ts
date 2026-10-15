@@ -16,6 +16,11 @@ const serverInfo = z.looseObject({
     .regex(/^\d+\.\d+\.\d+$/)
     .nullable()
     .optional(),
+  minWebVersion: z
+    .string()
+    .regex(/^\d+\.\d+\.\d+$/)
+    .nullable()
+    .optional(),
   serverVersion: z
     .string()
     .regex(/^\d+\.\d+\.\d+$/)

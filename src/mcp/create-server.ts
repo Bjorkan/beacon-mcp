@@ -176,7 +176,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_get_server_info",
-    "Get the connected Beacon server version and its minimum supported BEACON Mobile app version. minAppVersion is null when the server has no minimum requirement.",
+    "Get the connected Beacon server version and minimum supported BEACON Mobile and Beacon Web versions. minAppVersion and minWebVersion are null when the server sets no respective minimum requirement.",
     z.strictObject({}),
     outputSchemas.beacon_get_server_info,
     (_a, s) => adapter.getServerInfo(s),

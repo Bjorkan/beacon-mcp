@@ -35,7 +35,8 @@ async function start(options: StartOptions = {}): Promise<FastifyInstance> {
     if (path.endsWith("/info"))
       return Response.json({
         minAppVersion: null,
-        serverVersion: "2.0.3",
+        minWebVersion: "2.0.3",
+        serverVersion: "2.0.7",
       });
     if (path.endsWith("/nodes"))
       return Response.json({
@@ -270,7 +271,8 @@ describe("MCP HTTP integration", () => {
       name: "beacon_get_server_info",
       arguments: {},
     });
-    expect(info.body).toContain('"serverVersion":"2.0.3"');
+    expect(info.body).toContain('"serverVersion":"2.0.7"');
+    expect(info.body).toContain('"minWebVersion":"2.0.3"');
     expect(info.body).toContain('"minAppVersion":null');
 
     const nodes = (
