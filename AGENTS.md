@@ -33,9 +33,9 @@ so replicas can sit behind a round-robin load balancer.
 - MCP era `2026-07-28` default, served statelessly; older clients negotiate over
   the same endpoint via legacy `initialize` (SDK defaults: `2025-11-25`,
   `2025-06-18`, `2025-03-26`, `2024-11-05`, `2024-10-07`), also statelessly
-- Beacon API version `2.0.3`, also advertised as the MCP server version
-- Beacon server release `v2.0.3`, commit `768889243c4f8ecb685751aa1b9af231eab07513`
-- Beacon docs commit `9e4298d5897184f1875e3d6be97164f40d208000`
+- Beacon API contract version `2.0.7`, also advertised as the MCP server version
+- Beacon server snapshot `beacon-server-main.zip` supplied for the 2026-10-15 audit; it contains API version `2.0.7`, but no Git commit metadata (it is **not** a verified published release)
+- Beacon docs commit `9e4298d5897184f1875e3d6be97164f40d208000` was last verified for the prior `2.0.3` contract, not for this snapshot
 
 The exact upstream Swagger 2.0 document is committed at
 `vendor/beacon-openapi.yaml`. Build-time tooling converts it to OpenAPI 3 and
@@ -65,24 +65,26 @@ whole-hour boundaries and has a rolling ~90-day retention measured from the
 current time; windows beyond the retention window are rejected with a
 misleading "epoch milliseconds" error.
 
-The last comparison was made against release `v2.0.3`, commit
-`768889243c4f8ecb685751aa1b9af231eab07513`, on 2026-10-07. Its Swagger document
-is byte-identical to the vendored contract. Compared with `v2.0.2`, it adds the
-public `GET /info` endpoint for the server version and optional minimum BEACON
-Mobile version; this is exposed as `beacon_get_server_info`. The upstream
-handler returns `minAppVersion: null` when unset, although Swagger does not mark
-the field nullable, and Swagger's `serverVersion` example remains `2.0.2`; the
-runtime value comes from Swagger's current API version (`2.0.3`). The MCP output
-schema intentionally reflects the handler behavior. The upstream
-handlers currently ignore the documented `region` and `regionId` parameters on
-`GET /messages` and `GET /channels/{channelID}/messages`; the corresponding MCP
-tools intentionally expose only `iatas` and `scope` until upstream implements
-those region filters.
+The latest source comparison was made on 2026-10-15 against the supplied
+`beacon-server-main.zip` snapshot (Swagger API `2.0.7`, Git SHA unavailable).
+The earlier `2.0.7` pin is historical and must not be cited as the commit for
+this snapshot. Across these contracts there are no new or removed paths;
+changes relevant to the public MCP surface are packet `hashPrefix`,
+optional single/multiple/all-IATA route searches with 1–4-byte hop hashes,
+`minWebVersion` in `/info`, MeshMapper metadata in node details, and the
+required `sort=flood|direct` filter on `/stats/top-advertisers`.
 
-Upstream `GET /routes/search` and `cross` endpoints use `hex.DecodeString` on
-the hash parameters; odd-length hexadecimal input (e.g. `e72ba`) reaches the
-handler and produces an unhandled panic that surfaces as HTTP 500 instead of 400. The local tool input schemas reject odd-length hex at the Zod layer to
-avoid this upstream defect.
+The `/info` handler returns null for minimum client versions when unset;
+Swagger does not mark them nullable. The output schema matches runtime
+behavior. The upstream handlers documented to accept `region` and `regionId`
+on `GET /messages` and `GET /channels/{channelID}/messages` still need a
+separate implementation review before MCP should expose those filters.
+
+Current `/routes/search` and `/routes/cross` handlers validate 1–4 bytes of
+hex, rejecting odd-length hashes with HTTP 400. The MCP route schemas match
+this and continue to reject odd-length hex before making upstream requests.
+`/packets?hashPrefix` is different: it intentionally accepts odd-length
+prefixes of 4–16 hex characters.
 
 `GET /routes/cross` builds the entire result list in memory — for every hop of
 every stored route containing the source node it queries cross-IATA neighbors —
@@ -162,12 +164,12 @@ Deployment and Compose must always use an image published at
 host. Pull and run:
 
 ```sh
-docker pull ghcr.io/bjorkan/beacon-mcp:2.0.3
+docker pull ghcr.io/bjorkan/beacon-mcp:2.0.7
 
 docker run --rm -p 127.0.0.1:3000:3000 \
   --stop-timeout 15 \
   -e BEACON_BASE_URL=https://beacon.example.org \
-  ghcr.io/bjorkan/beacon-mcp:2.0.3
+  ghcr.io/bjorkan/beacon-mcp:2.0.7
 ```
 
 Hardened example:
@@ -181,7 +183,7 @@ docker run --rm --name beacon-mcp \
   --memory=256m --cpus=0.5 --pids-limit=100 \
   -p 127.0.0.1:3000:3000 \
   -e BEACON_BASE_URL=https://beacon.example.org \
-  ghcr.io/bjorkan/beacon-mcp:2.0.3
+  ghcr.io/bjorkan/beacon-mcp:2.0.7
 ```
 
 The final `node:24-bookworm-slim` stage contains compiled JavaScript,
@@ -192,8 +194,9 @@ cache to an image layer. The runtime runs as the image's `node` user (UID/GID
 1000), uses exec-form `CMD`, and writes no application files. Logs go to
 stdout/stderr; Compose uses the rotating local log driver. Set
 `BEACON_MCP_IMAGE` to an immutable semantic-version tag, Git SHA tag, or image
-digest in production; Compose defaults to the matching `2.0.3` release tag. Use
-`edge` only to evaluate the latest `main` branch.
+digest in production; Compose targets the `2.0.7` tag. Publish that image first, or set
+`BEACON_MCP_IMAGE` to the exact tested SHA/digest; `edge` evaluates the latest
+`main` branch and need not match this snapshot.
 
 All direct dependencies are JavaScript-only and support both targets. CI builds
 both platforms, publishes only from `main` or `vX.Y.Z` tags, and attaches SBOM
@@ -246,7 +249,7 @@ curl -sS https://mcp.example.org \
 | Messages/channels | `beacon_search_messages`, `beacon_list_channels`, `beacon_get_channel_messages`        |
 | Routes            | `beacon_list_routes`, `beacon_search_routes`, `beacon_find_cross_iata_routes`          |
 | Traces            | `beacon_search_traces`, `beacon_get_trace`                                             |
-| Analytics         | `beacon_get_network_overview`, `beacon_get_network_series`, `beacon_compare_observers` |
+| Analytics         | `beacon_get_network_overview`, `beacon_get_network_series`, `beacon_compare_observers`, `beacon_get_top_advertisers` |
 
 Times are strict RFC3339 UTC inputs and become Beacon epoch milliseconds. IATAs
 are uppercased. `since` must be earlier than `until`. Scope names are
@@ -272,6 +275,8 @@ tools also read the upstream array incrementally: the HTTP transfer is
 cancelled as soon as the requested limit of complete elements has been parsed,
 so the limit bounds the actual work (upstream exposes no limit parameter on
 `/routes/search` or `/routes/cross`, and both can return tens of megabytes).
+`beacon_get_top_advertisers` is a separate bounded top-N endpoint with a required
+`sort` (`flood` or `direct`) and no continuation cursor.
 `truncated: true` therefore also appears when the read stopped before the
 upstream array terminator was seen — including when the fixed 5 MiB upstream
 body cap was hit after at least one complete element; hitting the cap with no

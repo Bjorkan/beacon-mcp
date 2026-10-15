@@ -19,6 +19,7 @@ features, or send messages.
 - “Show recent public channel messages for this location.”
 - “How did network activity change between these two times?”
 - “Which routes connect these locations?”
+- “Which nodes sent the most direct adverts in my region?”
 - “Compare the packets heard by these two observers.”
 - “Show the details for this packet or trace.”
 
