@@ -34,8 +34,8 @@ so replicas can sit behind a round-robin load balancer.
   the same endpoint via legacy `initialize` (SDK defaults: `2025-11-25`,
   `2025-06-18`, `2025-03-26`, `2024-11-05`, `2024-10-07`), also statelessly
 - Beacon API contract version `2.0.7`, also advertised as the MCP server version
-- Beacon server snapshot `beacon-server-main.zip` supplied for the 2026-10-15 audit; it contains API version `2.0.7`, but no Git commit metadata (it is **not** a verified published release)
-- Beacon docs commit `9e4298d5897184f1875e3d6be97164f40d208000` was last verified for the prior `2.0.3` contract, not for this snapshot
+- Beacon server tag `v2.0.7`, commit `202acc6cc8f616819a3577c57a7009ea1a48c0dd`; the newest published GitHub release is `v2.0.5`, so re-check this pin when `v2.0.6`/`v2.0.7` are published
+- Beacon docs commit `9e4298d5897184f1875e3d6be97164f40d208000`, which predates the full `2.0.7` surface: the documentation repository had not yet documented packet `hashPrefix`, the top-advertisers `sort`, or the node MeshMapper block when this contract was pinned
 
 The exact upstream Swagger 2.0 document is committed at
 `vendor/beacon-openapi.yaml`. Build-time tooling converts it to OpenAPI 3 and
@@ -65,14 +65,15 @@ whole-hour boundaries and has a rolling ~90-day retention measured from the
 current time; windows beyond the retention window are rejected with a
 misleading "epoch milliseconds" error.
 
-The latest source comparison was made on 2026-10-15 against the supplied
-`beacon-server-main.zip` snapshot (Swagger API `2.0.7`, Git SHA unavailable).
-The earlier `2.0.7` pin is historical and must not be cited as the commit for
-this snapshot. Across these contracts there are no new or removed paths;
-changes relevant to the public MCP surface are packet `hashPrefix`,
-optional single/multiple/all-IATA route searches with 1–4-byte hop hashes,
-`minWebVersion` in `/info`, MeshMapper metadata in node details, and the
-required `sort=flood|direct` filter on `/stats/top-advertisers`.
+The last comparison was made on 2026-10-15 against the `v2.0.7` tag, commit
+`202acc6cc8f616819a3577c57a7009ea1a48c0dd` (tagged 2026-10-14; no published
+release yet). The audit input was a `beacon-server-main.zip` snapshot without
+Git metadata; its `docs/swagger.yaml` is byte-identical to that tag's document,
+which is the pin for this contract. Relative to the newest published release
+`v2.0.5`, this contract adds packet `hashPrefix` and the MeshMapper node
+metadata; the other relevant changes — optional `iatas` route searches,
+`minWebVersion`, and the required `sort=flood|direct` — already exist in
+`v2.0.5`. There are no new or removed paths.
 
 The `/info` handler returns null for minimum client versions when unset;
 Swagger does not mark them nullable. The output schema matches runtime
@@ -196,7 +197,7 @@ stdout/stderr; Compose uses the rotating local log driver. Set
 `BEACON_MCP_IMAGE` to an immutable semantic-version tag, Git SHA tag, or image
 digest in production; Compose targets the `2.0.7` tag. Publish that image first, or set
 `BEACON_MCP_IMAGE` to the exact tested SHA/digest; `edge` evaluates the latest
-`main` branch and need not match this snapshot.
+`main` branch and need not match this release.
 
 All direct dependencies are JavaScript-only and support both targets. CI builds
 both platforms, publishes only from `main` or `vX.Y.Z` tags, and attaches SBOM
