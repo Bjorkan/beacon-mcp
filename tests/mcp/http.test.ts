@@ -67,13 +67,15 @@ async function start(options: StartOptions = {}): Promise<FastifyInstance> {
     if (path.endsWith("/routes"))
       return Response.json([{ id: 1, lastSeen: 1_000 }]);
     if (path.endsWith("/stats/top-advertisers"))
-      return Response.json([{
-        publicKey: "aa".repeat(32),
-        advertCount: 8,
-        floodAdvertCount: 5,
-        directAdvertCount: 3,
-        lastHeard: 1791127800000,
-      }]);
+      return Response.json([
+        {
+          publicKey: "aa".repeat(32),
+          advertCount: 8,
+          floodAdvertCount: 5,
+          directAdvertCount: 3,
+          lastHeard: 1791127800000,
+        },
+      ]);
     if (path.endsWith("/stats/overview"))
       return Response.json({ packetCount: 42 });
     return Response.json([]);
@@ -231,8 +233,12 @@ describe("MCP HTTP integration", () => {
     expect(tracesOutput).toContain('"cursorTag"');
     expect(tracesOutput).toContain('"cursor"');
 
-    expect(JSON.stringify(listed("beacon_search_routes").inputSchema)).toContain('"iatas"');
-    expect(JSON.stringify(listed("beacon_find_cross_iata_routes").inputSchema)).toContain('"iatas"');
+    expect(
+      JSON.stringify(listed("beacon_search_routes").inputSchema),
+    ).toContain('"iatas"');
+    expect(
+      JSON.stringify(listed("beacon_find_cross_iata_routes").inputSchema),
+    ).toContain('"iatas"');
 
     const routesOutput = JSON.stringify(
       listed("beacon_list_routes").outputSchema,
@@ -243,8 +249,12 @@ describe("MCP HTTP integration", () => {
     expect(JSON.stringify(listed("beacon_get_node").outputSchema)).toContain(
       '"meshmapper"',
     );
-    expect(JSON.stringify(listed("beacon_get_top_advertisers").inputSchema)).toContain('"sort"');
-    expect(JSON.stringify(listed("beacon_get_top_advertisers").outputSchema)).toContain('"floodAdvertCount"');
+    expect(
+      JSON.stringify(listed("beacon_get_top_advertisers").inputSchema),
+    ).toContain('"sort"');
+    expect(
+      JSON.stringify(listed("beacon_get_top_advertisers").outputSchema),
+    ).toContain('"floodAdvertCount"');
     expect(JSON.stringify(listed("beacon_get_packet").outputSchema)).toContain(
       '"packetHash"',
     );
@@ -297,10 +307,19 @@ describe("MCP HTTP integration", () => {
     const app = await start({ fetchImpl: fetchMock });
     for (const [name, args] of [
       ["beacon_search_packets", { hashPrefix: "gghi" }],
-      ["beacon_search_routes", { from: "aa", to: "bb", iata: "ARN", iatas: ["MMX"] }],
+      [
+        "beacon_search_routes",
+        { from: "aa", to: "bb", iata: "ARN", iatas: ["MMX"] },
+      ],
       ["beacon_search_routes", { from: "aabbccddee", to: "bb" }],
-      ["beacon_find_cross_iata_routes", { fromHash: "aa", toHash: "bb", fromIata: "ARN" }],
-      ["beacon_find_cross_iata_routes", { fromHash: "aa", toHash: "bb", iatas: ["arn", "ARN"] }],
+      [
+        "beacon_find_cross_iata_routes",
+        { fromHash: "aa", toHash: "bb", fromIata: "ARN" },
+      ],
+      [
+        "beacon_find_cross_iata_routes",
+        { fromHash: "aa", toHash: "bb", iatas: ["arn", "ARN"] },
+      ],
       ["beacon_get_top_advertisers", { limit: 2 }],
     ] as const) {
       const response = await rpc(app, "tools/call", { name, arguments: args });

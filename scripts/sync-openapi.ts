@@ -25,7 +25,9 @@ if (
   );
 }
 
-const apiVersion = /^ {2}version: ['"]?(\d+\.\d+\.\d+)['"]?\s*$/m.exec(document)?.[1];
+const apiVersion = /^ {2}version: ['"]?(\d+\.\d+\.\d+)['"]?\s*$/m.exec(
+  document,
+)?.[1];
 if (!apiVersion) {
   throw new Error("Upstream Swagger document has no recognizable API version");
 }
@@ -43,7 +45,9 @@ await writeFile(
     )
     .replace(
       /^- Source contract version: .*$/m,
-      "- Source contract version: `" + apiVersion + "` (from pinned upstream commit)",
+      "- Source contract version: `" +
+        apiVersion +
+        "` (from pinned upstream commit)",
     )
     .replace(
       /^- Note: .*$/m,

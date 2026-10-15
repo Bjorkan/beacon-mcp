@@ -239,16 +239,16 @@ curl -sS https://mcp.example.org \
 
 ## Tools
 
-| Area              | Tools                                                                                  |
-| ----------------- | -------------------------------------------------------------------------------------- |
-| Server            | `beacon_get_server_info`                                                               |
-| Geography         | `beacon_list_iatas`, `beacon_list_regions`, `beacon_list_scopes`                       |
-| Nodes             | `beacon_search_nodes`, `beacon_get_node`                                               |
-| Observers         | `beacon_search_observers`, `beacon_get_observer`, `beacon_get_observer_activity`       |
-| Packets           | `beacon_search_packets`, `beacon_get_packet`                                           |
-| Messages/channels | `beacon_search_messages`, `beacon_list_channels`, `beacon_get_channel_messages`        |
-| Routes            | `beacon_list_routes`, `beacon_search_routes`, `beacon_find_cross_iata_routes`          |
-| Traces            | `beacon_search_traces`, `beacon_get_trace`                                             |
+| Area              | Tools                                                                                                                |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Server            | `beacon_get_server_info`                                                                                             |
+| Geography         | `beacon_list_iatas`, `beacon_list_regions`, `beacon_list_scopes`                                                     |
+| Nodes             | `beacon_search_nodes`, `beacon_get_node`                                                                             |
+| Observers         | `beacon_search_observers`, `beacon_get_observer`, `beacon_get_observer_activity`                                     |
+| Packets           | `beacon_search_packets`, `beacon_get_packet`                                                                         |
+| Messages/channels | `beacon_search_messages`, `beacon_list_channels`, `beacon_get_channel_messages`                                      |
+| Routes            | `beacon_list_routes`, `beacon_search_routes`, `beacon_find_cross_iata_routes`                                        |
+| Traces            | `beacon_search_traces`, `beacon_get_trace`                                                                           |
 | Analytics         | `beacon_get_network_overview`, `beacon_get_network_series`, `beacon_compare_observers`, `beacon_get_top_advertisers` |
 
 Times are strict RFC3339 UTC inputs and become Beacon epoch milliseconds. IATAs

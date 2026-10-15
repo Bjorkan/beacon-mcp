@@ -125,7 +125,9 @@ describe("Beacon adapter pagination", () => {
     await adapter.searchRoutes({ from: "aa", to: "bb", iatas: ["arn", "mmx"] });
     await adapter.findCrossIataRoutes({ fromHash: "aa", toHash: "bb" });
     await adapter.findCrossIataRoutes({
-      fromHash: "aabbccdd", toHash: "cc", iatas: ["arn", "mmx"],
+      fromHash: "aabbccdd",
+      toHash: "cc",
+      iatas: ["arn", "mmx"],
     });
     expect(urls).toEqual([
       "https://beacon.example/api/v1/routes/search?from=aabbccdd&to=ff",
@@ -153,7 +155,9 @@ describe("Beacon adapter pagination", () => {
       urls.push(String(input));
       return Response.json([{ publicKey: "ab" }]);
     });
-    const adapter = new BeaconAdapter(new BeaconClient(config, { fetch: fetchMock }));
+    const adapter = new BeaconAdapter(
+      new BeaconClient(config, { fetch: fetchMock }),
+    );
     const page = await adapter.getTopAdvertisers({
       iatas: ["arn"],
       sort: "direct",
