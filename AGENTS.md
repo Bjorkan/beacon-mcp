@@ -23,8 +23,8 @@ MCP client -> HTTPS / on dedicated subdomain -> Beacon MCP Server -> Beacon /api
 
 The MCP endpoint is intentionally public and has no application-layer
 authentication. The service has no database, persistent cache, queue, volume,
-or durable state. Every MCP request gets a fresh MCP server instance. When
-resource notifications are enabled, each replica also owns a process-local
+or durable state. Every MCP request gets a fresh MCP server instance. Resource
+notifications are enabled by default, so each replica also owns a process-local
 Beacon WebSocket and MCP subscription bus. Long-lived listen streams must
 remain on that replica; no cross-replica delivery or replay is provided.
 
@@ -219,7 +219,7 @@ process.
 | `BEACON_TIMEOUT_MS`                |   `10000` | Normal request timeout, 100–120000 ms                     |
 | `BEACON_STATS_TIMEOUT_MS`          |   `20000` | Analytics and cross-IATA route timeout, 100–300000 ms     |
 | `LOG_LEVEL`                        |    `info` | Log level setting                                         |
-| `BEACON_SUBSCRIPTIONS_ENABLED`     |   `false` | Enable the modern resource subscription listener          |
+| `BEACON_SUBSCRIPTIONS_ENABLED`     |    `true` | Enable the modern resource subscription listener          |
 | `BEACON_WS_URL`                    |   derived | Optional Beacon `ws/wss` endpoint ending in `/ws`         |
 | `BEACON_SUBSCRIPTIONS_MAX_STREAMS` |      `64` | Maximum concurrent SSE subscription streams (1–1024)      |
 | `BEACON_SUBSCRIPTIONS_DEBOUNCE_MS` |     `500` | Coalescing window per resource URI (0–5000 ms)            |
@@ -418,7 +418,8 @@ Commit the vendor document, generated declarations, and updated
 ## Known limitations
 
 - The service is read-only and exposes 23 tools plus node/observer resource templates.
-- Optional MCP `subscriptions/listen` uses a process-local `/ws` listener
+- MCP `subscriptions/listen`, enabled by default and disabled with
+  `BEACON_SUBSCRIPTIONS_ENABLED=false`, uses a process-local `/ws` listener
   with reconnect and debounce. It sends change hints for subscribed resource
   URIs only. Beacon `/ws` may lose events and has no replay; the MCP client
   must re-read resources and recreate lost listen streams. The legacy

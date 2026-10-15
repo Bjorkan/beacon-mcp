@@ -22,7 +22,7 @@ const envSchema = z.object({
   LOG_LEVEL: z
     .enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"])
     .default("info"),
-  BEACON_SUBSCRIPTIONS_ENABLED: z.enum(["true", "false"]).default("false"),
+  BEACON_SUBSCRIPTIONS_ENABLED: z.enum(["true", "false"]).default("true"),
   BEACON_WS_URL: z.union([z.literal(""), z.url()]).optional(),
   BEACON_SUBSCRIPTIONS_MAX_STREAMS: z.coerce
     .number()

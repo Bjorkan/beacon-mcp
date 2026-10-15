@@ -137,12 +137,18 @@ describe("Beacon WS bridge", () => {
 });
 
 describe("subscription configuration", () => {
-  it("defaults to off and derives WS URL from Beacon origin", () => {
+  it("defaults to on and derives WS URL from Beacon origin", () => {
     const cfg = loadConfig({
       BEACON_BASE_URL: "https://beacon.example/api/v1",
     });
-    expect(cfg.subscriptions?.enabled).toBe(false);
+    expect(cfg.subscriptions?.enabled).toBe(true);
     expect(cfg.subscriptions?.wsUrl.href).toBe("wss://beacon.example/ws");
+    expect(
+      loadConfig({
+        BEACON_BASE_URL: "https://beacon.example/api/v1",
+        BEACON_SUBSCRIPTIONS_ENABLED: "false",
+      }).subscriptions?.enabled,
+    ).toBe(false);
   });
   it("rejects unsafe upstream URLs and invalid bounds", () => {
     expect(() =>
