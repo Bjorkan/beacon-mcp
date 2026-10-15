@@ -137,6 +137,43 @@ const nodeNeighbor = z.looseObject({
   snr: optionalNumber,
 });
 
+const meshMapperSite = z.looseObject({
+  antenna: optionalString,
+  hardware: optionalString,
+  heightAslM: optionalNumber,
+  heightM: optionalNumber,
+  notes: optionalString,
+  power: optionalString,
+  powerSource: optionalString,
+});
+
+const meshMapperScope = z.looseObject({
+  observedAt: epochMs,
+  observedPackets: optionalInteger,
+  proof: optionalString,
+  reportedAt: epochMs,
+  scope: optionalString,
+  uploadedAt: epochMs,
+});
+
+const meshMapperDefaultScope = z.looseObject({
+  name: optionalString,
+  source: optionalString,
+  state: optionalString,
+  updatedAt: epochMs,
+});
+
+const meshMapperRepeater = z.looseObject({
+  admins: optionalStrings,
+  carpeater: optionalBoolean,
+  defaultScope: meshMapperDefaultScope.nullish(),
+  fetchedAt: epochMs,
+  iata: optionalString,
+  scopes: z.array(meshMapperScope).nullish(),
+  scopesCheckedAt: epochMs,
+  site: meshMapperSite.nullish(),
+});
+
 const node = z.looseObject({
   defaultScope: optionalString,
   iatas: z.array(nodeIata).nullish(),
@@ -163,6 +200,7 @@ const node = z.looseObject({
   lastSeen: epochMs,
   locationSource: optionalString,
   metadata: z.unknown().nullish(),
+  meshmapper: meshMapperRepeater.nullish(),
   minFirmwareVersion: optionalString,
   neighbors: z.array(nodeNeighbor).nullish(),
 });

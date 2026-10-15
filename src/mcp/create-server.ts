@@ -246,7 +246,7 @@ export function createMcpServer(
     server,
     logger,
     "beacon_get_node",
-    "Get one node by its Beacon node UUID.",
+    "Get one node by its Beacon node UUID, including optional MeshMapper repeater metadata (site, scopes, default scope, and admins) when the server has imported a matching MeshMapper entry.",
     z.strictObject({ id: z.uuid() }),
     outputSchemas.beacon_get_node,
     (a, s) => adapter.getNode(a.id, s),

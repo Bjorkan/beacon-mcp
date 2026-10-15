@@ -43,6 +43,20 @@ async function start(options: StartOptions = {}): Promise<FastifyInstance> {
         items: [{ id: "n1", name: "Node" }],
         hasMore: false,
       });
+    if (path.includes("/nodes/"))
+      return Response.json({
+        id: "123e4567-e89b-42d3-a456-426614174000",
+        name: "MeshMapper repeater",
+        meshmapper: {
+          iata: "ARN",
+          fetchedAt: 1791127800000,
+          carpeater: false,
+          admins: ["relay-maintainer"],
+          scopes: [{ scope: "#se13", observedPackets: 12 }],
+          defaultScope: { name: "#se13", source: "reported", state: "named" },
+          site: { antenna: "omni", heightM: 9, powerSource: "solar" },
+        },
+      });
     if (path.includes("/packets/"))
       return Response.json({ packetHash: "abcd", observationCount: 1 });
     if (path.endsWith("/messages"))
@@ -132,7 +146,7 @@ describe("MCP HTTP integration", () => {
     expect(text).toContain("beacon_search_nodes");
     expect(text).toContain("beacon_get_server_info");
     expect(text).toContain("beacon_compare_observers");
-    expect(text).not.toContain("admin");
+    expect(text).not.toContain('"name":"beacon_admin');
     expect(text.match(/"readOnlyHint":true/g)).toHaveLength(22);
     expect(text.match(/"destructiveHint":false/g)).toHaveLength(22);
     expect(text.match(/"idempotentHint":true/g)).toHaveLength(22);
@@ -218,6 +232,9 @@ describe("MCP HTTP integration", () => {
     expect(routesOutput).toContain('"cursorId"');
     expect(routesOutput).toContain('"cursor"');
 
+    expect(JSON.stringify(listed("beacon_get_node").outputSchema)).toContain(
+      '"meshmapper"',
+    );
     expect(JSON.stringify(listed("beacon_get_packet").outputSchema)).toContain(
       '"packetHash"',
     );
@@ -282,6 +299,14 @@ describe("MCP HTTP integration", () => {
       })
     ).body;
     expect(nodes).toContain("Node");
+    const nodeDetail = (
+      await rpc(app, "tools/call", {
+        name: "beacon_get_node",
+        arguments: { id: "123e4567-e89b-42d3-a456-426614174000" },
+      })
+    ).body;
+    expect(nodeDetail).toContain('"meshmapper"');
+    expect(nodeDetail).toContain('"powerSource":"solar"');
     const packet = (
       await rpc(app, "tools/call", {
         name: "beacon_get_packet",
