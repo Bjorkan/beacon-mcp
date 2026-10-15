@@ -147,6 +147,28 @@ describe("Beacon adapter pagination", () => {
     });
   });
 
+  it("requires the advertiser sort and forwards flood/direct rankings", async () => {
+    const urls: string[] = [];
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      urls.push(String(input));
+      return Response.json([{ publicKey: "ab" }]);
+    });
+    const adapter = new BeaconAdapter(new BeaconClient(config, { fetch: fetchMock }));
+    const page = await adapter.getTopAdvertisers({
+      iatas: ["arn"],
+      sort: "direct",
+      since: "2026-10-01T00:00:00Z",
+      limit: 2,
+    });
+    expect(page).toEqual({
+      items: [{ publicKey: "ab" }],
+      pagination: { hasMore: false },
+    });
+    expect(urls).toEqual([
+      "https://beacon.example/api/v1/stats/top-advertisers?iatas=ARN&sort=direct&since=1790812800000&limit=2",
+    ]);
+  });
+
   it("continues channel pages only with the opaque page cursor", async () => {
     const urls: string[] = [];
     const fetchMock = vi.fn<typeof fetch>(async (input) => {

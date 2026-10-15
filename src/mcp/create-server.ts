@@ -519,7 +519,9 @@ export function createMcpServer(
         message: "use iatas or fromIata/toIata, not both",
       })
       .refine(
-        (a) => !a.iatas || new Set(a.iatas.map((code) => code.toUpperCase())).size >= 2,
+        (a) =>
+          !a.iatas ||
+          new Set(a.iatas.map((code) => code.toUpperCase())).size >= 2,
         { message: "iatas must contain at least two distinct codes" },
       ),
     outputSchemas.beacon_find_cross_iata_routes,
@@ -568,6 +570,25 @@ export function createMcpServer(
     z.strictObject({ tag: traceTag }),
     outputSchemas.beacon_get_trace,
     (a, s) => adapter.getTrace(a.tag, s),
+  );
+
+  register(
+    server,
+    logger,
+    "beacon_get_top_advertisers",
+    "Get the top advertising nodes ranked by the required sort selection, distinct flood or direct advert packet counts, with ties broken by total adverts and then public key. The default window is the last 24 hours. Flood (route types 0/1) and direct (2/3) counts are included in every result. Each advert counts once per hour, independent of how many selected IATAs heard it. This is a bounded top-N result, not a pageable list. region and regionId are mutually exclusive.",
+    z
+      .strictObject({
+        ...location,
+        sort: z.enum(["flood", "direct"]),
+        since: timestamp.optional(),
+        limit,
+      })
+      .refine((a) => !(a.region && a.regionId), {
+        message: "region and regionId are mutually exclusive",
+      }),
+    outputSchemas.beacon_get_top_advertisers,
+    (a, s) => adapter.getTopAdvertisers(a, s),
   );
 
   register(

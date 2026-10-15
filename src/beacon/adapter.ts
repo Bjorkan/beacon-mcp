@@ -437,6 +437,32 @@ export class BeaconAdapter {
     return this.client.request("getTrace", { path: { tag }, signal });
   }
 
+  async getTopAdvertisers(
+    input: Input<
+      LocationFilters & {
+        sort: "flood" | "direct";
+        since?: string;
+        limit?: number;
+      }
+    >,
+    signal?: AbortSignal,
+  ): Promise<Page> {
+    const limit = boundedLimit(input.limit);
+    return truncatedArrayPage(
+      await this.client.requestArrayPage("topAdvertisers", {
+        query: {
+          ...location(input),
+          sort: input.sort,
+          since: timeRange(input.since).since,
+          limit,
+        },
+        signal,
+        maxItems: limit + 1,
+      }),
+      limit,
+    );
+  }
+
   getNetworkOverview(
     input: Input<LocationFilters>,
     signal?: AbortSignal,

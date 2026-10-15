@@ -37,6 +37,7 @@ const endpoints = {
   crossRoutes: "/routes/cross",
   listTraces: "/traces",
   getTrace: "/traces/{tag}",
+  topAdvertisers: "/stats/top-advertisers",
   networkOverview: "/stats/overview",
   networkSeries: "/stats/series",
   compareObservers: "/stats/observer-comparison",

@@ -448,6 +448,19 @@ const traceDetail = z.looseObject({
   traceTag: optionalString,
 });
 
+const topAdvertiser = z.looseObject({
+  nodeId: optionalString,
+  publicKey: optionalString,
+  nodeName: optionalString,
+  nodeType: optionalInteger,
+  nodeTypeName: optionalString,
+  iata: optionalString,
+  advertCount: optionalInteger,
+  floodAdvertCount: optionalInteger,
+  directAdvertCount: optionalInteger,
+  lastHeard: epochMs,
+});
+
 const statsOverview = z.looseObject({
   activeIatas: optionalInteger,
   activeObservers: optionalInteger,
@@ -576,6 +589,7 @@ export const outputSchemas = {
   beacon_find_cross_iata_routes: finitePage(crossIataRoute),
   beacon_search_traces: cursorPage(traceSummary, traceCursor),
   beacon_get_trace: traceDetail,
+  beacon_get_top_advertisers: finitePage(topAdvertiser),
   beacon_get_network_overview: statsOverview,
   beacon_get_network_series: statsSeries,
   beacon_compare_observers: observerComparison,

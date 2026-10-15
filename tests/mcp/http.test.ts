@@ -66,6 +66,14 @@ async function start(options: StartOptions = {}): Promise<FastifyInstance> {
       });
     if (path.endsWith("/routes"))
       return Response.json([{ id: 1, lastSeen: 1_000 }]);
+    if (path.endsWith("/stats/top-advertisers"))
+      return Response.json([{
+        publicKey: "aa".repeat(32),
+        advertCount: 8,
+        floodAdvertCount: 5,
+        directAdvertCount: 3,
+        lastHeard: 1791127800000,
+      }]);
     if (path.endsWith("/stats/overview"))
       return Response.json({ packetCount: 42 });
     return Response.json([]);
@@ -147,13 +155,13 @@ describe("MCP HTTP integration", () => {
     expect(text).toContain("beacon_get_server_info");
     expect(text).toContain("beacon_compare_observers");
     expect(text).not.toContain('"name":"beacon_admin');
-    expect(text.match(/"readOnlyHint":true/g)).toHaveLength(22);
-    expect(text.match(/"destructiveHint":false/g)).toHaveLength(22);
-    expect(text.match(/"idempotentHint":true/g)).toHaveLength(22);
-    expect(text.match(/"openWorldHint":true/g)).toHaveLength(22);
+    expect(text.match(/"readOnlyHint":true/g)).toHaveLength(23);
+    expect(text.match(/"destructiveHint":false/g)).toHaveLength(23);
+    expect(text.match(/"idempotentHint":true/g)).toHaveLength(23);
+    expect(text.match(/"openWorldHint":true/g)).toHaveLength(23);
     const listedTools = (response.json() as { result: { tools: ListedTool[] } })
       .result.tools;
-    expect(listedTools).toHaveLength(22);
+    expect(listedTools).toHaveLength(23);
     expect(listedTools.every((tool) => tool.outputSchema !== undefined)).toBe(
       true,
     );
@@ -235,6 +243,8 @@ describe("MCP HTTP integration", () => {
     expect(JSON.stringify(listed("beacon_get_node").outputSchema)).toContain(
       '"meshmapper"',
     );
+    expect(JSON.stringify(listed("beacon_get_top_advertisers").inputSchema)).toContain('"sort"');
+    expect(JSON.stringify(listed("beacon_get_top_advertisers").outputSchema)).toContain('"floodAdvertCount"');
     expect(JSON.stringify(listed("beacon_get_packet").outputSchema)).toContain(
       '"packetHash"',
     );
@@ -282,6 +292,24 @@ describe("MCP HTTP integration", () => {
     expect(modern.body).toContain("beacon_search_nodes");
   });
 
+  it("rejects invalid route and packet filters before reaching Beacon", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () => Response.json([]));
+    const app = await start({ fetchImpl: fetchMock });
+    for (const [name, args] of [
+      ["beacon_search_packets", { hashPrefix: "gghi" }],
+      ["beacon_search_routes", { from: "aa", to: "bb", iata: "ARN", iatas: ["MMX"] }],
+      ["beacon_search_routes", { from: "aabbccddee", to: "bb" }],
+      ["beacon_find_cross_iata_routes", { fromHash: "aa", toHash: "bb", fromIata: "ARN" }],
+      ["beacon_find_cross_iata_routes", { fromHash: "aa", toHash: "bb", iatas: ["arn", "ARN"] }],
+      ["beacon_get_top_advertisers", { limit: 2 }],
+    ] as const) {
+      const response = await rpc(app, "tools/call", { name, arguments: args });
+      expect(response.statusCode, response.body).toBe(200);
+      expect(response.body).toContain("Invalid");
+    }
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("calls server-info, node, and packet tools through the actual handler", async () => {
     const app = await start();
     const info = await rpc(app, "tools/call", {
@@ -314,6 +342,14 @@ describe("MCP HTTP integration", () => {
       })
     ).body;
     expect(packet).toContain("packetHash");
+    const advertisers = (
+      await rpc(app, "tools/call", {
+        name: "beacon_get_top_advertisers",
+        arguments: { sort: "direct", limit: 2 },
+      })
+    ).body;
+    expect(advertisers).toContain('"floodAdvertCount":5');
+    expect(advertisers).toContain('"directAdvertCount":3');
     const invalidRoute = (
       await rpc(app, "tools/call", {
         name: "beacon_search_routes",
