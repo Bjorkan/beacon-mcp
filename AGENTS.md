@@ -22,9 +22,11 @@ MCP client -> HTTPS / on dedicated subdomain -> Beacon MCP Server -> Beacon /api
 ```
 
 The MCP endpoint is intentionally public and has no application-layer
-authentication. The service has no database, cache, queue, WebSocket, volume,
-or other persistent state. Every MCP request gets a fresh MCP server instance,
-so replicas can sit behind a round-robin load balancer.
+authentication. The service has no database, persistent cache, queue, volume,
+or durable state. Every MCP request gets a fresh MCP server instance. When
+resource notifications are enabled, each replica also owns a process-local
+Beacon WebSocket and MCP subscription bus. Long-lived listen streams must
+remain on that replica; no cross-replica delivery or replay is provided.
 
 ## Compatibility and pinned contracts
 
@@ -209,18 +211,23 @@ CI, and `tests/container/run.sh` verification—not deployment.
 Configuration is parsed once with Zod during startup. Invalid values stop the
 process.
 
-| Variable                  |   Default | Meaning                                                   |
-| ------------------------- | --------: | --------------------------------------------------------- |
-| `HOST`                    | `0.0.0.0` | Listen address                                            |
-| `PORT`                    |    `3000` | Unprivileged listen port                                  |
-| `BEACON_BASE_URL`         |  required | Fixed upstream base; credentials/query/fragment forbidden |
-| `BEACON_TIMEOUT_MS`       |   `10000` | Normal request timeout, 100–120000 ms                     |
-| `BEACON_STATS_TIMEOUT_MS` |   `20000` | Analytics and cross-IATA route timeout, 100–300000 ms     |
-| `LOG_LEVEL`               |    `info` | Log level setting                                         |
-| `SHUTDOWN_GRACE_MS`       |   `10000` | Bounded shutdown grace period                             |
+| Variable                           |   Default | Meaning                                                   |
+| ---------------------------------- | --------: | --------------------------------------------------------- |
+| `HOST`                             | `0.0.0.0` | Listen address                                            |
+| `PORT`                             |    `3000` | Unprivileged listen port                                  |
+| `BEACON_BASE_URL`                  |  required | Fixed upstream base; credentials/query/fragment forbidden |
+| `BEACON_TIMEOUT_MS`                |   `10000` | Normal request timeout, 100–120000 ms                     |
+| `BEACON_STATS_TIMEOUT_MS`          |   `20000` | Analytics and cross-IATA route timeout, 100–300000 ms     |
+| `LOG_LEVEL`                        |    `info` | Log level setting                                         |
+| `BEACON_SUBSCRIPTIONS_ENABLED`     |   `false` | Enable the modern resource subscription listener          |
+| `BEACON_WS_URL`                    |   derived | Optional Beacon `ws/wss` endpoint ending in `/ws`         |
+| `BEACON_SUBSCRIPTIONS_MAX_STREAMS` |      `64` | Maximum concurrent SSE subscription streams (1–1024)      |
+| `BEACON_SUBSCRIPTIONS_DEBOUNCE_MS` |     `500` | Coalescing window per resource URI (0–5000 ms)            |
+| `SHUTDOWN_GRACE_MS`                |   `10000` | Bounded shutdown grace period                             |
 
-The upstream response limit is fixed at 5 MiB. MCP is always public and
-stateless; these are service invariants rather than deployment settings. The
+The upstream response limit is fixed at 5 MiB. MCP remains unauthenticated
+and request-stateless; enabled listen streams and an upstream WebSocket are
+transient process-local transport state, not durable sessions. The
 legacy-era fallback adds no session state: every POST is served by a fresh MCP
 instance, and legacy GET/DELETE session operations are answered with 405.
 
@@ -410,9 +417,13 @@ Commit the vendor document, generated declarations, and updated
 
 ## Known limitations
 
-- The service is tools-only and read-only.
-- Beacon `/ws` is deliberately unsupported; there are no subscriptions,
-  persistent sockets, reconnect loops, or REST backfill state.
+- The service is read-only and exposes 23 tools plus node/observer resource templates.
+- Optional MCP `subscriptions/listen` uses a process-local `/ws` listener
+  with reconnect and debounce. It sends change hints for subscribed resource
+  URIs only. Beacon `/ws` may lose events and has no replay; the MCP client
+  must re-read resources and recreate lost listen streams. The legacy
+  `resources/subscribe` method remains unsupported; no offline delivery or
+  background MCP Events are implemented.
 - No admin endpoints, direct PostgreSQL/Redis/MQTT access, generic proxy
   operation, OAuth server, persistent cache, or local sessions are implemented.
 - Readiness intentionally does not report transient Beacon availability.

@@ -3,6 +3,8 @@ import { createMcpHandler } from "@modelcontextprotocol/server";
 import Fastify, { type FastifyInstance } from "fastify";
 import type { BeaconAdapter } from "../beacon/adapter.js";
 import type { Config } from "../config/config.js";
+import { BeaconWsBridge } from "../subscriptions/beacon-ws.js";
+import { ResourceNotifications } from "../subscriptions/notifications.js";
 import {
   currentRequestContext,
   type Logger,
@@ -25,19 +27,47 @@ export function buildHttpServer(
   app.get("/healthz", async () => ({ status: "ok" }));
   app.get("/readyz", async () => ({ status: "ok" }));
 
-  const handler = createMcpHandler(() => createMcpServer(adapter, logger), {
-    // Modern MCP (2026-07-28) stays the default era. The SDK's stateless
-    // legacy fallback additionally negotiates older revisions over the same
-    // endpoint (2025-era and pre-2025 back to 2024-10-07) with a fresh MCP
-    // instance per POST, so no session state is added; legacy GET/DELETE
-    // session operations are answered with 405.
-    legacy: "stateless",
-    onerror: (error) =>
-      logger.error(
-        { ...currentRequestContext(), error: error.message },
-        "MCP handler error",
-      ),
+  const enabled = config.subscriptions?.enabled ?? false;
+  const handler = createMcpHandler(
+    (ctx) => createMcpServer(adapter, logger, enabled && ctx.era === "modern"),
+    {
+      // Modern MCP (2026-07-28) stays the default era. The SDK's stateless
+      // legacy fallback additionally negotiates older revisions over the same
+      // endpoint (2025-era and pre-2025 back to 2024-10-07) with a fresh MCP
+      // instance per POST, so no session state is added; legacy GET/DELETE
+      // session operations are answered with 405.
+      legacy: "stateless",
+      maxSubscriptions: config.subscriptions?.maxStreams ?? 64,
+      onerror: (error) =>
+        logger.error(
+          { ...currentRequestContext(), error: error.message },
+          "MCP handler error",
+        ),
+    },
+  );
+  const notifications = new ResourceNotifications(
+    handler.notify,
+    logger,
+    config.subscriptions?.debounceMs ?? 500,
+  );
+  const bridge =
+    enabled && config.subscriptions
+      ? new BeaconWsBridge(config.subscriptions.wsUrl, logger, (event, data) =>
+          notifications.received(event, data),
+        )
+      : undefined;
+
+  app.addHook("onReady", async () => {
+    bridge?.start();
   });
+  // preClose executes before Fastify waits for HTTP connections to drain.
+  // A listen POST is intentionally long-lived and must be aborted first.
+  app.addHook("preClose", async () => {
+    bridge?.stop();
+    notifications.stop();
+    await handler.close();
+  });
+
   const nodeHandler = toNodeHandler(handler, {
     onerror: (error) =>
       logger.error(

@@ -11,6 +11,7 @@ import { PAYLOAD_TYPE_FILTER_NAMES } from "../beacon/payload.js";
 import { BEACON_API_VERSION } from "../beacon/version.js";
 import type { Logger } from "../logging/logger.js";
 import { outputSchemas } from "./output-schemas.js";
+import { registerBeaconResources } from "./resources.js";
 import { toolError, toolResult } from "./result.js";
 
 const MAX_INT32 = 2_147_483_647;
@@ -166,11 +167,18 @@ function register<
 export function createMcpServer(
   adapter: BeaconAdapter,
   logger: Logger,
+  subscriptionEnabled = false,
 ): McpServer {
   const server = new McpServer(
     { name: "beacon-mcp", version: BEACON_API_VERSION },
-    { capabilities: { tools: {} } },
+    {
+      capabilities: {
+        tools: {},
+        resources: { subscribe: subscriptionEnabled, listChanged: false },
+      },
+    },
   );
+  registerBeaconResources(server, adapter);
 
   register(
     server,

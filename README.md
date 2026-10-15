@@ -60,3 +60,26 @@ Streamable HTTP. Access rules, if any, are set by the service operator.
 Want to run the service, contribute, or understand the implementation? See
 [AGENTS.md](AGENTS.md) for setup, deployment, architecture, security, and test
 details.
+
+## Live resource subscriptions (opt-in)
+
+Operators can enable MCP `subscriptions/listen` (revision `2026-07-28`) by setting
+`BEACON_SUBSCRIPTIONS_ENABLED=true`. The gateway exposes the resource templates
+`beacon://nodes/{id}` and `beacon://observers/{id}`; `{id}` is a Beacon UUID.
+Clients can read them with `resources/read`, and if enabled, open a long-lived
+`subscriptions/listen` POST with `notifications.resourceSubscriptions` containing
+those URIs. Every matching upstream `nodeUpdate` / `observerStatus` causes a
+`notifications/resources/updated` on the corresponding listening stream. The
+client should re-read the resource after a notification. For legacy clients
+resource reads still work but legacy `resources/subscribe` is **not** available.
+
+A single process-wide WebSocket connection connects to Beacon's existing `/ws`
+endpoint (derived from `BEACON_BASE_URL`, or specified using `BEACON_WS_URL`).
+No changes to Beacon Server are needed. This uses an ephemeral, process-local
+subscription bus; it cannot replay missed events or deliver offline alerts.
+Configure `BEACON_SUBSCRIPTIONS_MAX_STREAMS` (default 64) and
+`BEACON_SUBSCRIPTIONS_DEBOUNCE_MS` (default 500). Keep the feature disabled if
+your MCP client does not support `subscriptions/listen`. Reverse proxies must
+**not buffer** SSE responses, must allow long-lived streaming POST responses,
+and must allow idle connections beyond the SDK's keepalive interval (15 s).
+Always use `wss://` for public Beacon WebSocket connections.
