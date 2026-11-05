@@ -6,8 +6,10 @@ use axum::{Router, routing::get};
 use rmcp::{
     ErrorData as McpError, ServerHandler,
     model::{
-        CallToolRequestParams, CallToolResponse, ListToolsResult, PaginatedRequestParams,
-        ServerCapabilities, ServerConfig, Tool,
+        CallToolRequestParams, CallToolResponse, ListResourceTemplatesResult,
+        ListToolsResult, PaginatedRequestParams, ReadResourceRequestParams, ReadResourceResponse,
+        ReadResourceResult, ResourceContents, ResourceTemplate, ServerCapabilities, ServerConfig,
+        Tool,
     },
     service::{RequestContext, RoleServer},
     transport::streamable_http_server::{
@@ -27,7 +29,12 @@ pub struct BeaconServer {
 
 impl ServerHandler for BeaconServer {
     fn get_info(&self) -> ServerConfig {
-        let mut info = ServerConfig::new(ServerCapabilities::builder().enable_tools().build());
+        let mut info = ServerConfig::new(
+            ServerCapabilities::builder()
+                .enable_tools()
+                .enable_resources()
+                .build(),
+        );
         info.server_info.name = "beacon-mcp".into();
         info.server_info.version = "2.1.1".into();
         info
@@ -57,6 +64,62 @@ impl ServerHandler for BeaconServer {
             .or_else(|| self.packet_tools.definition(name))
             .or_else(|| self.routing_tools.definition(name))
             .or_else(|| self.analytics_tools.definition(name))
+    }
+
+    async fn list_resource_templates(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListResourceTemplatesResult, McpError> {
+        Ok(ListResourceTemplatesResult {
+            resource_templates: ["nodes", "observers"]
+                .into_iter()
+                .map(|kind| {
+                    ResourceTemplate::new(
+                        format!("beacon://{kind}/{{id}}"),
+                        format!("beacon-{kind}"),
+                    )
+                    .with_title(format!(
+                        "Beacon {} details",
+                        if kind == "nodes" { "node" } else { "observer" }
+                    ))
+                    .with_description("Read the latest public information from Beacon REST")
+                    .with_mime_type("application/json")
+                })
+                .collect(),
+            ..Default::default()
+        })
+    }
+
+    async fn read_resource(
+        &self,
+        request: ReadResourceRequestParams,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ReadResourceResponse, McpError> {
+        let (kind, id) = crate::resources::parse_uri(&request.uri)
+            .ok_or_else(|| McpError::invalid_params("Invalid Beacon resource URI", None))?;
+        let op = if kind == "nodes" {
+            crate::client::Operation::Node
+        } else {
+            crate::client::Operation::Observer
+        };
+        let data = self
+            .tools
+            .client()
+            .request(op, Some(&id), &[])
+            .await
+            .map_err(|error| {
+                if error.code == crate::client::ErrorCode::NotFound {
+                    McpError::resource_not_found("Beacon resource not found", None)
+                } else {
+                    McpError::internal_error("Beacon resource temporarily unavailable", None)
+                }
+            })?;
+        Ok(ReadResourceResult::new(vec![
+            ResourceContents::text(data.to_string(), format!("beacon://{kind}/{id}"))
+                .with_mime_type("application/json"),
+        ])
+        .into())
     }
 
     async fn call_tool(

@@ -108,6 +108,9 @@ impl CoreTools {
     pub fn new(client: BeaconClient) -> Self {
         Self { client }
     }
+    pub fn client(&self) -> &BeaconClient {
+        &self.client
+    }
 
     pub fn list(&self) -> Vec<Tool> {
         NAMES
