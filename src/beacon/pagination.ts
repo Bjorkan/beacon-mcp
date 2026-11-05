@@ -2,6 +2,8 @@ import type { ArrayPage } from "./client.js";
 
 export interface Page {
   items: unknown[];
+  sort?: string;
+  order?: string;
   pagination: {
     hasMore: boolean;
     nextCursor?: Record<string, unknown>;
@@ -9,7 +11,12 @@ export interface Page {
   };
 }
 
-export function toPage(value: unknown, limit: number): Page {
+export function toPage(
+  value: unknown,
+  limit: number,
+  includeSort = false,
+  opaqueOnly = false,
+): Page {
   const record =
     value && typeof value === "object"
       ? (value as Record<string, unknown>)
@@ -22,13 +29,24 @@ export function toPage(value: unknown, limit: number): Page {
   const items = source.slice(0, limit);
   const nextCursor =
     record["nextPageCursor"] !== undefined
-      ? { pageCursor: record["nextPageCursor"] }
-      : record["nextCursor"] !== undefined
+      ? {
+          pageCursor: record["nextPageCursor"],
+          ...(!opaqueOnly && record["nextCursor"] !== undefined
+            ? { cursor: record["nextCursor"] }
+            : {}),
+        }
+      : !opaqueOnly && record["nextCursor"] !== undefined
         ? { cursor: record["nextCursor"] }
         : {};
   const hasMore = Boolean(record["hasMore"]) || source.length > limit;
   return {
     items,
+    ...(includeSort && typeof record["sort"] === "string"
+      ? { sort: record["sort"] }
+      : {}),
+    ...(includeSort && typeof record["order"] === "string"
+      ? { order: record["order"] }
+      : {}),
     pagination: {
       hasMore,
       ...(Object.keys(nextCursor).length ? { nextCursor } : {}),

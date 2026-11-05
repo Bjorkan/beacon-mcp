@@ -14,6 +14,92 @@ function adapterReturning(body: unknown): BeaconAdapter {
 }
 
 describe("Beacon adapter pagination", () => {
+  it("prefers exact cursors and preserves node ordering and optional neighbors", async () => {
+    const urls: string[] = [];
+    const adapter = new BeaconAdapter(
+      new BeaconClient(config, {
+        fetch: vi.fn<typeof fetch>(async (input) => {
+          urls.push(String(input));
+          return Response.json({
+            items: [{ id: "node-1", lastSeen: 1000, neighborIds: ["node-2"] }],
+            hasMore: true,
+            nextPageCursor: "s1:name:a:0:0:0:uuid:YWJj",
+            sort: "name",
+            order: "asc",
+          });
+        }),
+      }),
+    );
+    const page = await adapter.searchNodes({
+      sort: "name",
+      neighbors: true,
+      limit: 1,
+    });
+    expect(page).toEqual({
+      items: [{ id: "node-1", lastSeen: 1000, neighborIds: ["node-2"] }],
+      sort: "name",
+      order: "asc",
+      pagination: {
+        hasMore: true,
+        nextCursor: { pageCursor: "s1:name:a:0:0:0:uuid:YWJj" },
+      },
+    });
+    await adapter.searchNodes({
+      sort: "name",
+      pageCursor: "s1:name:a:0:0:0:uuid:YWJj",
+    });
+    expect(urls[0]).toContain("sort=name&neighbors=true");
+    expect(urls[1]).toContain(
+      "pageCursor=s1%3Aname%3Aa%3A0%3A0%3A0%3Auuid%3AYWJj",
+    );
+  });
+
+  it("continues observers and packets with opaque cursors, falling back to numeric for hash searches", async () => {
+    const urls: string[] = [];
+    const adapter = new BeaconAdapter(
+      new BeaconClient(config, {
+        fetch: vi.fn<typeof fetch>(async (input) => {
+          urls.push(String(input));
+          return Response.json({
+            items: [],
+            hasMore: true,
+            nextCursor: 1000,
+            ...(urls.length === 3 ? {} : { nextPageCursor: "v1:1000000:ab" }),
+          });
+        }),
+      }),
+    );
+    expect(
+      (await adapter.searchObservers({ pageCursor: "v1:1000000:ab" }))
+        .pagination.nextCursor,
+    ).toEqual({ pageCursor: "v1:1000000:ab", cursor: 1000 });
+    expect(
+      (await adapter.searchPackets({ pageCursor: "v1:1000000:ab" })).pagination
+        .nextCursor,
+    ).toEqual({ pageCursor: "v1:1000000:ab", cursor: 1000 });
+    expect(
+      (await adapter.searchPackets({ hashPrefix: "abcd", cursor: 1000 }))
+        .pagination.nextCursor,
+    ).toEqual({ cursor: 1000 });
+    expect(urls[0]).toContain("pageCursor=v1%3A1000000%3Aab");
+    expect(urls[1]).toContain("pageCursor=v1%3A1000000%3Aab");
+  });
+
+  it("passes multi-IATA filters to the full route list", async () => {
+    const urls: string[] = [];
+    const adapter = new BeaconAdapter(
+      new BeaconClient(config, {
+        fetch: vi.fn<typeof fetch>(async (input) => {
+          urls.push(String(input));
+          return Response.json([]);
+        }),
+      }),
+    );
+    await adapter.listRoutes({ iatas: ["arn", "mmx"] });
+    expect(urls).toEqual([
+      "https://beacon.example/api/v1/routes?iatas=ARN%2CMMX&limit=20",
+    ]);
+  });
   it("derives the route compound cursor from the last returned route", async () => {
     const page = await adapterReturning([
       { id: 10, lastSeen: 2_000 },
@@ -186,6 +272,16 @@ describe("Beacon adapter pagination", () => {
     expect(urls).toEqual([
       "https://beacon.example/api/v1/channels?limit=2&pageCursor=v1%3A1000%3A7",
     ]);
+  });
+
+  it("does not expose the legacy numeric channel cursor when a precise one is returned", async () => {
+    const page = await adapterReturning({
+      items: [{ id: 1 }],
+      hasMore: true,
+      nextCursor: 1000,
+      nextPageCursor: "v1:1000000:1",
+    }).listChannels({ limit: 1 });
+    expect(page.pagination.nextCursor).toEqual({ pageCursor: "v1:1000000:1" });
   });
 
   it("forwards packet hash prefixes, including odd-length and mixed-case hex", async () => {

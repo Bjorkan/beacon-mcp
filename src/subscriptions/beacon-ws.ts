@@ -20,13 +20,24 @@ export class BeaconWsBridge {
   private handshakeTimer: ReturnType<typeof setTimeout> | undefined;
   private awaitingPong = false;
   private pingId = 0;
+  private ticketAbort: AbortController | undefined;
 
   constructor(
     private readonly url: URL,
     private readonly logger: Logger,
     private readonly onUpdate: (event: string, data: unknown) => void,
-    private readonly socketFactory: (url: string) => WebSocket = (url) =>
-      new WebSocket(url),
+    private readonly socketFactory: (
+      url: string,
+      ticket?: string,
+    ) => WebSocket = (url, ticket) =>
+      ticket
+        ? new WebSocket(url, {
+            headers: { "X-Beacon-Ticket": ticket },
+          } as never)
+        : new WebSocket(url),
+    private readonly ticketProvider?: (
+      signal: AbortSignal,
+    ) => Promise<string | undefined>,
   ) {}
 
   start(): void {
@@ -38,6 +49,8 @@ export class BeaconWsBridge {
   stop(): void {
     if (!this.running) return;
     this.running = false;
+    this.ticketAbort?.abort();
+    this.ticketAbort = undefined;
     this.clearTimers();
     this.ready = false;
     const socket = this.socket;
@@ -66,9 +79,35 @@ export class BeaconWsBridge {
 
   private connect(): void {
     if (!this.running) return;
+    if (this.ticketProvider) {
+      const controller = new AbortController();
+      this.ticketAbort = controller;
+      void this.ticketProvider(controller.signal).then(
+        (ticket) => {
+          if (this.ticketAbort !== controller || !this.running) return;
+          this.ticketAbort = undefined;
+          this.openSocket(ticket);
+        },
+        (error: unknown) => {
+          if (this.ticketAbort !== controller || !this.running) return;
+          this.ticketAbort = undefined;
+          this.logger.warn(
+            { error: error instanceof Error ? error.message : "unknown" },
+            "Beacon WS ticket request failed",
+          );
+          this.scheduleReconnect();
+        },
+      );
+      return;
+    }
+    this.openSocket();
+  }
+
+  private openSocket(ticket?: string): void {
+    if (!this.running) return;
     let socket: WebSocket;
     try {
-      socket = this.socketFactory(this.url.href);
+      socket = this.socketFactory(this.url.href, ticket);
     } catch (error) {
       this.logger.warn(
         { error: error instanceof Error ? error.message : "unknown" },

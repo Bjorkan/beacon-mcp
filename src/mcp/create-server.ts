@@ -109,6 +109,14 @@ const pagination = {
   cursor: z.number().int().nonnegative().optional(),
   limit,
 };
+const pageCursor = z
+  .string()
+  .min(1)
+  .max(512)
+  .optional()
+  .describe(
+    "Opaque nextPageCursor returned as pagination.nextCursor.pageCursor; pass unchanged with the same filters and sort",
+  );
 const timeWindow = {
   since: timestamp.optional(),
   until: timestamp.optional(),
@@ -226,11 +234,20 @@ export function createMcpServer(
     server,
     logger,
     "beacon_search_nodes",
-    "Search known MeshCore nodes using bounded filters. region and regionId are mutually exclusive, as are type and typeName.",
+    "Search known MeshCore nodes. Sort by lastSeen (newest first by default), name, type or neighbors; order defaults to asc except lastSeen (desc). For continuation pass both pageCursor and cursor when returned, so older servers can use the numeric fallback. A numeric cursor only works with default newest-first ordering. region and regionId are mutually exclusive, as are type and typeName.",
     z
       .strictObject({
         ...scopedLocation,
         ...pagination,
+        pageCursor,
+        sort: z.enum(["lastSeen", "name", "type", "neighbors"]).optional(),
+        order: z.enum(["asc", "desc"]).optional(),
+        neighbors: z
+          .boolean()
+          .optional()
+          .describe(
+            "Include neighborIds in each node summary; can increase response size",
+          ),
         name: nameText.optional(),
         type: z.number().int().min(1).max(4).optional(),
         typeName: z
@@ -246,7 +263,18 @@ export function createMcpServer(
       })
       .refine((a) => !(a.type && a.typeName), {
         message: "type and typeName are mutually exclusive",
-      }),
+      })
+      .refine(
+        (a) =>
+          !(
+            a.cursor &&
+            (a.order === "asc" || (a.sort && a.sort !== "lastSeen"))
+          ),
+        {
+          message:
+            "numeric cursor works only with default lastSeen descending order",
+        },
+      ),
     outputSchemas.beacon_search_nodes,
     (a, s) => adapter.searchNodes(a, s),
   );
@@ -264,11 +292,12 @@ export function createMcpServer(
     server,
     logger,
     "beacon_search_observers",
-    "Search Beacon observers/gateways. region and regionId are mutually exclusive.",
+    "Search Beacon observers/gateways. For continuation pass both pageCursor and cursor when returned: the opaque token preserves millisecond ties, the numeric cursor supports older servers. region and regionId are mutually exclusive.",
     z
       .strictObject({
         ...scopedLocation,
         ...pagination,
+        pageCursor,
         type: shortText.optional(),
         broker: shortText.optional(),
         status: z.enum(["online", "offline"]).optional(),
@@ -319,12 +348,13 @@ export function createMcpServer(
     server,
     logger,
     "beacon_search_packets",
-    "Search packet summaries; hashPrefix matches the beginning of an 8-byte packet hash and switches ordering/cursor to global lastHeardAt (also with IATA filters). The window is half-open: a packet is included when firstHeardAt is at or after since and it was last heard before until — since is inclusive, until is exclusive (the exact until boundary is inconsistent upstream when iatas filters are used). Beacon MCP Server does not persist or log packet payloads; upstream Beacon may store and return them through beacon_get_packet. region and regionId are mutually exclusive, as are scope and scopes, payloadType and payloadTypes, and routeType and routeTypes; payloadTypeName cannot be combined with payloadType or payloadTypes.",
+    "Search packet summaries; prefer the opaque pageCursor when returned for precise pagination across millisecond ties (region pages may lack it). hashPrefix matches the beginning of an 8-byte packet hash and uses only the numeric cursor in global lastHeardAt order, including with IATA filters. The window is half-open: a packet is included when firstHeardAt is at or after since and it was last heard before until — since is inclusive, until is exclusive (the exact until boundary is inconsistent upstream when iatas filters are used). Beacon MCP Server does not persist or log packet payloads; upstream Beacon may store and return them through beacon_get_packet. region and regionId are mutually exclusive, as are scope and scopes, payloadType and payloadTypes, and routeType and routeTypes; payloadTypeName cannot be combined with payloadType or payloadTypes.",
     z
       .strictObject({
         ...scopedLocation,
         ...timeWindow,
         ...pagination,
+        pageCursor,
         payloadType: z.number().int().min(0).max(32_767).optional(),
         payloadTypes: z
           .array(z.number().int().min(0).max(32_767))
@@ -375,6 +405,9 @@ export function createMcpServer(
       })
       .refine((a) => !(a.scope !== undefined && a.scopes), {
         message: "scope and scopes are mutually exclusive",
+      })
+      .refine((a) => !(a.hashPrefix && a.pageCursor), {
+        message: "hashPrefix pages with cursor, not pageCursor",
       }),
     outputSchemas.beacon_search_packets,
     (a, s) => adapter.searchPackets(a, s),
@@ -458,10 +491,11 @@ export function createMcpServer(
     server,
     logger,
     "beacon_list_routes",
-    "List known routes with the upstream compound cursor preserved. cursorId requires cursor.",
+    "List known routes with the upstream compound cursor preserved. cursorId requires cursor. iata and iatas are mutually exclusive.",
     z
       .strictObject({
         iata: iata.optional(),
+        iatas: routeIatas,
         hopCount: z.number().int().positive().max(MAX_INT32).optional(),
         cursor: z
           .number()
@@ -483,6 +517,9 @@ export function createMcpServer(
       })
       .refine((a) => a.cursorId === undefined || a.cursor !== undefined, {
         message: "cursorId requires cursor",
+      })
+      .refine((a) => !(a.iata && a.iatas), {
+        message: "iata and iatas are mutually exclusive",
       }),
     outputSchemas.beacon_list_routes,
     (a, s) => adapter.listRoutes(a, s),

@@ -194,6 +194,20 @@ describe("MCP HTTP integration", () => {
     expect(JSON.stringify(listed("beacon_search_nodes").description)).toContain(
       "type and typeName",
     );
+    for (const field of ['"sort"', '"order"', '"neighbors"', '"pageCursor"']) {
+      expect(
+        JSON.stringify(listed("beacon_search_nodes").inputSchema),
+      ).toContain(field);
+    }
+    expect(
+      JSON.stringify(listed("beacon_search_observers").inputSchema),
+    ).toContain('"pageCursor"');
+    expect(
+      JSON.stringify(listed("beacon_search_packets").inputSchema),
+    ).toContain('"pageCursor"');
+    expect(JSON.stringify(listed("beacon_list_routes").inputSchema)).toContain(
+      '"iatas"',
+    );
     expect(
       JSON.stringify(listed("beacon_get_observer_activity").inputSchema),
     ).toContain("43200m");
@@ -219,7 +233,7 @@ describe("MCP HTTP integration", () => {
     expect(nodesOutput).toContain('"pagination"');
     expect(nodesOutput).toContain('"cursor"');
     expect(nodesOutput).not.toContain('"cursorTag"');
-    expect(nodesOutput).not.toContain('"pageCursor"');
+    expect(nodesOutput).toContain('"pageCursor"');
 
     const channelsOutput = JSON.stringify(
       listed("beacon_list_channels").outputSchema,
@@ -272,7 +286,7 @@ describe("MCP HTTP integration", () => {
     ).toContain('"hashPrefix"');
     const discovery = await rpc(app, "server/discover");
     expect(discovery.statusCode, discovery.body).toBe(200);
-    expect(discovery.body).toContain('"version":"2.0.7"');
+    expect(discovery.body).toContain('"version":"2.1.1"');
     const modern = await app.inject({
       url: "/",
       method: "POST",
@@ -700,8 +714,8 @@ describe("MCP HTTP integration", () => {
     );
     expect(nodesOutput).not.toContain("supportsMultibytePaths");
     expect(nodesOutput).not.toContain("supportsMultibyteTraces");
-    expect(nodesOutput).not.toContain("neighborIds");
-    expect(nodesOutput).not.toContain("defaultScope");
+    expect(nodesOutput).toContain("neighborIds");
+    expect(nodesOutput).toContain("defaultScope");
     const nodeOutput = JSON.stringify(listed("beacon_get_node").outputSchema);
     expect(nodeOutput).toContain("supportsMultibytePaths");
     expect(nodeOutput).toContain("defaultScope");
@@ -773,7 +787,7 @@ describe("MCP HTTP integration", () => {
       expect(response.statusCode).toBe(200);
       expect(response.body).toContain(`"protocolVersion":"${requested}"`);
       expect(response.body).toContain('"name":"beacon-mcp"');
-      expect(response.body).toContain('"version":"2.0.7"');
+      expect(response.body).toContain('"version":"2.1.1"');
     }
   });
 

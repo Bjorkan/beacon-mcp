@@ -29,7 +29,7 @@ describe("pagination and errors", () => {
       items: [1, 2],
       pagination: {
         hasMore: true,
-        nextCursor: { pageCursor: "opaque" },
+        nextCursor: { pageCursor: "opaque", cursor: 10 },
       },
     });
   });

@@ -4,6 +4,7 @@ import Fastify, { type FastifyInstance } from "fastify";
 import type { BeaconAdapter } from "../beacon/adapter.js";
 import type { Config } from "../config/config.js";
 import { BeaconWsBridge } from "../subscriptions/beacon-ws.js";
+import { BeaconNotFoundError } from "../beacon/errors.js";
 import { ResourceNotifications } from "../subscriptions/notifications.js";
 import {
   currentRequestContext,
@@ -52,8 +53,21 @@ export function buildHttpServer(
   );
   const bridge =
     enabled && config.subscriptions
-      ? new BeaconWsBridge(config.subscriptions.wsUrl, logger, (event, data) =>
-          notifications.received(event, data),
+      ? new BeaconWsBridge(
+          config.subscriptions.wsUrl,
+          logger,
+          (event, data) => notifications.received(event, data),
+          undefined,
+          async (signal) => {
+            try {
+              const ticket = await adapter.getWsTicket(signal);
+              return ticket.ticket;
+            } catch (error) {
+              // Older Beacon servers have no ticket endpoint and do not require one.
+              if (error instanceof BeaconNotFoundError) return undefined;
+              throw error;
+            }
+          },
         )
       : undefined;
 

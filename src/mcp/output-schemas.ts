@@ -103,13 +103,21 @@ const regionSummary = z.looseObject({
   id: optionalInteger,
   name: optionalString,
   slug: optionalString,
+  centerLat: optionalNumber,
+  centerLng: optionalNumber,
+  description: optionalString,
+  iatas: optionalStrings,
+  zoomLevel: optionalInteger,
 });
 
 const nodeSummary = z.looseObject({
+  defaultScope: optionalString,
   iatas: z.array(nodeIata).nullish(),
   id: optionalString,
   isObserver: optionalBoolean,
   knownNeighborCount: optionalInteger,
+  lastSeen: epochMs,
+  neighborIds: optionalStrings,
   lat: optionalNumber,
   lng: optionalNumber,
   name: optionalString,
@@ -546,6 +554,15 @@ const channelCursor = z
     "Continuation opaque page cursor; pass the value to the next call as-is",
   );
 
+const preciseCursor = z
+  .strictObject({
+    pageCursor: z.string(),
+    cursor: z.number().int().nonnegative().optional(),
+  })
+  .describe(
+    "Pass pageCursor and, when present, cursor unchanged with the same filters and sort; older servers ignore pageCursor",
+  );
+
 function finitePage<T extends z.ZodType>(item: T) {
   return z.strictObject({
     items: z.array(item),
@@ -559,9 +576,16 @@ function finitePage<T extends z.ZodType>(item: T) {
 function cursorPage<T extends z.ZodType, C extends z.ZodType>(
   item: T,
   cursor: C,
+  nodeSort = false,
 ) {
   return z.strictObject({
     items: z.array(item),
+    ...(nodeSort
+      ? {
+          sort: z.enum(["lastSeen", "name", "type", "neighbors"]).optional(),
+          order: z.enum(["asc", "desc"]).optional(),
+        }
+      : {}),
     pagination: z.strictObject({
       hasMore: z.boolean(),
       nextCursor: cursor.optional(),
@@ -574,12 +598,22 @@ export const outputSchemas = {
   beacon_list_iatas: finitePage(iataArea),
   beacon_list_regions: finitePage(regionSummary),
   beacon_list_scopes: cursorPage(z.string(), numericCursor),
-  beacon_search_nodes: cursorPage(nodeSummary, numericCursor),
+  beacon_search_nodes: cursorPage(
+    nodeSummary,
+    z.union([numericCursor, preciseCursor]),
+    true,
+  ),
   beacon_get_node: node,
-  beacon_search_observers: cursorPage(observerSummary, numericCursor),
+  beacon_search_observers: cursorPage(
+    observerSummary,
+    z.union([numericCursor, preciseCursor]),
+  ),
   beacon_get_observer: observer,
   beacon_get_observer_activity: observerActivity,
-  beacon_search_packets: cursorPage(packetSummary, numericCursor),
+  beacon_search_packets: cursorPage(
+    packetSummary,
+    z.union([numericCursor, preciseCursor]),
+  ),
   beacon_get_packet: packet,
   beacon_search_messages: cursorPage(channelMessage, numericCursor),
   beacon_list_channels: cursorPage(channelSummary, channelCursor),

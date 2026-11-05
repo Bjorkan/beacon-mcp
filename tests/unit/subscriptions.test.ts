@@ -68,6 +68,47 @@ class TestSocket extends EventTarget {
 }
 
 describe("Beacon WS bridge", () => {
+  it("gets a fresh ticket before opening a socket and ignores a late ticket after stop", async () => {
+    const socket = new TestSocket();
+    const factory = vi.fn(() => socket as unknown as WebSocket);
+    let resolveTicket!: (value: string) => void;
+    const ticket = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          resolveTicket = resolve;
+        }),
+    );
+    const bridge = new BeaconWsBridge(
+      new URL("wss://beacon.example/ws"),
+      logger,
+      () => {},
+      factory,
+      ticket,
+    );
+    bridge.start();
+    expect(factory).not.toHaveBeenCalled();
+    resolveTicket("short-lived-ticket");
+    await vi.waitFor(() =>
+      expect(factory).toHaveBeenCalledWith(
+        "wss://beacon.example/ws",
+        "short-lived-ticket",
+      ),
+    );
+    bridge.stop();
+
+    const second = new BeaconWsBridge(
+      new URL("wss://beacon.example/ws"),
+      logger,
+      () => {},
+      factory,
+      ticket,
+    );
+    second.start();
+    second.stop();
+    resolveTicket("too-late");
+    await Promise.resolve();
+    expect(factory).toHaveBeenCalledTimes(1);
+  });
   it("requires hello and subscribe ack, maps only the selected events, then disconnects", () => {
     const socket = new TestSocket();
     const events: string[] = [];

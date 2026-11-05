@@ -70,5 +70,7 @@ export function errorFromResponse(
   if (status === 404) return new BeaconNotFoundError(message, status, code);
   if (status === 429)
     return new BeaconRateLimitError(message, status, code, retryAfter);
+  if (status === 503 && code === "deadline_exceeded")
+    return new BeaconTimeoutError(message, status, code, retryAfter);
   return new BeaconUpstreamError(message, status, code, retryAfter);
 }

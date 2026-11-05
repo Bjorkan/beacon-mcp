@@ -1,6 +1,6 @@
 {
   "name": "beacon-mcp",
-  "version": "2.0.7",
+  "version": "2.1.1",
   "description": "Read-only MCP gateway for the MeshCore Beacon public API",
   "type": "module",
   "private": true,

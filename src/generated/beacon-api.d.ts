@@ -495,7 +495,7 @@ export interface paths {
         };
         /**
          * Inspect selected running configuration
-         * @description Returns current CORS options, auth configuration status and configured broker count. Credential fields and other configuration are excluded. Runtime origin updates are lost on restart.
+         * @description Returns current CORS options, auth configuration status, configured broker count and, when database guards are configured, their state. Credential fields and other configuration are excluded. Runtime origin updates are lost on restart. PUT also replaces guards.enforce at runtime; the configuration file is the boot default.
          */
         get: {
             parameters: {
@@ -540,8 +540,8 @@ export interface paths {
             };
         };
         /**
-         * Update runtime CORS origins
-         * @description Replaces only cors.allowed_origins immediately. Updates are serialized; concurrent valid updates are applied one at a time. Already-running requests may finish with the previous policy. Nothing is persisted; restart reloads saved configuration.
+         * Update runtime CORS origins and enforced guard families
+         * @description Replaces cors.allowed_origins, guards.enforce or both immediately; at least one is required. Both are validated before either is applied. An empty guards.enforce list makes every family observe. Updates are serialized; concurrent valid updates are applied one at a time. Already-running requests may finish with the previous policy. Nothing is persisted; restart reloads saved configuration.
          */
         put: {
             parameters: {
@@ -550,7 +550,7 @@ export interface paths {
                 path?: never;
                 cookie?: never;
             };
-            /** @description 1-32 ASCII HTTP(S) origins, at most 512 bytes each; one hostname wildcard is supported, or a sole *. Empty/null lists and unsupported fields are rejected. Body at most 16 KiB. */
+            /** @description cors.allowed_origins: 1-32 ASCII HTTP(S) origins, at most 512 bytes each; one hostname wildcard is supported, or a sole *. Empty/null lists and unsupported fields are rejected. guards.enforce: guard family names, possibly empty. Body at most 16 KiB. */
             requestBody: {
                 content: {
                     "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.UpdateAdminConfigRequest"];
@@ -623,6 +623,164 @@ export interface paths {
                 };
             };
         };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/db/planguard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Last daily plan regression check
+         * @description Plans every corpus statement in custom and generic mode against this database, read-only and without executing it (plain EXPLAIN, 5 s per plan, 1 s lock timeout), and checks each plan against the corpus. Off unless planguard.daily_check is set (404 "planguard daily check is disabled"); when on, the check runs about an hour after boot and then daily, and until its first run this returns 404. fresh=true runs it now, shared with any run in progress and cancelled at server shutdown; within 5 minutes of the last run's end it starts nothing and returns the last successful report (started_at gives its age), or 500 when no run has succeeded yet. A read-only server cannot enable the check (configuration refuses planguard.daily_check with server.read_only), so there this returns 404 "planguard daily check is disabled".
+         */
+        get: {
+            parameters: {
+                query?: {
+                    /** @description Run the check now instead of returning the last report */
+                    fresh?: boolean;
+                };
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.PlanguardReport"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: components["schemas"]["internal_api_handlers.APIError"];
+                        };
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: components["schemas"]["internal_api_handlers.APIError"];
+                        };
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: components["schemas"]["internal_api_handlers.APIError"];
+                        };
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: components["schemas"]["internal_api_handlers.APIError"];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/admin/db/statements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Statement statistics by sqlc name
+         * @description Sums pg_stat_statements for this database by sqlc statement name, highest total execution time first. Statements without a name are summed as "(unnamed)". Times are milliseconds rounded to microseconds; plan_ms stays 0 unless pg_stat_statements.track_planning is on. Counters run from the last pg_stat_statements reset.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.DBStatementsResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: components["schemas"]["internal_api_handlers.APIError"];
+                        };
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: components["schemas"]["internal_api_handlers.APIError"];
+                        };
+                    };
+                };
+                /** @description Service Unavailable */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: components["schemas"]["internal_api_handlers.APIError"];
+                        };
+                    };
+                };
+            };
+        };
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -725,6 +883,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -784,6 +951,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -863,6 +1039,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description Not available yet, or the server is busy: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -901,6 +1086,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -965,6 +1159,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -1022,6 +1225,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1142,6 +1354,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description Not available yet, or the server is busy: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -1209,6 +1430,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -1258,7 +1488,13 @@ export interface paths {
                     neighbors?: boolean;
                     /** @description last_seen epoch ms of last item for pagination */
                     cursor?: number;
-                    /** @description Max results (default 50); must be positive, values above 200 are clamped */
+                    /** @description Opaque nextPageCursor from a previous response; keeps millisecond ties. Wins over cursor when both are sent */
+                    pageCursor?: string;
+                    /** @description Order: lastSeen (default), name, type or neighbors. Unnamed nodes come last in either name order; other ties go newest first, lastSeen ties by id. Page any order but lastSeen desc with pageCursor only */
+                    sort?: "lastSeen" | "name" | "type" | "neighbors";
+                    /** @description asc or desc. Defaults to asc, but to desc (newest first) for lastSeen; lastSeen asc lists the oldest heard first */
+                    order?: "asc" | "desc";
+                    /** @description Max results (default 50); must be positive, values above 2000 are clamped */
                     limit?: number;
                 };
                 header?: never;
@@ -1273,7 +1509,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.Page-github_com_MeshCore-Beacon_beacon-server_internal_api_NodeSummary"];
+                        "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.NodePage"];
                     };
                 };
                 /** @description Bad Request */
@@ -1287,6 +1523,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1360,6 +1605,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -1410,6 +1664,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1479,6 +1742,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -1518,8 +1790,10 @@ export interface paths {
                     name?: string;
                     /** @description Filter by transport scope name e.g. %23bc (URL-encoded #bc) */
                     scope?: string;
-                    /** @description last_seen epoch ms of last item for pagination */
+                    /** @description last_seen epoch ms of the last item */
                     cursor?: number;
+                    /** @description Opaque nextPageCursor from a previous response; keeps millisecond ties. Wins over cursor when both are sent */
+                    pageCursor?: string;
                     /** @description Max results (default 50); must be positive, values above 200 are clamped */
                     limit?: number;
                 };
@@ -1535,7 +1809,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.Page-github_com_MeshCore-Beacon_beacon-server_internal_api_ObserverSummary"];
+                        "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.ObserverPage"];
                     };
                 };
                 /** @description Bad Request */
@@ -1549,6 +1823,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1615,6 +1898,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1695,6 +1987,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -1750,6 +2051,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description Not available yet, or the server is busy: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1814,6 +2124,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1907,6 +2226,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -1954,8 +2282,10 @@ export interface paths {
                     since?: number;
                     /** @description Filter by first_heard_at <= until (epoch ms) */
                     until?: number;
-                    /** @description epoch ms of last item for pagination; last_heard_at, or site-local heard_at when iatas is set */
+                    /** @description epoch ms of the last item: its last_heard_at, or its site-local heard_at when iatas, iata, region or regionId is set (with hashPrefix always last_heard_at). Prefer pageCursor where nextPageCursor is returned */
                     cursor?: number;
+                    /** @description Opaque nextPageCursor from a previous response; keeps millisecond ties and wins over cursor when both are sent. A region page served without nextPageCursor pages by cursor: there cursor wins, and a pageCursor sent alone pages by its millisecond. Ignored with hashPrefix, which pages by cursor */
+                    pageCursor?: string;
                     /** @description Max results (default 50); must be positive, values above 200 are clamped */
                     limit?: number;
                     /** @description Match packets whose hash starts with this hex prefix (4-16 chars). Ordering and cursor use global last_heard_at even when iatas is set */
@@ -1973,7 +2303,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": Record<string, never>;
+                        "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.PacketPage"];
                     };
                 };
                 /** @description Bad Request */
@@ -1987,6 +2317,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description Not available yet, or the server is busy: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2053,6 +2392,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2133,6 +2481,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -2150,7 +2507,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List all regions */
+        /**
+         * List all regions
+         * @description Each region carries its detail and member IATAs, the same as GET /regions/{regionId}.
+         */
         get: {
             parameters: {
                 query?: never;
@@ -2166,11 +2526,20 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.RegionSummary"][];
+                        "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.Region"][];
                     };
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2244,6 +2613,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -2261,11 +2639,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List known routes */
+        /**
+         * List known routes
+         * @description Newest first. iatas filters by several IATA codes and takes precedence over the single iata, which
+         *     is matched exactly as given. With neither, every IATA's routes are listed.
+         */
         get: {
             parameters: {
                 query?: {
-                    /** @description Filter by IATA code */
+                    /** @description Comma-separated IATA codes (max 100) */
+                    iatas?: string;
+                    /** @description Single IATA code (when iatas is omitted) */
                     iata?: string;
                     /** @description Filter by exact hop count */
                     hopCount?: number;
@@ -2302,6 +2686,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2384,6 +2777,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The lookup took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2610,6 +3012,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -2663,6 +3074,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2724,6 +3144,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -2769,6 +3198,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2826,6 +3264,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -2978,6 +3425,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -3109,6 +3565,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -3156,6 +3621,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3224,6 +3698,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3455,6 +3938,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -3507,6 +3999,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3570,6 +4071,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -3619,6 +4129,15 @@ export interface paths {
                 };
                 /** @description Internal Server Error */
                 500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -3701,6 +4220,15 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
             };
         };
         put?: never;
@@ -3758,6 +4286,57 @@ export interface paths {
                         "application/json": components["schemas"]["internal_api_handlers.APIError"];
                     };
                 };
+                /** @description The read took too long: retry after Retry-After seconds */
+                503: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["internal_api_handlers.APIError"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ws-ticket": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ticket for opening /ws without an Origin
+         * @description For clients that send no Origin header, such as BEACON Mobile. Send the ticket in the
+         *     X-Beacon-Ticket header of the /ws upgrade. It works for 60 seconds, from the same client
+         *     address (IPv6: the same /64), and only on this server process. Required only when
+         *     websocket.require_origin is on; browsers never need one.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.WSTicket"];
+                    };
+                };
             };
         };
         put?: never;
@@ -3795,9 +4374,21 @@ export interface components {
         "github_com_MeshCore-Beacon_beacon-server_internal_api.AdminConfig": {
             auth?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminAuthConfig"];
             cors?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminCORSConfig"];
+            /** @description absent when database guards are not configured */
+            guards?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminGuardsConfig"];
             ingest?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminIngestConfig"];
             mobile?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminMobileConfig"];
             web?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminWebConfig"];
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.AdminGuardsConfig": {
+            /** @description custom_all, split or single */
+            api_plan_layout?: string;
+            /** @description always "shadow" */
+            budget?: string;
+            /** @description families currently enforced; the configuration file is the boot default */
+            enforce?: string[];
+            /** @description the single plan layout makes every family observe */
+            observe_only?: boolean;
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.AdminIngestConfig": {
             /**
@@ -3921,6 +4512,21 @@ export interface components {
             /** @description route segment in target IATA */
             targetSegment?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.RouteHop"][];
             totalHops?: number;
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.DBStatement": {
+            calls?: number;
+            exec_ms?: number;
+            /** @description sqlc statement name; "(unnamed)" aggregates the rest */
+            name?: string;
+            /** @description 0 unless pg_stat_statements.track_planning is on */
+            plan_ms?: number;
+            rows?: number;
+            shared_hit?: number;
+            shared_read?: number;
+            wal_bytes?: number;
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.DBStatementsResponse": {
+            items?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.DBStatement"][];
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.IATA": {
             displayName?: string;
@@ -4093,6 +4699,20 @@ export interface components {
             publicKey?: string;
             snr?: number;
         };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.NodePage": {
+            hasMore?: boolean;
+            items?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.NodeSummary"][];
+            nextCursor?: number;
+            nextPageCursor?: string;
+            /** @enum {string} */
+            order?: "asc" | "desc";
+            /**
+             * @description Sort and Order name the order the items are in ("lastSeen" "desc" unless a sort was asked
+             *     for), so a client can tell this server sorted; older servers leave them out.
+             * @enum {string}
+             */
+            sort?: "lastSeen" | "name" | "type" | "neighbors";
+        };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.NodeSummary": {
             /** @description most recently matched transport scope name e.g. "#bc" */
             defaultScope?: string;
@@ -4102,6 +4722,8 @@ export interface components {
             /** @description true if this node is also a known observer */
             isObserver?: boolean;
             knownNeighborCount?: number;
+            /** @description epoch ms */
+            lastSeen?: number;
             /** @description decimal degrees, from advert AppData */
             lat?: number;
             /** @description decimal degrees, from advert AppData */
@@ -4291,6 +4913,12 @@ export interface components {
             /** @description "online" or "offline" derived from last_status_at */
             status?: string;
         };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.ObserverPage": {
+            hasMore?: boolean;
+            items?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.ObserverSummary"][];
+            nextCursor?: number;
+            nextPageCursor?: string;
+        };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.ObserverSummary": {
             /** @description friendly name from /status messages */
             displayName?: string;
@@ -4423,6 +5051,12 @@ export interface components {
             rssi?: number;
             snr?: number;
         };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.PacketPage": {
+            hasMore?: boolean;
+            items?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.PacketSummary"][];
+            nextCursor?: number;
+            nextPageCursor?: string;
+        };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.PacketPathLength": {
             /** @description per-hop hash size in bytes (1, 2, or 3) */
             hashSize?: number;
@@ -4462,16 +5096,6 @@ export interface components {
         "github_com_MeshCore-Beacon_beacon-server_internal_api.Page-github_com_MeshCore-Beacon_beacon-server_internal_api_AdvertObservation": {
             hasMore?: boolean;
             items?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdvertObservation"][];
-            nextCursor?: number;
-        };
-        "github_com_MeshCore-Beacon_beacon-server_internal_api.Page-github_com_MeshCore-Beacon_beacon-server_internal_api_NodeSummary": {
-            hasMore?: boolean;
-            items?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.NodeSummary"][];
-            nextCursor?: number;
-        };
-        "github_com_MeshCore-Beacon_beacon-server_internal_api.Page-github_com_MeshCore-Beacon_beacon-server_internal_api_ObserverSummary": {
-            hasMore?: boolean;
-            items?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.ObserverSummary"][];
             nextCursor?: number;
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.Page-github_com_MeshCore-Beacon_beacon-server_internal_api_PacketObservationSummary": {
@@ -4516,6 +5140,34 @@ export interface components {
             payloadType?: number;
             payloadTypeName?: string;
         };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.PlanguardReport": {
+            /** @description no FALSE_POSITIVE, MISSED or ERROR */
+            clean?: boolean;
+            /** @description verdict → runs */
+            counts?: {
+                [key: string]: number;
+            };
+            duration_ms?: number;
+            /** @description never null */
+            failures?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.PlanguardRun"][];
+            runs?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.PlanguardRun"][];
+            started_at?: string;
+            tier?: string;
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.PlanguardRun": {
+            /** @description relation:node:index of each driving scan */
+            drivers?: string[];
+            entry?: string;
+            /** @description the plan rules the run broke */
+            failures?: string[];
+            /** @description custom or generic */
+            mode?: string;
+            /** @description why the run was not made */
+            skip?: string;
+            stmt?: string;
+            /** @description ok, DETECTED, MISSED, FALSE_POSITIVE, RETIRED_INDEX, KNOWN_ISSUE, SKIP or ERROR */
+            verdict?: string;
+        };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.RadioPreset": {
             /** @description number of observers or nodes on this preset in this IATA */
             count?: number;
@@ -4545,12 +5197,6 @@ export interface components {
             slug?: string;
             /** @description suggested map zoom level */
             zoomLevel?: number;
-        };
-        "github_com_MeshCore-Beacon_beacon-server_internal_api.RegionSummary": {
-            id?: number;
-            name?: string;
-            /** @description URL-safe identifier e.g. "western-canada" */
-            slug?: string;
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.ResolvedHop": {
             /** @description "high", "ambiguous", or "none" */
@@ -4802,12 +5448,25 @@ export interface components {
             allowed_origins: string[];
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.UpdateAdminConfigRequest": {
-            cors: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.UpdateAdminCORSRequest"];
+            cors?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.UpdateAdminCORSRequest"];
+            guards?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.UpdateAdminGuardsRequest"];
         };
         "github_com_MeshCore-Beacon_beacon-server_internal_api.UpdateAdminConfigResponse": {
             config?: components["schemas"]["github_com_MeshCore-Beacon_beacon-server_internal_api.AdminConfig"];
             persisted?: boolean;
             requires_restart?: boolean;
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.UpdateAdminGuardsRequest": {
+            enforce: string[];
+        };
+        "github_com_MeshCore-Beacon_beacon-server_internal_api.WSTicket": {
+            /**
+             * @description ExpiresAt is when the ticket stops opening /ws, in epoch ms.
+             * @example 1793470167000
+             */
+            expiresAt?: number;
+            /** @example AAABmZ1s4CgLBvU1n1yN3v8hQm9YtVq2 */
+            ticket?: string;
         };
         "internal_api_handlers.APIError": {
             /** @description e.g. "not_found", "bad_request" */

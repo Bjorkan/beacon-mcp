@@ -20,7 +20,7 @@ describe("Beacon HTTP contract", () => {
         "https://beacon.example/api/v1/nodes?iatas=ARN&limit=20",
       );
       expect(init?.headers).toMatchObject({
-        "user-agent": "beacon-mcp/2.0.7",
+        "user-agent": "beacon-mcp/2.1.1",
       });
       expect(init?.redirect).toBe("error");
       return Response.json({
@@ -34,7 +34,7 @@ describe("Beacon HTTP contract", () => {
     ).resolves.toMatchObject({ items: [{ id: "node-1" }] });
   });
 
-  it("calls the v2.0.7 public server-info endpoint", async () => {
+  it("calls the public server-info endpoint", async () => {
     const fetchMock = vi.fn<typeof fetch>(async (input) => {
       expect(String(input)).toBe("https://beacon.example/api/v1/info");
       return Response.json({
@@ -125,6 +125,32 @@ describe("Beacon HTTP contract", () => {
       BeaconUpstreamError,
     );
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it("classifies upstream database deadlines without exposing their message", async () => {
+    const fetchMock = vi.fn<typeof fetch>(async () =>
+      Response.json(
+        {
+          error: {
+            code: "deadline_exceeded",
+            message: "internal query details",
+          },
+        },
+        { status: 503, headers: { "retry-after": "10" } },
+      ),
+    );
+    const client = new BeaconClient(config, {
+      fetch: fetchMock,
+      sleep: async () => undefined,
+    });
+    await expect(client.request("listPackets")).rejects.toMatchObject({
+      name: "BeaconTimeoutError",
+      status: 503,
+      code: "deadline_exceeded",
+      retryAfter: "10",
+      message: "Beacon request failed with HTTP 503",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("maps timeouts and structurally prevents arbitrary/admin operations", async () => {

@@ -35,9 +35,9 @@ remain on that replica; no cross-replica delivery or replay is provided.
 - MCP era `2026-07-28` default, served statelessly; older clients negotiate over
   the same endpoint via legacy `initialize` (SDK defaults: `2025-11-25`,
   `2025-06-18`, `2025-03-26`, `2024-11-05`, `2024-10-07`), also statelessly
-- Beacon API contract version `2.0.7`, also advertised as the MCP server version
-- Beacon server tag `v2.0.7`, commit `202acc6cc8f616819a3577c57a7009ea1a48c0dd`; the newest published GitHub release is `v2.0.5`, so re-check this pin when `v2.0.6`/`v2.0.7` are published
-- Beacon docs commit `9e4298d5897184f1875e3d6be97164f40d208000`, which predates the full `2.0.7` surface: the documentation repository had not yet documented packet `hashPrefix`, the top-advertisers `sort`, or the node MeshMapper block when this contract was pinned
+- Beacon API contract version `2.1.1`, also advertised as the MCP server version
+- Beacon server release `v2.1.1`, commit `d0a55dbf6d6f5ed4345bd72c039845f6c947fd16` (the re-cut release, not the original 2.1.1 build)
+- Beacon docs commit `008f988863014c32e673c5c0176ea86db2868ccf`
 
 The exact upstream Swagger 2.0 document is committed at
 `vendor/beacon-openapi.yaml`. Build-time tooling converts it to OpenAPI 3 and
@@ -67,15 +67,17 @@ whole-hour boundaries and has a rolling ~90-day retention measured from the
 current time; windows beyond the retention window are rejected with a
 misleading "epoch milliseconds" error.
 
-The last comparison was made on 2026-10-15 against the `v2.0.7` tag, commit
-`202acc6cc8f616819a3577c57a7009ea1a48c0dd` (tagged 2026-10-14; no published
-release yet). The audit input was a `beacon-server-main.zip` snapshot without
-Git metadata; its `docs/swagger.yaml` is byte-identical to that tag's document,
-which is the pin for this contract. Relative to the newest published release
-`v2.0.5`, this contract adds packet `hashPrefix` and the MeshMapper node
-metadata; the other relevant changes — optional `iatas` route searches,
-`minWebVersion`, and the required `sort=flood|direct` — already exist in
-`v2.0.5`. There are no new or removed paths.
+The last comparison was made on 2026-11-05 against the published `v2.1.1`
+release at `d0a55dbf6d6f5ed4345bd72c039845f6c947fd16`, reviewing the
+handlers, response types, Swagger and matching Beacon docs (commit above).
+Relative to the previous local `v2.0.7` pin, `/ws-ticket` is the new public
+path; new admin database/guard paths remain excluded. Nodes, observers and
+packets now offer `nextPageCursor` to preserve millisecond ties, with the
+numeric `nextCursor` retained for older clients. Node lists gained `sort`,
+`order`, `lastSeen`, and (when requested) `neighborIds`; lists of regions
+include full region detail. Full route lists now accept multiple `iatas`.
+Upstream also returns `503` with `deadline_exceeded` and `Retry-After` for
+database timeouts; the gateway classifies this as `DEADLINE_EXCEEDED`.
 
 The `/info` handler returns null for minimum client versions when unset;
 Swagger does not mark them nullable. The output schema matches runtime
@@ -99,10 +101,10 @@ streaming contract below); the operation shares the analytics timeout budget.
 
 Further pinned-commit findings verified live against `beacon.meshat.se`:
 
-- Node list items (`api.NodeSummary` projection in `db/nodes.go`) never carry
-  `defaultScope`, `supportsMultibytePaths`, or `supportsMultibyteTraces`;
-  `neighborIds` is populated only when the list request opts in with
-  `?neighbors=true`, which the MCP tool does not expose. The node detail
+- Node list items (`api.NodeSummary` projection in `db/nodes.go`) carry
+  `defaultScope` when set, `lastSeen`, and (with `?neighbors=true`) `neighborIds`;
+  the MCP tool exposes the neighbors option. They do not carry
+  `supportsMultibytePaths` or `supportsMultibyteTraces`. The node detail
   endpoint (`api.Node`) carries the multibyte flags and, when set,
   `defaultScope`, `observerId`, and `radio`, but never `neighborIds` (detail
   exposes full `neighbors` objects instead). The output schemas mirror this.
@@ -164,7 +166,8 @@ docker pull ghcr.io/bjorkan/beacon-mcp:edge
 
 Deployment and Compose must always use an image published at
 `ghcr.io/bjorkan/beacon-mcp`; never build the deployment image on the target
-host. Pull and run:
+host. The examples below retain the last known published `2.0.7` image;
+do not substitute `2.1.1` until that image has been published. Pull and run:
 
 ```sh
 docker pull ghcr.io/bjorkan/beacon-mcp:2.0.7
@@ -197,7 +200,8 @@ cache to an image layer. The runtime runs as the image's `node` user (UID/GID
 1000), uses exec-form `CMD`, and writes no application files. Logs go to
 stdout/stderr; Compose uses the rotating local log driver. Set
 `BEACON_MCP_IMAGE` to an immutable semantic-version tag, Git SHA tag, or image
-digest in production; Compose targets the `2.0.7` tag. Publish that image first, or set
+digest in production; Compose still targets the last known published `2.0.7` tag.
+Publish the updated image first, or set
 `BEACON_MCP_IMAGE` to the exact tested SHA/digest; `edge` evaluates the latest
 `main` branch and need not match this release.
 
@@ -268,8 +272,12 @@ requested bound.
 Paginated results use `{ items, pagination: { hasMore, nextCursor? } }`. The
 shape of `nextCursor` varies by endpoint:
 
-- Numeric `cursor` for `list_scopes`, `search_nodes`, `search_observers`,
-  `search_packets`, `search_messages`, and `get_channel_messages`.
+- Numeric `cursor` for `list_scopes`, `search_messages`, and
+  `get_channel_messages`. `search_nodes`, `search_observers`, and
+  `search_packets` return the opaque `pageCursor` as well as the numeric
+  `cursor` when both are available. Pass both back for precise pages on
+  Beacon 2.1+ and backward compatibility with older servers. Sorted node
+  lists only return `pageCursor`; packet `hashPrefix` only returns `cursor`.
 - Compound `{ cursor, cursorId }` for `list_routes`.
 - Compound `{ cursor, cursorTag }` for `search_traces`.
 - Opaque `pageCursor` for `list_channels` (Beacon's legacy numeric channel
@@ -339,8 +347,9 @@ observations.
   credentials.
 - The MCP endpoint is public by design. Apply access control, rate limiting, or
   geographic policy at the reverse proxy when a deployment requires it.
-- One retry with jitter is used only for network failures and HTTP 502/503/504.
-  HTTP 429 is never retried and `Retry-After` is returned to the client.
+- One retry with jitter is used only for network failures and HTTP 502/503/504
+  without `Retry-After`. HTTP 429 and 5xx responses with `Retry-After` are
+  never retried immediately; the header is returned to the client.
 - Pino logs Fastify request IDs, MCP tool names, HTTP status and latency, plus
   upstream operation, status, retry attempt, latency, and result count. Headers,
   message bodies, packet bodies, response bodies, stack traces, and environment
@@ -420,8 +429,13 @@ Commit the vendor document, generated declarations, and updated
 - The service is read-only and exposes 23 tools plus node/observer resource templates.
 - MCP `subscriptions/listen`, enabled by default and disabled with
   `BEACON_SUBSCRIPTIONS_ENABLED=false`, uses a process-local `/ws` listener
-  with reconnect and debounce. It sends change hints for subscribed resource
-  URIs only. Beacon `/ws` may lose events and has no replay; the MCP client
+  with reconnect and debounce. Before each WebSocket connection it requests
+  `/api/v1/ws-ticket` and passes the short-lived ticket in the upgrade header;
+  older servers returning 404 connect without a ticket. Ticket and socket
+  must reach the same upstream process/address when `websocket.require_origin`
+  is enabled; load-balanced hosts require affinity. It sends change hints for
+  subscribed resource URIs only. Beacon `/ws` may lose events and has no replay;
+  the MCP client
   must re-read resources and recreate lost listen streams. The legacy
   `resources/subscribe` method remains unsupported; no offline delivery or
   background MCP Events are implemented.

@@ -19,6 +19,7 @@ type PublicApiPath = Exclude<keyof paths, `/admin/${string}`>;
 
 const endpoints = {
   serverInfo: "/info",
+  wsTicket: "/ws-ticket",
   listIatas: "/iatas",
   listRegions: "/regions",
   listScopes: "/scopes",
@@ -446,7 +447,9 @@ export class BeaconClient {
             resultCount: resultCount(body),
             outcome: response.ok
               ? "success"
-              : attempt === 1 && [502, 503, 504].includes(response.status)
+              : attempt === 1 &&
+                  [502, 503, 504].includes(response.status) &&
+                  !response.headers.has("retry-after")
                 ? "retry"
                 : "error",
           },
@@ -454,7 +457,11 @@ export class BeaconClient {
         );
         logged = true;
         if (response.ok) return body;
-        if (attempt === 1 && [502, 503, 504].includes(response.status)) {
+        if (
+          attempt === 1 &&
+          [502, 503, 504].includes(response.status) &&
+          !response.headers.has("retry-after")
+        ) {
           await this.sleep(25 + Math.floor(Math.random() * 50));
           if (options.signal?.aborted) throw options.signal.reason;
           continue;

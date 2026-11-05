@@ -21,6 +21,7 @@ interface ScopedLocationFilters extends LocationFilters {
 }
 interface OffsetPage {
   cursor?: number;
+  pageCursor?: string;
   limit?: number;
 }
 interface TimeWindow {
@@ -45,7 +46,11 @@ function scopedLocation(input: Input<ScopedLocationFilters>) {
 }
 
 function offsetPage(input: Input<OffsetPage>) {
-  return { cursor: input.cursor, limit: boundedLimit(input.limit) };
+  return {
+    cursor: input.cursor,
+    pageCursor: input.pageCursor,
+    limit: boundedLimit(input.limit),
+  };
 }
 
 export class BeaconAdapter {
@@ -53,6 +58,10 @@ export class BeaconAdapter {
 
   getServerInfo(signal?: AbortSignal): Promise<BeaconResponse<"serverInfo">> {
     return this.client.request("serverInfo", { signal });
+  }
+
+  getWsTicket(signal?: AbortSignal): Promise<BeaconResponse<"wsTicket">> {
+    return this.client.request("wsTicket", { signal });
   }
 
   async listIatas(limit = 20, signal?: AbortSignal): Promise<Page> {
@@ -103,6 +112,9 @@ export class BeaconAdapter {
           pubkeyPrefix?: string;
           supportsMultibytePaths?: boolean;
           supportsMultibyteTraces?: boolean;
+          sort?: "lastSeen" | "name" | "type" | "neighbors";
+          order?: "asc" | "desc";
+          neighbors?: boolean;
         }
     >,
     signal?: AbortSignal,
@@ -120,10 +132,14 @@ export class BeaconAdapter {
           pubkeyPrefix: input.pubkeyPrefix,
           supportsMultibytePaths: input.supportsMultibytePaths,
           supportsMultibyteTraces: input.supportsMultibyteTraces,
+          sort: input.sort,
+          order: input.order,
+          neighbors: input.neighbors,
         },
         signal,
       }),
       page.limit,
+      true,
     );
   }
 
@@ -293,6 +309,8 @@ export class BeaconAdapter {
         signal,
       }),
       limit,
+      false,
+      true,
     );
   }
 
@@ -323,6 +341,7 @@ export class BeaconAdapter {
   async listRoutes(
     input: Input<{
       iata?: string;
+      iatas?: string[];
       hopCount?: number;
       cursor?: number;
       cursorId?: number;
@@ -334,6 +353,7 @@ export class BeaconAdapter {
     const value = await this.client.request("listRoutes", {
       query: {
         iata: input.iata ? normalizeIatas([input.iata])?.[0] : undefined,
+        iatas: normalizeIatas(input.iatas)?.join(","),
         hopCount: input.hopCount,
         cursor: input.cursor,
         cursorId: input.cursorId,
