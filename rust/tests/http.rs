@@ -49,3 +49,34 @@ async fn health_readiness_and_mcp_discovery() {
     token.cancel();
     task.abort();
 }
+
+#[test]
+fn shutdown_grace_does_not_limit_normal_uptime() {
+    use std::{
+        process::{Command, Stdio},
+        thread,
+        time::Duration,
+    };
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    drop(listener);
+    let mut child = Command::new(env!("CARGO_BIN_EXE_beacon-mcp-rust"))
+        .env("HOST", "127.0.0.1")
+        .env("PORT", port.to_string())
+        .env("BEACON_BASE_URL", "http://127.0.0.1:9/")
+        .env("SHUTDOWN_GRACE_MS", "100")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .unwrap();
+    thread::sleep(Duration::from_millis(400));
+    let exited = child.try_wait().unwrap();
+    if exited.is_none() {
+        child.kill().unwrap();
+        child.wait().unwrap();
+    }
+    assert!(
+        exited.is_none(),
+        "shutdown grace expired before a shutdown signal: {exited:?}"
+    );
+}
