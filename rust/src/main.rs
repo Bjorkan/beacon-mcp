@@ -1,4 +1,4 @@
-use beacon_mcp_rust::{config::Config, server};
+use beacon_mcp_rust::{client::BeaconClient, config::Config, server};
 use tokio_util::sync::CancellationToken;
 
 #[tokio::main]
@@ -17,8 +17,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listener = tokio::net::TcpListener::bind(config.bind).await?;
     let shutdown = CancellationToken::new();
     tracing::info!(address = %listener.local_addr()?, "Beacon MCP Rust foundation listening");
+    let client = BeaconClient::new(
+        config.beacon_base_url.clone(),
+        config.beacon_timeout,
+        config.stats_timeout,
+    );
     let serve = async {
-        axum::serve(listener, server::router(shutdown.clone()))
+        axum::serve(listener, server::router(shutdown.clone(), client))
             .with_graceful_shutdown(shutdown.clone().cancelled_owned())
             .await
     };
