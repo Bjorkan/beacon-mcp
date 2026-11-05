@@ -398,10 +398,10 @@ fn hex_key(key: &str, min: usize, max: usize) -> bool {
     (min..=max).contains(&key.len()) && key.bytes().all(|c| c.is_ascii_hexdigit())
 }
 
-fn page(value: Value, limit: usize, include_sort: bool) -> Result<Value, GatewayError> {
+pub(crate) fn page(value: Value, limit: usize, include_sort: bool) -> Result<Value, GatewayError> {
     let source = value
-        .get("items")
-        .and_then(Value::as_array)
+        .as_array()
+        .or_else(|| value.get("items").and_then(Value::as_array))
         .cloned()
         .ok_or_else(|| GatewayError::new(ErrorCode::Unavailable, "Beacon returned invalid page"))?;
     let items = source.iter().take(limit).cloned().collect::<Vec<_>>();

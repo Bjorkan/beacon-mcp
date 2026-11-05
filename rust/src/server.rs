@@ -1,4 +1,4 @@
-use crate::{client::BeaconClient, tools::CoreTools};
+use crate::{client::BeaconClient, packet_tools::PacketTools, tools::CoreTools};
 use axum::{Router, routing::get};
 use rmcp::{
     ErrorData as McpError, ServerHandler,
@@ -14,10 +14,10 @@ use rmcp::{
 use serde_json::{Value, json};
 use tokio_util::sync::CancellationToken;
 
-/// Foundation only. Tools are added with their implementation and tests in later layers.
 #[derive(Clone)]
 pub struct BeaconServer {
     pub tools: CoreTools,
+    pub packet_tools: PacketTools,
 }
 
 impl ServerHandler for BeaconServer {
@@ -34,13 +34,20 @@ impl ServerHandler for BeaconServer {
         _context: RequestContext<RoleServer>,
     ) -> Result<ListToolsResult, McpError> {
         Ok(ListToolsResult {
-            tools: self.tools.list(),
+            tools: self
+                .tools
+                .list()
+                .into_iter()
+                .chain(self.packet_tools.list())
+                .collect(),
             ..Default::default()
         })
     }
 
     fn get_tool(&self, name: &str) -> Option<Tool> {
-        self.tools.definition(name)
+        self.tools
+            .definition(name)
+            .or_else(|| self.packet_tools.definition(name))
     }
 
     async fn call_tool(
@@ -48,11 +55,19 @@ impl ServerHandler for BeaconServer {
         request: CallToolRequestParams,
         _context: RequestContext<RoleServer>,
     ) -> Result<CallToolResponse, McpError> {
-        let result = match self
-            .tools
-            .execute(request.name.as_ref(), request.arguments)
-            .await
+        let result = match if self
+            .packet_tools
+            .definition(request.name.as_ref())
+            .is_some()
         {
+            self.packet_tools
+                .execute(request.name.as_ref(), request.arguments)
+                .await
+        } else {
+            self.tools
+                .execute(request.name.as_ref(), request.arguments)
+                .await
+        } {
             Ok(value) => crate::result::success(value),
             Err(error) => crate::result::error(error),
         };
@@ -69,6 +84,7 @@ pub fn router(shutdown: CancellationToken, client: BeaconClient) -> Router {
         move || {
             Ok(BeaconServer {
                 tools: CoreTools::new(client.clone()),
+                packet_tools: PacketTools::new(client.clone()),
             })
         },
         Default::default(),
