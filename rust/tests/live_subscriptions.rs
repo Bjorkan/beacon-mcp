@@ -355,3 +355,76 @@ async fn stream_permits_are_bounded_and_released_on_disconnect() {
     .unwrap();
     task.abort();
 }
+
+#[tokio::test]
+async fn disabled_does_not_advertise_subscriptions_or_accept_listen() {
+    let shutdown = CancellationToken::new();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let root = format!("http://{}/", listener.local_addr().unwrap());
+    let client = BeaconClient::new(
+        "http://127.0.0.1:9/".parse().unwrap(),
+        Duration::from_secs(1),
+        Duration::from_secs(1),
+    );
+    let task = tokio::spawn({
+        let app = server::router(shutdown.clone(), client);
+        async move { axum::serve(listener, app).await.unwrap() }
+    });
+    let http = reqwest::Client::new();
+    let discover = http
+        .post(&root)
+        .header("Accept", "application/json, text/event-stream")
+        .header("MCP-Protocol-Version", "2026-07-28")
+        .header("Mcp-Method", "server/discover")
+        .json(
+            &json!({"jsonrpc":"2.0","id":1,"method":"server/discover","params":{"_meta":{
+                "io.modelcontextprotocol/protocolVersion":"2026-07-28",
+                "io.modelcontextprotocol/clientInfo":{"name":"test","version":"1"},
+                "io.modelcontextprotocol/clientCapabilities":{}
+            }}}),
+        )
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
+    assert!(!discover.contains("\"subscribe\":true"), "{discover}");
+    let response = listen(&http, &root, &format!("beacon://nodes/{NODE}")).await;
+    let body = response.text().await.unwrap();
+    assert!(
+        !body.contains("notifications/subscriptions/acknowledged"),
+        "{body}"
+    );
+    shutdown.cancel();
+    task.abort();
+}
+
+#[tokio::test]
+async fn legacy_initialize_does_not_advertise_resource_subscribe() {
+    let shutdown = CancellationToken::new();
+    let live = Live::new(1, Duration::ZERO, shutdown.clone());
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let root = format!("http://{}/", listener.local_addr().unwrap());
+    let client = BeaconClient::new(
+        "http://127.0.0.1:9/".parse().unwrap(),
+        Duration::from_secs(1),
+        Duration::from_secs(1),
+    );
+    let task = tokio::spawn({
+        let app = server::router_with_live(shutdown.clone(), client, Some(live));
+        async move { axum::serve(listener, app).await.unwrap() }
+    });
+    let response=reqwest::Client::new().post(root)
+        .header("Accept","application/json, text/event-stream")
+        .header("MCP-Protocol-Version","2025-11-25")
+        .json(&json!({"jsonrpc":"2.0","id":3,"method":"initialize","params":{
+            "protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"legacy","version":"1"}
+        }})).send().await.unwrap();
+    assert_eq!(response.status(), 200);
+    let body = response.text().await.unwrap();
+    assert!(body.contains("resources"), "{body}");
+    assert!(!body.contains("\"subscribe\":true"), "{body}");
+    shutdown.cancel();
+    task.abort();
+}

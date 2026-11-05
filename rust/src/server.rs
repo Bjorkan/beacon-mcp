@@ -6,10 +6,10 @@ use axum::{Router, routing::get};
 use rmcp::{
     ErrorData as McpError, ServerHandler,
     model::{
-        CallToolRequestParams, CallToolResponse, ListResourceTemplatesResult, ListToolsResult,
-        PaginatedRequestParams, ReadResourceRequestParams, ReadResourceResponse,
-        ReadResourceResult, ResourceContents, ResourceTemplate, ServerCapabilities, ServerConfig,
-        SubscriptionFilter, Tool,
+        CallToolRequestParams, CallToolResponse, InitializeRequestParams, InitializeResult,
+        ListResourceTemplatesResult, ListToolsResult, PaginatedRequestParams,
+        ReadResourceRequestParams, ReadResourceResponse, ReadResourceResult, ResourceContents,
+        ResourceTemplate, ServerCapabilities, ServerConfig, SubscriptionFilter, Tool,
     },
     service::{RequestContext, RoleServer, SubscriptionContext},
     transport::streamable_http_server::{
@@ -30,6 +30,21 @@ pub struct BeaconServer {
 }
 
 impl ServerHandler for BeaconServer {
+    async fn initialize(
+        &self,
+        request: InitializeRequestParams,
+        context: RequestContext<RoleServer>,
+    ) -> Result<InitializeResult, McpError> {
+        context.peer.set_peer_info(request.clone());
+        let mut info = self.negotiate_initialize(&request)?;
+        // subscribe in the legacy capability means resources/subscribe, not
+        // the modern subscriptions/listen stream supported by this gateway.
+        if let Some(resources) = info.capabilities.resources.as_mut() {
+            resources.subscribe = None;
+        }
+        Ok(info)
+    }
+
     fn get_info(&self) -> ServerConfig {
         let mut capabilities = ServerCapabilities::builder()
             .enable_tools()
