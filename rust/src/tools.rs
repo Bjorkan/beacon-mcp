@@ -164,7 +164,9 @@ impl CoreTools {
             && (args.order.as_deref() == Some("asc")
                 || args.sort.as_deref().is_some_and(|sort| sort != "lastSeen"))
         {
-            return Err(invalid("numeric cursor requires newest-first node order"));
+            return Err(invalid(
+                "numeric cursor works only with default lastSeen descending order",
+            ));
         }
         if args
             .status
@@ -362,7 +364,7 @@ impl CoreTools {
                         || (minutes > 2_880
                             && matches!(args.interval.as_deref().unwrap_or("15m"), "5m" | "15m"))
                     {
-                        return Err(invalid("observer range exceeds interval limit"));
+                        return Err(invalid("range must be 48h or less for intervals under 1h"));
                     }
                     put("range", Some(range));
                 }
