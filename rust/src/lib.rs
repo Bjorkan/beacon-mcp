@@ -3,6 +3,7 @@ pub mod client;
 pub mod config;
 pub mod packet_tools;
 pub mod resources;
+pub mod request_logging;
 pub mod result;
 pub mod routing_tools;
 pub mod server;
