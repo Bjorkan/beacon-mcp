@@ -143,7 +143,7 @@ async fn calls_all_five_route_and_trace_tools_with_compound_cursors() {
         ),
         (
             "beacon_find_cross_iata_routes",
-            json!({"fromHash":"ab","toHash":"cd","fromIata":" arn ","toIata":"mmx","limit":1}),
+            json!({"fromHash":"ab","toHash":"cd","fromIata":"arn","toIata":"mmx","limit":1}),
             "items",
         ),
         (
@@ -221,9 +221,9 @@ async fn invalid_filters_never_reach_beacon_and_unknown_tags_report_not_found() 
     ] {
         let response = rpc(&client, &root, "tools/call", Some(name), args).await;
         assert_eq!(response["result"]["isError"], true, "{name}: {response}");
-        assert_eq!(
-            response["result"]["structuredContent"]["error"]["code"],
-            "INVALID_ARGUMENT"
+        assert!(
+            response["result"].get("structuredContent").is_none(),
+            "{name}: {response}"
         );
     }
     assert!(seen.lock().unwrap().is_empty());

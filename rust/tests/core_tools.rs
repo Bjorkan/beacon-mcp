@@ -193,7 +193,7 @@ async fn lists_only_implemented_tools_and_calls_all_nine() {
         &root,
         "tools/call",
         Some("beacon_search_nodes"),
-        json!({"iatas":[" arn "]}),
+        json!({"iatas":["arn"]}),
     )
     .await;
     assert_eq!(normalized["result"]["isError"], false);

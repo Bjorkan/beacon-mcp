@@ -20,6 +20,110 @@ use serde_json::{Value, json};
 use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 
+// The frozen discovery schema is also the pre-request validation boundary.
+// Its keywords are deliberately limited to the subset used by these tools.
+fn validate_field(value: &Value, schema: &Value, path: &str) -> Result<(), String> {
+    let kind = schema["type"].as_str().unwrap_or("");
+    let valid_type = match kind {
+        "string" => value.is_string(),
+        "integer" => value.as_i64().is_some() || value.as_u64().is_some(),
+        "boolean" => value.is_boolean(),
+        "array" => value.is_array(),
+        _ => true,
+    };
+    if !valid_type {
+        return Err(format!("{path}: Invalid input: expected {kind}"));
+    }
+    if let Some(options) = schema["enum"].as_array()
+        && !options.contains(value)
+    {
+        return Err(format!("{path}: Invalid option"));
+    }
+    if let Some(text) = value.as_str() {
+        if schema["minLength"]
+            .as_u64()
+            .is_some_and(|min| text.chars().count() < min as usize)
+            || schema["maxLength"]
+                .as_u64()
+                .is_some_and(|max| text.chars().count() > max as usize)
+        {
+            return Err(format!("{path}: Invalid string length"));
+        }
+        if let Some(pattern) = schema["pattern"].as_str()
+            && !regex::Regex::new(pattern)
+                .expect("valid frozen input pattern")
+                .is_match(text)
+        {
+            return Err(format!(
+                "{path}: Invalid string: must match pattern /{pattern}/"
+            ));
+        }
+    }
+    if let Some(number) = value.as_f64() {
+        for (key, condition) in [
+            (
+                "minimum",
+                number < schema["minimum"].as_f64().unwrap_or(f64::NEG_INFINITY),
+            ),
+            (
+                "maximum",
+                number > schema["maximum"].as_f64().unwrap_or(f64::INFINITY),
+            ),
+            (
+                "exclusiveMinimum",
+                number
+                    <= schema["exclusiveMinimum"]
+                        .as_f64()
+                        .unwrap_or(f64::NEG_INFINITY),
+            ),
+        ] {
+            if condition {
+                return Err(format!("{path}: Invalid number ({key})"));
+            }
+        }
+    }
+    if let Some(values) = value.as_array() {
+        if schema["minItems"]
+            .as_u64()
+            .is_some_and(|min| values.len() < min as usize)
+            || schema["maxItems"]
+                .as_u64()
+                .is_some_and(|max| values.len() > max as usize)
+        {
+            return Err(format!("{path}: Invalid array length"));
+        }
+        for (index, item) in values.iter().enumerate() {
+            validate_field(item, &schema["items"], &format!("{path}.{index}"))?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_tool_input(tool: &Tool, args: &rmcp::model::JsonObject) -> Result<(), String> {
+    let schema = &tool.input_schema;
+    let properties = schema["properties"]
+        .as_object()
+        .expect("tool schema properties");
+    for field in schema
+        .get("required")
+        .and_then(Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        let field = field.as_str().expect("required field name");
+        if !args.contains_key(field) {
+            return Err(format!("{field}: Required"));
+        }
+    }
+    for (field, value) in args {
+        let Some(rule) = properties.get(field) else {
+            return Err(format!("{field}: Unrecognized key"));
+        };
+        validate_field(value, rule, field)?;
+    }
+    Ok(())
+}
+
 #[derive(Clone)]
 pub struct BeaconServer {
     pub tools: CoreTools,
@@ -206,6 +310,12 @@ impl ServerHandler for BeaconServer {
         request: CallToolRequestParams,
         _context: RequestContext<RoleServer>,
     ) -> Result<CallToolResponse, McpError> {
+        if let Some(tool) = self.get_tool(request.name.as_ref())
+            && let Err(reason) =
+                validate_tool_input(&tool, &request.arguments.clone().unwrap_or_default())
+        {
+            return Ok(crate::result::invalid_input(request.name.as_ref(), &reason).into());
+        }
         let result = match if self
             .analytics_tools
             .definition(request.name.as_ref())
@@ -236,6 +346,12 @@ impl ServerHandler for BeaconServer {
                 .await
         } {
             Ok(value) => crate::result::success(value),
+            Err(error)
+                if error.code == crate::client::ErrorCode::InvalidArgument
+                    && error.status.is_none() =>
+            {
+                crate::result::invalid_input(request.name.as_ref(), &error.message)
+            }
             Err(error) => crate::result::error(error),
         };
         Ok(result.into())

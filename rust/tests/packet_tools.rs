@@ -107,7 +107,7 @@ async fn calls_all_five_packet_and_channel_tools_with_filters_and_cursors() {
         &root,
         "tools/call",
         Some("beacon_search_packets"),
-        json!({"hashPrefix":"aBcDe","iatas":[" arn "]}),
+        json!({"hashPrefix":"aBcDe","iatas":["arn"]}),
     )
     .await;
     assert_eq!(
@@ -231,9 +231,9 @@ async fn rejects_invalid_inputs_without_contacting_upstream_and_reports_not_foun
     ] {
         let response = rpc(&client, &root, "tools/call", Some(name), args).await;
         assert_eq!(response["result"]["isError"], true, "{name}: {response}");
-        assert_eq!(
-            response["result"]["structuredContent"]["error"]["code"],
-            "INVALID_ARGUMENT"
+        assert!(
+            response["result"].get("structuredContent").is_none(),
+            "{name}: {response}"
         );
     }
     assert!(seen.lock().unwrap().is_empty());

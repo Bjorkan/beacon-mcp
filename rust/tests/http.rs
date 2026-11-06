@@ -2,6 +2,113 @@ use beacon_mcp_rust::{client::BeaconClient, server};
 use tokio_util::sync::CancellationToken;
 
 #[tokio::test]
+async fn invalid_tool_inputs_are_plain_errors_but_upstream_400_is_structured() {
+    let upstream = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let backend = format!("http://{}/", upstream.local_addr().unwrap());
+    let upstream_task = tokio::spawn(async move {
+        axum::serve(
+            upstream,
+            axum::Router::new().fallback(|| async {
+                (
+                    axum::http::StatusCode::BAD_REQUEST,
+                    axum::Json(serde_json::json!({
+                        "error": {"code":"bad_request", "message":"bad filter"}
+                    })),
+                )
+            }),
+        )
+        .await
+        .unwrap();
+    });
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let root = format!("http://{}/", listener.local_addr().unwrap());
+    let shutdown = CancellationToken::new();
+    let client = BeaconClient::new(
+        backend.parse().unwrap(),
+        std::time::Duration::from_secs(2),
+        std::time::Duration::from_secs(2),
+    );
+    let app = server::router(shutdown.clone(), client);
+    let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
+    let http = reqwest::Client::new();
+    for (name, args) in [
+        ("beacon_get_packet", serde_json::json!({"hash":"xyz"})),
+        (
+            "beacon_search_nodes",
+            serde_json::json!({"iatas":[" arn "]}),
+        ),
+        (
+            "beacon_search_nodes",
+            serde_json::json!({"sort":"name","cursor":1}),
+        ),
+        ("beacon_compare_observers", serde_json::json!({})),
+    ] {
+        let reply: serde_json::Value = http
+            .post(&root)
+            .header("Accept", "application/json, text/event-stream")
+            .header("MCP-Protocol-Version", "2026-07-28")
+            .header("Mcp-Method", "tools/call")
+            .header("Mcp-Name", name)
+            .json(
+                &serde_json::json!({"jsonrpc":"2.0", "id":1, "method":"tools/call", "params":{
+                    "name":name,"arguments":args,"_meta":{
+                        "io.modelcontextprotocol/protocolVersion":"2026-07-28",
+                        "io.modelcontextprotocol/clientInfo":{"name":"test","version":"1"},
+                        "io.modelcontextprotocol/clientCapabilities":{}
+                    }
+                }}),
+            )
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        assert_eq!(reply["result"]["isError"], true, "{reply}");
+        assert!(
+            reply["result"].get("structuredContent").is_none(),
+            "{reply}"
+        );
+        assert!(
+            reply["result"]["content"][0]["text"]
+                .as_str()
+                .unwrap()
+                .starts_with("Input validation error: Invalid arguments for tool")
+        );
+    }
+    let name = "beacon_get_server_info";
+    let reply: serde_json::Value = http
+        .post(&root)
+        .header("Accept", "application/json, text/event-stream")
+        .header("MCP-Protocol-Version", "2026-07-28")
+        .header("Mcp-Method", "tools/call")
+        .header("Mcp-Name", name)
+        .json(
+            &serde_json::json!({"jsonrpc":"2.0", "id":2, "method":"tools/call", "params":{
+                "name":name,"arguments":{},"_meta":{
+                    "io.modelcontextprotocol/protocolVersion":"2026-07-28",
+                    "io.modelcontextprotocol/clientInfo":{"name":"test","version":"1"},
+                    "io.modelcontextprotocol/clientCapabilities":{}
+                }
+            }}),
+        )
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(
+        reply["result"]["structuredContent"]["error"]["code"],
+        "INVALID_ARGUMENT"
+    );
+    assert_eq!(reply["result"]["structuredContent"]["error"]["status"], 400);
+    shutdown.cancel();
+    task.abort();
+    upstream_task.abort();
+}
+
+#[tokio::test]
 async fn health_readiness_and_mcp_discovery() {
     let token = CancellationToken::new();
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
