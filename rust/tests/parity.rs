@@ -240,3 +240,47 @@ async fn non_pageable_arrays_differentiate_truncation_and_complete_results() {
     assert_eq!(complete["pagination"], json!({"hasMore":false}));
     task.abort();
 }
+
+#[tokio::test]
+async fn incremental_json_array_keeps_escapes_strings_scalars_and_nested_values() {
+    let chunks: Vec<&'static str> = vec![
+        "[\"a,b\", \"c\\\"d\", ",
+        "null, 12, true, {\"x\":\"y,z\"}",
+        "]",
+    ];
+    let router = Router::new().route(
+        "/api/v1/iatas",
+        get(move || {
+            let chunks = chunks.clone();
+            async move {
+                let stream = futures_util::stream::iter(
+                    chunks
+                        .into_iter()
+                        .map(|chunk| Ok::<_, std::io::Error>(chunk.as_bytes().to_vec())),
+                );
+                Response::builder()
+                    .status(StatusCode::OK)
+                    .body(Body::from_stream(stream))
+                    .unwrap()
+            }
+        }),
+    );
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://{}/", listener.local_addr().unwrap());
+    let task = tokio::spawn(async move { axum::serve(listener, router).await.unwrap() });
+    let client = BeaconClient::new(
+        base.parse().unwrap(),
+        Duration::from_secs(2),
+        Duration::from_secs(2),
+    );
+    let page = client.array_page(Operation::Iatas, &[], 10).await.unwrap();
+    assert!(page.complete);
+    assert_eq!(
+        page.items,
+        json!(["a,b", "c\"d", null, 12, true, {"x":"y,z"}])
+            .as_array()
+            .unwrap()
+            .clone()
+    );
+    task.abort();
+}
