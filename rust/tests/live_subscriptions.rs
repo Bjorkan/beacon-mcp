@@ -50,6 +50,15 @@ async fn websocket_uses_fresh_ticket_and_dispatches_only_valid_events() {
             }).await.unwrap();
             socket
                 .send(Message::Text(
+                    json!({"v":1,"type":"subscribed","id":"mcp-changes"})
+                        .to_string()
+                        .into(),
+                ))
+                .await
+                .unwrap();
+            socket.send(Message::Text(json!({"v":1,"type":"event","event":"nodeUpdate","data":{"nodeId":"123e4567-e89b-42d3-a456-426614174002"}}).to_string().into())).await.unwrap();
+            socket
+                .send(Message::Text(
                     json!({"v":1,"type":"hello"}).to_string().into(),
                 ))
                 .await
@@ -61,6 +70,14 @@ async fn websocket_uses_fresh_ticket_and_dispatches_only_valid_events() {
                 subscribe["scope"]["events"],
                 json!(["nodeUpdate", "observerStatus"])
             );
+            socket
+                .send(Message::Text(
+                    json!({"v":1,"type":"subscribed","id":"wrong-subscription"})
+                        .to_string()
+                        .into(),
+                ))
+                .await
+                .unwrap();
             socket
                 .send(Message::Text(
                     json!({"v":1,"type":"subscribed","id":"mcp-changes"})
@@ -114,6 +131,12 @@ async fn websocket_uses_fresh_ticket_and_dispatches_only_valid_events() {
         ]
     );
     assert_eq!(header.lock().unwrap().as_deref(), Some("secret"));
+    assert!(
+        tokio::time::timeout(Duration::from_millis(25), events.recv())
+            .await
+            .is_err(),
+        "pre-handshake events must never be delivered"
+    );
     shutdown.cancel();
     bridge_task.await.unwrap();
     mock.await.unwrap();

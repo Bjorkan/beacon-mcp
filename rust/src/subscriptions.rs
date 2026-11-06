@@ -138,6 +138,7 @@ async fn connect_once(
     .map_err(|_| "WebSocket connection timed out")?
     .map_err(|_| "WebSocket connection failed")?;
     let mut ready = false;
+    let mut seen_hello = false;
     let mut ping_id = 0u64;
     let mut awaiting_pong = false;
     let mut ping = tokio::time::interval(Duration::from_secs(30));
@@ -161,9 +162,10 @@ async fn connect_once(
                 if value["v"]!=1 {continue;}
                 match value["type"].as_str() {
                     Some("hello") if !ready => {
+                        seen_hello=true;
                         socket.send(Message::Text(serde_json::json!({"v":1,"type":"subscribe","id":"mcp-changes","scope":{"events":["nodeUpdate","observerStatus"]}}).to_string().into())).await.map_err(|_|"WebSocket subscribe failed")?;
                     }
-                    Some("subscribed") if value["id"]=="mcp-changes"=>{
+                    Some("subscribed") if seen_hello && value["id"]=="mcp-changes"=>{
                         ready=true;
                         *retry=Duration::from_secs(1);
                         tracing::info!("Beacon WebSocket subscribed to resource updates");
