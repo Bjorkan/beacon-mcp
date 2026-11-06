@@ -1,12 +1,7 @@
 //! One bounded, payload-free summary per HTTP request to the MCP endpoint.
 //! Do not inspect request/response bodies: they can contain public packet or
 //! message contents, and subscription responses may stream indefinitely.
-use axum::{
-    extract::Request,
-    http::HeaderMap,
-    middleware::Next,
-    response::Response,
-};
+use axum::{extract::Request, http::HeaderMap, middleware::Next, response::Response};
 use std::time::Instant;
 
 // MCP-Method and MCP-Name are supplied by the client. Never log arbitrary
@@ -65,7 +60,10 @@ mod tests {
     fn accepts_protocol_metadata_but_not_free_form_header_content() {
         let mut headers = HeaderMap::new();
         headers.insert("mcp-method", HeaderValue::from_static("tools/call"));
-        headers.insert("mcp-name", HeaderValue::from_static("beacon_search_packets"));
+        headers.insert(
+            "mcp-name",
+            HeaderValue::from_static("beacon_search_packets"),
+        );
         assert_eq!(safe_header(&headers, "mcp-method"), Some("tools/call"));
         assert_eq!(
             safe_header(&headers, "mcp-name"),
@@ -74,10 +72,7 @@ mod tests {
 
         headers.insert("mcp-name", HeaderValue::from_static("token=secret"));
         assert_eq!(safe_header(&headers, "mcp-name"), None);
-        headers.insert(
-            "mcp-name",
-            HeaderValue::from_str(&"a".repeat(81)).unwrap(),
-        );
+        headers.insert("mcp-name", HeaderValue::from_str(&"a".repeat(81)).unwrap());
         assert_eq!(safe_header(&headers, "mcp-name"), None);
     }
 }
