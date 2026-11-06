@@ -77,12 +77,26 @@ subscription and exited cleanly; it did not verify delivery of a production
 resource update. The remaining TS behaviors and final Node-free runtime,
 container and CI are still pending.
 
+## Added scope: MCP Events (#17)
+
+[Issue #17](https://github.com/Bjorkan/beacon-mcp/issues/17) is included in
+this GitHub stack as an **opt-in, separately gated follow-on feature**, not as
+part of the existing resource subscription implementation or the 23 read-only
+tools. See [the Events migration plan](mcp-events-migration.md) for the pinned
+experimental contract, SDK incompatibility, authenticated and persistent
+webhook prerequisites, phased Draft PRs, compatibility tests and honest
+no-replay semantics. This planning layer does **not** implement or advertise
+Events. The issue remains open; poll/push may remain linked follow-ups.
+
 ## Required invariants for every intermediate layer
 
 - TypeScript CI and deployment remain in place until Rust has equivalent
   coverage; run both suites once the Rust project exists.
 - The MCP endpoint is read-only and only fixed public Beacon GET operations may
-  be called; no caller-controlled path, URL, credential or admin endpoint.
+  be called by existing tools; no caller-controlled upstream path, URL,
+  credential or admin endpoint. Opt-in Events webhook delivery introduces a
+  separately authenticated, persistent outbound trust boundary; it must not
+  change the default public read-only behavior.
 - Clamp every result to its requested bound; preserve opaque, numeric and
   compound cursors, and cancel oversized or no-longer-needed upstream reads.
 - Keep resource URIs canonical and restrict subscriptions to the requested URI.
@@ -102,6 +116,10 @@ container and CI are still pending.
 7. Resources, WebSocket and subscription streams.
 8. Container, multiarchitecture CI and security checks.
 9. Remove TypeScript/npm, replace remaining tooling, complete parity ledger.
+10. Issue #17 Events follow-on layers: typed WS ingress and protocol contract,
+    authenticated durable webhooks and controlled ChatGPT verification, then
+    optional push/poll. These may interleave with layers 8–9 only while every
+    intermediate PR stays green and Events remain disabled until safe.
 
 Each branch must compile and its relevant tests pass before the next branch is
 created. All PRs remain draft and are based on the preceding branch, not `main`.
