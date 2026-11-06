@@ -61,6 +61,12 @@ Want to run the service, contribute, or understand the implementation? See
 [AGENTS.md](AGENTS.md) for setup, deployment, architecture, security, and test
 details.
 
+The gateway is built in Rust. For a local build, use
+`cargo test --manifest-path rust/Cargo.toml --locked` and
+`cargo run --manifest-path rust/Cargo.toml --locked` with `BEACON_BASE_URL`
+set to your Beacon server. Production deployments pull a published image;
+`compose.yaml` requires an explicit `BEACON_MCP_IMAGE` SHA or digest.
+
 ## Live resource subscriptions (on by default)
 
 The gateway enables MCP `subscriptions/listen` (revision `2026-07-28`) by

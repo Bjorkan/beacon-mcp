@@ -3,8 +3,8 @@ name: CI
 on:
   push:
     branches: main
+    tags: ["v*"]
   pull_request:
-    branches: main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -23,48 +23,35 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: 24
-          cache: npm
-      - name: Install dependencies
-        run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Verify generated OpenAPI types
-        run: npm run openapi:check
-      - name: Check formatting
-        run: npm run format:check
-      - name: Type-check TypeScript
-        run: npm run typecheck
-      - name: Lint source
-        run: npm run lint
-      - name: Run test suite
-        run: npm test
-      - name: Build application
-        run: npm run build
-      - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=high
-      - name: Install Rust toolchain for parallel migration checks
+      - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.99.1 --profile minimal --component clippy --component rustfmt
       - name: Check Rust formatting
         run: cargo +1.99.1 fmt --manifest-path rust/Cargo.toml --all -- --check
-      - name: Lint Rust foundation
+      - name: Lint Rust source and tests
         run: cargo +1.99.1 clippy --manifest-path rust/Cargo.toml --all-targets --locked -- -D warnings
       - name: Run Rust tests
         run: cargo +1.99.1 test --manifest-path rust/Cargo.toml --locked
+      - name: Build Rust gateway
+        run: cargo +1.99.1 build --manifest-path rust/Cargo.toml --release --locked
 
   container:
     name: Container verification
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     needs: test
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Set up QEMU for arm64 verification
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
       - name: Build and verify hardened container
         run: tests/container/run.sh
+      - name: Build arm64 Rust image
+        run: docker buildx build --platform linux/arm64 --output type=cacheonly .
 
   publish-image:
     name: Publish container image

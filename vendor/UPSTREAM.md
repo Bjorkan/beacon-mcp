@@ -14,9 +14,10 @@ To update, identify the latest published Beacon release, review its server and
 documentation contracts, then pin the release's full commit and run:
 
 ```sh
-npm run openapi:sync -- <full-beacon-server-commit>
-npm run openapi:generate
-npm test
+python3 scripts/sync-openapi.py <full-beacon-server-commit>
+cargo test --manifest-path rust/Cargo.toml --locked
 ```
 
-The synchronization command refuses branches and moving tags; it requires a full 40-character commit SHA.
+The synchronization command refuses branches and moving tags; it requires a
+full 40-character commit SHA. Review the upstream handlers and update the
+checked-in Rust tool discovery contract deliberately if the API changes.

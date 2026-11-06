@@ -9,11 +9,8 @@ AGENTS.md
 compose.yaml
 renovate.json
 README.md
-node_modules
 rust/target
-dist
-coverage
-.npm
+__pycache__
 *.log
 .DS_Store
 .idea
