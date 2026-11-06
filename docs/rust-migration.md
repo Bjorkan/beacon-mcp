@@ -29,9 +29,10 @@ Every PR in the stack must build and pass its checks. Keep all PRs Draft until
 the Rust-only final image and CI succeed across amd64 and arm64, the mock
 container hardening checks pass, and read-only live checks confirm core tools
 and subscription handshake. **Input-error parity remains under review:** the
-previous gateway's schema-layer rejections did not include structured error
-metadata, while the Rust handler currently returns a classified structured
-error. Invalid request wording and schema enforcement need case-by-case review
+Rust handler now validates the frozen input schemas and returns unstructured
+MCP tool errors for locally rejected inputs, as the previous gateway did;
+upstream HTTP 400 responses retain structured error metadata. Invalid-input
+wording and cross-field validation still need case-by-case differential review
 before claiming complete parity. Do not merge automatically. MCP Events issue #17
 is an independently gated opt-in follow-on; its current stack layer is a plan,
 not an implementation. Do not advertise Events without authenticated durable
