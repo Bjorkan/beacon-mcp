@@ -148,6 +148,15 @@ async fn calls_all_five_route_and_trace_tools_with_compound_cursors() {
         assert!(names.contains(&name), "{name}");
         let result = rpc(&client, &root, "tools/call", Some(name), args).await;
         assert_eq!(result["result"]["isError"], false, "{name}: {result}");
+        if matches!(
+            name,
+            "beacon_search_routes" | "beacon_find_cross_iata_routes"
+        ) {
+            assert_eq!(
+                result["result"]["structuredContent"]["pagination"],
+                json!({"hasMore":false})
+            );
+        }
         assert!(
             !result["result"]["structuredContent"][field].is_null(),
             "{name}: {result}"
