@@ -129,15 +129,18 @@ name = "beacon-mcp-rust"
 version = "2.1.1"
 dependencies = [
  "axum",
+ "getrandom 0.4.3",
  "reqwest",
  "rmcp",
  "serde",
  "serde_json",
+ "thiserror",
  "tokio",
  "tokio-util",
  "tracing",
  "tracing-subscriber",
  "url",
+ "uuid",
 ]
 
 [[package]]
