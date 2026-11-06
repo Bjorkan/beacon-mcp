@@ -1,5 +1,6 @@
 use crate::{
-    client::BeaconClient, packet_tools::PacketTools, routing_tools::RoutingTools, tools::CoreTools,
+    analytics_tools::AnalyticsTools, client::BeaconClient, packet_tools::PacketTools,
+    routing_tools::RoutingTools, tools::CoreTools,
 };
 use axum::{Router, routing::get};
 use rmcp::{
@@ -21,6 +22,7 @@ pub struct BeaconServer {
     pub tools: CoreTools,
     pub packet_tools: PacketTools,
     pub routing_tools: RoutingTools,
+    pub analytics_tools: AnalyticsTools,
 }
 
 impl ServerHandler for BeaconServer {
@@ -43,6 +45,7 @@ impl ServerHandler for BeaconServer {
                 .into_iter()
                 .chain(self.packet_tools.list())
                 .chain(self.routing_tools.list())
+                .chain(self.analytics_tools.list())
                 .collect(),
             ..Default::default()
         })
@@ -53,6 +56,7 @@ impl ServerHandler for BeaconServer {
             .definition(name)
             .or_else(|| self.packet_tools.definition(name))
             .or_else(|| self.routing_tools.definition(name))
+            .or_else(|| self.analytics_tools.definition(name))
     }
 
     async fn call_tool(
@@ -61,6 +65,14 @@ impl ServerHandler for BeaconServer {
         _context: RequestContext<RoleServer>,
     ) -> Result<CallToolResponse, McpError> {
         let result = match if self
+            .analytics_tools
+            .definition(request.name.as_ref())
+            .is_some()
+        {
+            self.analytics_tools
+                .execute(request.name.as_ref(), request.arguments)
+                .await
+        } else if self
             .routing_tools
             .definition(request.name.as_ref())
             .is_some()
@@ -99,6 +111,7 @@ pub fn router(shutdown: CancellationToken, client: BeaconClient) -> Router {
                 tools: CoreTools::new(client.clone()),
                 packet_tools: PacketTools::new(client.clone()),
                 routing_tools: RoutingTools::new(client.clone()),
+                analytics_tools: AnalyticsTools::new(client.clone()),
             })
         },
         Default::default(),
