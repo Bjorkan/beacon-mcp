@@ -117,8 +117,13 @@ impl RoutingTools {
         if !(1..=50).contains(&limit) {
             return Err(invalid("limit must be from 1 to 50"));
         }
-        if args.iata.is_some() && args.iatas.is_some()
-            || args.from_iata.is_some() != args.to_iata.is_some()
+        if args.iata.is_some() && args.iatas.is_some() {
+            return Err(invalid("iata and iatas are mutually exclusive"));
+        }
+        if args.from_iata.is_some() != args.to_iata.is_some() {
+            return Err(invalid("fromIata and toIata must be given together"));
+        }
+        if args.from_iata.is_some() && args.iatas.is_some()
             || args.from_iata.is_some() && args.iatas.is_some()
             || args.cursor_id.is_some() && args.cursor.is_none()
             || args.cursor_tag.is_some() && args.cursor.is_none()
