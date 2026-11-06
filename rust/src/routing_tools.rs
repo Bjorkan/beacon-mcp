@@ -76,6 +76,7 @@ fn hash(value: &str, min: usize, max: usize) -> bool {
         && value.bytes().all(|c| c.is_ascii_hexdigit())
 }
 fn iata(value: &str) -> bool {
+    let value = value.trim();
     value.len() == 3 && value.bytes().all(|c| c.is_ascii_alphanumeric())
 }
 fn required_hash(value: Option<&str>) -> Result<String, GatewayError> {
@@ -147,7 +148,7 @@ impl RoutingTools {
             if !iata(&value) {
                 return Err(invalid("invalid iata"));
             }
-            put("iata", Some(value.to_ascii_uppercase()));
+            put("iata", Some(value.trim().to_ascii_uppercase()));
         }
         if let Some(values) = args.iatas {
             let bound = if name == "beacon_search_traces" {
@@ -160,7 +161,7 @@ impl RoutingTools {
             }
             let codes = values
                 .iter()
-                .map(|value| value.to_ascii_uppercase())
+                .map(|value| value.trim().to_ascii_uppercase())
                 .collect::<Vec<_>>();
             if name == "beacon_find_cross_iata_routes"
                 && codes.iter().collect::<std::collections::HashSet<_>>().len() < 2
@@ -173,13 +174,13 @@ impl RoutingTools {
             if !iata(&value) {
                 return Err(invalid("invalid fromIata"));
             }
-            put("fromIata", Some(value.to_ascii_uppercase()));
+            put("fromIata", Some(value.trim().to_ascii_uppercase()));
         }
         if let Some(value) = args.to_iata {
             if !iata(&value) {
                 return Err(invalid("invalid toIata"));
             }
-            put("toIata", Some(value.to_ascii_uppercase()));
+            put("toIata", Some(value.trim().to_ascii_uppercase()));
         }
         match name {
             "beacon_search_routes" => {

@@ -143,7 +143,7 @@ async fn calls_all_five_route_and_trace_tools_with_compound_cursors() {
         ),
         (
             "beacon_find_cross_iata_routes",
-            json!({"fromHash":"ab","toHash":"cd","fromIata":"arn","toIata":"mmx","limit":1}),
+            json!({"fromHash":"ab","toHash":"cd","fromIata":" arn ","toIata":"mmx","limit":1}),
             "items",
         ),
         (
