@@ -118,7 +118,13 @@ async fn info_logging_summarizes_each_mcp_request_without_sdk_noise_or_payloads(
     let mut child = child;
     child.kill().unwrap();
     let output = child.wait_with_output().unwrap();
-    let logs = String::from_utf8_lossy(&output.stderr);
+    // tracing-subscriber's default writer is stdout; keep stderr too so a
+    // change of writer does not silently invalidate the assertions.
+    let logs = format!(
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
     let summaries: Vec<_> = logs
         .lines()
         .filter(|line| line.contains("MCP request completed"))
