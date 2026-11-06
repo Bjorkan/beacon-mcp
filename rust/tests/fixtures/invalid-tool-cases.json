@@ -2,9 +2,7 @@
   {
     "name": "beacon_search_nodes",
     "arguments": {
-      "iatas": [
-        "bad value"
-      ]
+      "iatas": ["bad value"]
     },
     "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: iatas.0: Invalid string: must match pattern /^[A-Za-z0-9]{3}$/",
     "error": null
@@ -12,9 +10,7 @@
   {
     "name": "beacon_search_nodes",
     "arguments": {
-      "iatas": [
-        " arn "
-      ],
+      "iatas": [" arn "],
       "region": "se"
     },
     "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: iatas.0: Invalid string: must match pattern /^[A-Za-z0-9]{3}$/",
@@ -132,9 +128,7 @@
     "name": "beacon_search_packets",
     "arguments": {
       "payloadTypeName": "reserved",
-      "payloadTypes": [
-        12
-      ]
+      "payloadTypes": [12]
     },
     "text": "Input validation error: Invalid arguments for tool beacon_search_packets: payloadTypeName cannot be combined with payloadType or payloadTypes",
     "error": null
@@ -142,9 +136,7 @@
   {
     "name": "beacon_search_packets",
     "arguments": {
-      "routeTypes": [
-        5
-      ]
+      "routeTypes": [5]
     },
     "text": "Input validation error: Invalid arguments for tool beacon_search_packets: routeTypes.0: Too big: expected number to be <=3",
     "error": null
@@ -198,9 +190,7 @@
   {
     "name": "beacon_list_routes",
     "arguments": {
-      "iatas": [
-        "ARN"
-      ],
+      "iatas": ["ARN"],
       "iata": "MMX"
     },
     "text": "Input validation error: Invalid arguments for tool beacon_list_routes: iata and iatas are mutually exclusive",
