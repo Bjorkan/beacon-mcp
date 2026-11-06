@@ -6,6 +6,7 @@ rust-version = "1.88"
 publish = false
 
 [dependencies]
+getrandom = "0.4"
 axum = "0.8.9"
 rmcp = { version = "=3.8.0", features = ["transport-streamable-http-server"] }
 serde = { version = "1", features = ["derive"] }

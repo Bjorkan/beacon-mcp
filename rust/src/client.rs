@@ -8,6 +8,22 @@ use url::Url;
 const MAX_BYTES: usize = 5_242_880;
 const MAX_URL: usize = 8_192;
 
+fn retry_delay() -> Duration {
+    // One jittered retry; use independent OS entropy instead of a fixed delay
+    // so many replicas do not retry a transient upstream outage together.
+    let mut byte = [0_u8; 1];
+    getrandom::fill(&mut byte).expect("OS entropy for retry jitter");
+    Duration::from_millis(25 + u64::from(byte[0] % 50))
+}
+
+#[cfg(test)]
+#[test]
+fn retry_jitter_stays_within_legacy_window() {
+    for _ in 0..128 {
+        assert!((25..=74).contains(&retry_delay().as_millis()));
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Operation {
     ServerInfo,
@@ -235,7 +251,7 @@ impl BeaconClient {
                     ));
                 }
                 Err(_) if attempt == 0 => {
-                    tokio::time::sleep(Duration::from_millis(50)).await;
+                    tokio::time::sleep(retry_delay()).await;
                     continue;
                 }
                 Err(_) => {
@@ -268,7 +284,7 @@ impl BeaconClient {
                 return Ok(body);
             }
             if attempt == 0 && [502, 503, 504].contains(&status.as_u16()) && retry_after.is_none() {
-                tokio::time::sleep(Duration::from_millis(50)).await;
+                tokio::time::sleep(retry_delay()).await;
                 continue;
             }
             return Err(classify(status, &body, retry_after));
@@ -322,7 +338,7 @@ impl BeaconClient {
                     ));
                 }
                 Err(_) if attempt == 0 => {
-                    tokio::time::sleep(Duration::from_millis(50)).await;
+                    tokio::time::sleep(retry_delay()).await;
                     continue;
                 }
                 Err(_) => {
@@ -344,7 +360,7 @@ impl BeaconClient {
             let body = serde_json::from_slice::<Value>(&read_bounded(response).await?)
                 .unwrap_or(Value::Null);
             if attempt == 0 && [502, 503, 504].contains(&status.as_u16()) && retry_after.is_none() {
-                tokio::time::sleep(Duration::from_millis(50)).await;
+                tokio::time::sleep(retry_delay()).await;
                 continue;
             }
             return Err(classify(status, &body, retry_after));
