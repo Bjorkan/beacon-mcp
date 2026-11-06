@@ -10,6 +10,7 @@ compose.yaml
 renovate.json
 README.md
 node_modules
+rust/target
 dist
 coverage
 .npm

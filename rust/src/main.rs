@@ -4,10 +4,54 @@ use beacon_mcp_rust::{
     server,
     subscriptions::{Live, bridge},
 };
+use std::{
+    io::{Read, Write},
+    net::{TcpStream, ToSocketAddrs},
+    time::Duration,
+};
 use tokio_util::sync::CancellationToken;
+
+fn healthcheck() -> bool {
+    let port = match std::env::var("PORT")
+        .unwrap_or_else(|_| "3000".into())
+        .parse::<u16>()
+    {
+        Ok(port) => port,
+        Err(_) => return false,
+    };
+    for host in ["127.0.0.1", "::1"] {
+        let Ok(addresses) = (host, port).to_socket_addrs() else {
+            continue;
+        };
+        for address in addresses {
+            if let Ok(mut stream) = TcpStream::connect_timeout(&address, Duration::from_secs(1)) {
+                let _ = stream.set_read_timeout(Some(Duration::from_secs(1)));
+                let _ = stream.set_write_timeout(Some(Duration::from_secs(1)));
+                if stream
+                    .write_all(
+                        b"GET /healthz HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
+                    )
+                    .is_ok()
+                {
+                    let mut response = [0; 32];
+                    if stream
+                        .read(&mut response)
+                        .is_ok_and(|size| response[..size].starts_with(b"HTTP/1.1 200"))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    false
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    if std::env::args().nth(1).as_deref() == Some("--healthcheck") {
+        std::process::exit(if healthcheck() { 0 } else { 1 });
+    }
     let config = Config::from_env()?;
     tracing_subscriber::fmt()
         .with_env_filter(if config.log_level == "silent" {
