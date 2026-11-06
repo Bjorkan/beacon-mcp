@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import type { FastifyInstance } from "fastify";
 import { BeaconAdapter } from "../../src/beacon/adapter.js";
 import { BeaconClient } from "../../src/beacon/client.js";
@@ -164,6 +165,15 @@ describe("MCP HTTP integration", () => {
     const listedTools = (response.json() as { result: { tools: ListedTool[] } })
       .result.tools;
     expect(listedTools).toHaveLength(23);
+    const expectedNames = JSON.parse(
+      readFileSync(
+        new URL("../fixtures/tool-names.json", import.meta.url),
+        "utf8",
+      ),
+    ) as string[];
+    expect(listedTools.map(({ name }) => name).sort()).toEqual(
+      expectedNames.sort(),
+    );
     expect(listedTools.every((tool) => tool.outputSchema !== undefined)).toBe(
       true,
     );
