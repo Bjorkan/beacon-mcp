@@ -16,6 +16,16 @@ gap signals. This is **not** a replay log or delivery queue: an occurrence
 is lost if no consumer receives it, a process restarts, or Beacon drops it.
 No MCP `events/*` methods or capabilities are exposed yet.
 
+A second internal-only layer defines the exact node/observer event descriptors
+and canonical, required UUID filters. Descriptor construction requires a
+nonempty set of actually implemented delivery modes; the gateway does not
+call it yet. An isolated protocol probe confirms `rmcp 3.8.0` routes custom
+`events/list` requests via `on_custom_request` in modern and legacy HTTP
+lifecycles and rejects contradictory modern `Mcp-Method` headers. This probe
+does not register an Events method on the real gateway: `rmcp` still cannot
+serialize the required top-level `capabilities.events`, and no authenticated
+webhook or durable outbox exists. Both remain release blockers.
+
 ## Contract and compatibility
 
 The experimental [Events design sketch][sketch] was reviewed at commit
