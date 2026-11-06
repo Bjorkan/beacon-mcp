@@ -198,6 +198,7 @@ impl PacketTools {
             if iatas.is_empty()
                 || iatas.len() > 20
                 || iatas.iter().any(|iata| {
+                    let iata = iata.trim();
                     iata.len() != 3 || !iata.bytes().all(|byte| byte.is_ascii_alphanumeric())
                 })
             {
@@ -208,7 +209,7 @@ impl PacketTools {
                 Some(
                     iatas
                         .iter()
-                        .map(|iata| iata.to_ascii_uppercase())
+                        .map(|iata| iata.trim().to_ascii_uppercase())
                         .collect::<Vec<_>>()
                         .join(","),
                 ),
@@ -294,6 +295,7 @@ impl PacketTools {
                 ),
             );
         }
+        let hash_search = args.hash_prefix.is_some();
         if let Some(prefix) = args.hash_prefix {
             if !hex(&prefix, 4, 16) {
                 return Err(invalid("invalid hashPrefix"));
@@ -351,6 +353,20 @@ impl PacketTools {
             result["pagination"]["nextCursor"]
                 .as_object_mut()
                 .map(|cursor| cursor.remove("cursor"));
+        }
+        if name == "beacon_search_packets" && hash_search {
+            result["pagination"]["nextCursor"]
+                .as_object_mut()
+                .map(|cursor| cursor.remove("pageCursor"));
+        }
+        if result["pagination"]["nextCursor"]
+            .as_object()
+            .is_some_and(serde_json::Map::is_empty)
+        {
+            result["pagination"]
+                .as_object_mut()
+                .unwrap()
+                .remove("nextCursor");
         }
         Ok(result)
     }

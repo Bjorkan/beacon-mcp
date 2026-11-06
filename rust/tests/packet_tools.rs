@@ -102,6 +102,19 @@ async fn rpc(
 async fn calls_all_five_packet_and_channel_tools_with_filters_and_cursors() {
     let (client, root, seen, token, tasks) = setup().await;
     let listed = rpc(&client, &root, "tools/list", None, json!({})).await;
+    let hash_search = rpc(
+        &client,
+        &root,
+        "tools/call",
+        Some("beacon_search_packets"),
+        json!({"hashPrefix":"aBcDe","iatas":[" arn "]}),
+    )
+    .await;
+    assert_eq!(
+        hash_search["result"]["structuredContent"]["pagination"]["nextCursor"],
+        json!({"cursor":42})
+    );
+    assert_eq!(hash_search["result"]["isError"], false);
     let expected_schemas: Value =
         serde_json::from_str(include_str!("../src/packet-tool-definitions.json")).unwrap();
     for tool in listed["result"]["tools"].as_array().unwrap() {
