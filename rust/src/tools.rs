@@ -100,6 +100,13 @@ fn fields(name: &str) -> Option<&'static [&'static str]> {
     })
 }
 
+/// Frozen JSON Schemas exported from the TypeScript gateway's `tools/list`.
+/// Kept as data so production and Rust-only CI need no Node toolchain.
+pub(crate) fn output_schema(document: &'static str, name: &str) -> Option<Arc<JsonObject>> {
+    let schemas: Value = serde_json::from_str(document).expect("valid frozen output schemas");
+    schemas.get(name)?.as_object().cloned().map(Arc::new)
+}
+
 impl CoreTools {
     pub fn new(client: BeaconClient) -> Self {
         Self { client }
@@ -129,6 +136,7 @@ impl CoreTools {
             format!("Read public Beacon data: {name}"),
             Arc::new(schema),
         );
+        tool.output_schema = output_schema(include_str!("core-output-schemas.json"), name);
         tool.annotations = Some(
             ToolAnnotations::new()
                 .read_only(true)

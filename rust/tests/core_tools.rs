@@ -110,6 +110,15 @@ async fn rpc(
 async fn lists_only_implemented_tools_and_calls_all_nine() {
     let (client, root, paths, token, tasks) = setup().await;
     let listed = rpc(&client, &root, "tools/list", None, json!({})).await;
+    let expected_schemas: Value =
+        serde_json::from_str(include_str!("../src/core-output-schemas.json")).unwrap();
+    for tool in listed["result"]["tools"].as_array().unwrap() {
+        let name = tool["name"].as_str().unwrap();
+        assert_eq!(
+            tool["outputSchema"], expected_schemas[name],
+            "{name} output schema"
+        );
+    }
     let names = listed["result"]["tools"]
         .as_array()
         .unwrap()
