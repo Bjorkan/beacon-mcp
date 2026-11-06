@@ -44,6 +44,14 @@ jobs:
         run: npm run build
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
+      - name: Install Rust toolchain for parallel migration checks
+        run: rustup toolchain install 1.99.1 --profile minimal --component clippy --component rustfmt
+      - name: Check Rust formatting
+        run: cargo +1.99.1 fmt --manifest-path rust/Cargo.toml --all -- --check
+      - name: Lint Rust foundation
+        run: cargo +1.99.1 clippy --manifest-path rust/Cargo.toml --all-targets --locked -- -D warnings
+      - name: Run Rust tests
+        run: cargo +1.99.1 test --manifest-path rust/Cargo.toml --locked
 
   container:
     name: Container verification
