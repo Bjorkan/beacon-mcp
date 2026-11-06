@@ -314,8 +314,12 @@ impl CoreTools {
                     .array_page(op, &query, limit as usize + 1)
                     .await?;
                 let truncated = !result.complete || result.items.len() > limit as usize;
+                let mut pagination = json!({"hasMore": false});
+                if truncated {
+                    pagination["truncated"] = json!(true);
+                }
                 Ok(
-                    json!({"items": result.items.into_iter().take(limit as usize).collect::<Vec<_>>(), "pagination": {"hasMore": false, "truncated": truncated}}),
+                    json!({"items": result.items.into_iter().take(limit as usize).collect::<Vec<_>>(), "pagination": pagination}),
                 )
             }
             "beacon_list_scopes" => {

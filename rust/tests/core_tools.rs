@@ -143,6 +143,18 @@ async fn lists_only_implemented_tools_and_calls_all_nine() {
         assert!(names.contains(&name));
         let result = rpc(&client, &root, "tools/call", Some(name), args).await;
         assert_eq!(result["result"]["isError"], false, "{name}: {result}");
+        if name == "beacon_list_regions" {
+            assert_eq!(
+                result["result"]["structuredContent"]["pagination"],
+                json!({"hasMore":false})
+            );
+        }
+        if name == "beacon_list_iatas" {
+            assert_eq!(
+                result["result"]["structuredContent"]["pagination"]["truncated"],
+                true
+            );
+        }
         let expected_text = if result["result"]["structuredContent"]["items"].is_array() {
             format!(
                 "Beacon returned {} item(s).",
