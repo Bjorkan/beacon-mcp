@@ -2,7 +2,7 @@ use crate::{
     analytics_tools::AnalyticsTools, client::BeaconClient, packet_tools::PacketTools,
     routing_tools::RoutingTools, subscriptions::Live, tools::CoreTools,
 };
-use axum::{Router, routing::get};
+use axum::{Router, middleware, routing::get};
 use rmcp::{
     ErrorData as McpError, ServerHandler,
     model::{
@@ -481,4 +481,5 @@ pub fn router_with_live(
         .route("/healthz", get(health))
         .route("/readyz", get(health))
         .fallback_service(mcp)
+        .layer(middleware::from_fn(crate::request_logging::summarize))
 }
