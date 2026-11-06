@@ -1,7 +1,7 @@
 use chrono::DateTime;
 use rmcp::model::{JsonObject, Tool};
 use serde::Deserialize;
-use serde_json::{Value, json};
+use serde_json::Value;
 
 use crate::{
     client::{BeaconClient, ErrorCode, GatewayError, Operation},
