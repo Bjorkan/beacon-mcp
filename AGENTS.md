@@ -1,452 +1,128 @@
-# Technical guide for Beacon MCP Server
+# Beacon MCP Server: maintainer guide
 
-This document is for maintainers, contributors, deployment operators, and
-coding agents working in this repository. The end-user introduction lives in
-[`README.md`](README.md).
+The end-user introduction is in [README.md](README.md). **Beacon MCP Server**
+is an unofficial, standalone, read-only Rust MCP gateway to public MeshCore
+Beacon REST data. It is not affiliated with or endorsed by Beacon or MeshCore.
 
-## Architecture and invariants
-
-**Beacon MCP Server** is an unofficial, community-built, standalone, read-only
-Model Context Protocol gateway for the public MeshCore Beacon REST API. It is
-not affiliated with or endorsed by the MeshCore or Beacon projects. It
-translates intentionally designed MCP tools into fixed `GET /api/v1/*`
-operations; it is not an arbitrary HTTP proxy and cannot access Beacon admin
-routes.
-
-Use **Beacon MCP Server** as the product name in prose. Keep `beacon-mcp` for
-technical identifiers such as the package, container image, service, repository,
-and MCP implementation name.
+## Architecture and pinned upstream contract
 
 ```text
-MCP client -> HTTPS / on dedicated subdomain -> Beacon MCP Server -> Beacon /api/v1
+MCP client -> TLS proxy -> Beacon MCP Server (/) -> Beacon /api/v1 public GETs
+                                                -> Beacon /ws (optional listen)
 ```
 
-The MCP endpoint is intentionally public and has no application-layer
-authentication. The service has no database, persistent cache, queue, volume,
-or durable state. Every MCP request gets a fresh MCP server instance. Resource
-notifications are enabled by default, so each replica also owns a process-local
-Beacon WebSocket and MCP subscription bus. Long-lived listen streams must
-remain on that replica; no cross-replica delivery or replay is provided.
+The MCP endpoint is public and unauthenticated. No database, persistent cache,
+volume, replay queue, admin operation, writable endpoint or arbitrary HTTP
+proxy exists. Every request gets a fresh MCP handler. Resource notifications
+use one process-local WebSocket and broadcast bus per replica; listeners must
+stay on that replica, and updates may be lost. The gateway never advertises
+MCP Events; see [the gated plan](docs/mcp-events-migration.md) for issue #17.
 
-## Compatibility and pinned contracts
+Pinned upstream API/release: `v2.1.1` at
+`d0a55dbf6d6f5ed4345bd72c039845f6c947fd16` (re-cut annotated tag).
+Vendored contract: `vendor/beacon-openapi.yaml`; docs commit
+`008f988863014c32e673c5c0176ea86db2868ccf`.
 
-- Node.js 24 LTS, TypeScript, ESM, Fastify
-- MCP TypeScript SDK `@modelcontextprotocol/server` 2.3.0
-- MCP era `2026-07-28` default, served statelessly; older clients negotiate over
-  the same endpoint via legacy `initialize` (SDK defaults: `2025-11-25`,
-  `2025-06-18`, `2025-03-26`, `2024-11-05`, `2024-10-07`), also statelessly
-- Beacon API contract version `2.1.1`, also advertised as the MCP server version
-- Beacon server release `v2.1.1`, commit `d0a55dbf6d6f5ed4345bd72c039845f6c947fd16` (the re-cut release, not the original 2.1.1 build)
-- Beacon docs commit `008f988863014c32e673c5c0176ea86db2868ccf`
+**Before reviewing or changing API integration**, identify the latest
+published `MeshCore-Beacon/beacon-server` GitHub release, resolve the tag to
+its full immutable commit, and compare its handlers and request/response types
+with the gateway. Do not use `main` or `dev` as the adoption target unless the
+task explicitly requests an unreleased branch. Record differences and update
+the pin deliberately; never silently overwrite the vendored document.
 
-The exact upstream Swagger 2.0 document is committed at
-`vendor/beacon-openapi.yaml`. Build-time tooling converts it to OpenAPI 3 and
-generates `src/generated/beacon-api.d.ts`; production never downloads a schema.
+Relevant upstream quirks: route search returns _segments_ rather than entire
+routes. Route hash matching uses exact stored hop hashes (2, 4 or 6 hex
+characters exist); packet hash prefixes permit odd lengths of 4–16 hex
+characters. Cross-IATA search can build multi-megabyte arrays in memory, so
+the gateway stops reading at its result limit and uses the analytics timeout.
+Stats series rounds times to whole hours, has a rolling ~90-day retention
+window and reports misleading errors for expired windows. Scope names are
+case-sensitive; IATA inputs are uppercased. Node list fields differ from node
+details: neighbor IDs belong to requested lists, while detail carries full
+neighbor objects and multibyte flags. Packet server timestamps differ from
+observer-reported `heardAt`; `firstToLastMs` is the observer-clock span.
+Packet time bounds vary by IATA filter; traces have inclusive `until`, while
+stats hours and observer comparison use `[since,until)`. Message filters use
+`sentAt >= since`. Unknown well-formed node/packet/trace IDs return 404.
+Upstream `/info` can return null minimum client versions, regardless of its
+Swagger nullability. Upstream 503 `deadline_exceeded` with `Retry-After` maps to
+`DEADLINE_EXCEEDED`. Messages' documented region filters are not exposed until
+their handlers have been reviewed separately.
 
-## Upstream API comparison
+## Development
 
-Before reviewing or changing the Beacon API integration, identify the latest
-published GitHub release of
-[`MeshCore-Beacon/beacon-server`](https://github.com/MeshCore-Beacon/beacon-server),
-resolve its tag to the full immutable commit, and compare the local API
-implementation against that release—not `main` or `dev`. This applies to the
-REST client, adapter, MCP tool schemas, vendored OpenAPI document, and generated
-declarations. Only use an unreleased branch as the adoption target when the
-task explicitly requests it.
-
-Inspect the upstream handlers and request/response types rather than relying
-only on its generated API documentation. Record the upstream commit used for
-the comparison and call out any differences from the pinned local contract. Do
-not silently update the pinned schema or commit; use the OpenAPI update workflow
-below when intentionally adopting upstream changes.
-
-Upstream `GET /routes/search` returns route segments (subsets of full routes)
-using the same shape as list-routes; a single route may appear with fewer hops
-in a segment result. `GET /stats/series` silently rounds `since` and `until` to
-whole-hour boundaries and has a rolling ~90-day retention measured from the
-current time; windows beyond the retention window are rejected with a
-misleading "epoch milliseconds" error.
-
-The last comparison was made on 2026-11-05 against the published `v2.1.1`
-release at `d0a55dbf6d6f5ed4345bd72c039845f6c947fd16`, reviewing the
-handlers, response types, Swagger and matching Beacon docs (commit above).
-Relative to the previous local `v2.0.7` pin, `/ws-ticket` is the new public
-path; new admin database/guard paths remain excluded. Nodes, observers and
-packets now offer `nextPageCursor` to preserve millisecond ties, with the
-numeric `nextCursor` retained for older clients. Node lists gained `sort`,
-`order`, `lastSeen`, and (when requested) `neighborIds`; lists of regions
-include full region detail. Full route lists now accept multiple `iatas`.
-Upstream also returns `503` with `deadline_exceeded` and `Retry-After` for
-database timeouts; the gateway classifies this as `DEADLINE_EXCEEDED`.
-
-The `/info` handler returns null for minimum client versions when unset;
-Swagger does not mark them nullable. The output schema matches runtime
-behavior. The upstream handlers documented to accept `region` and `regionId`
-on `GET /messages` and `GET /channels/{channelID}/messages` still need a
-separate implementation review before MCP should expose those filters.
-
-Current `/routes/search` and `/routes/cross` handlers validate 1–4 bytes of
-hex, rejecting odd-length hashes with HTTP 400. The MCP route schemas match
-this and continue to reject odd-length hex before making upstream requests.
-`/packets?hashPrefix` is different: it intentionally accepts odd-length
-prefixes of 4–16 hex characters.
-
-`GET /routes/cross` builds the entire result list in memory — for every hop of
-every stored route containing the source node it queries cross-IATA neighbors —
-so realistic hash pairs routinely produce multi-megabyte responses (one pair
-returned 5551 items / 14.5 MiB live) and can take seconds before the first
-byte. Upstream exposes no limit parameter, so the MCP layer reads the response
-incrementally and stops as soon as the tool's limit is satisfied (see the
-streaming contract below); the operation shares the analytics timeout budget.
-
-Further pinned-commit findings verified live against `beacon.meshat.se`:
-
-- Node list items (`api.NodeSummary` projection in `db/nodes.go`) carry
-  `defaultScope` when set, `lastSeen`, and (with `?neighbors=true`) `neighborIds`;
-  the MCP tool exposes the neighbors option. They do not carry
-  `supportsMultibytePaths` or `supportsMultibyteTraces`. The node detail
-  endpoint (`api.Node`) carries the multibyte flags and, when set,
-  `defaultScope`, `observerId`, and `radio`, but never `neighborIds` (detail
-  exposes full `neighbors` objects instead). The output schemas mirror this.
-- Time-window bounds are endpoint-specific. Packets: `firstHeardAt >= since`
-  and `lastHeardAt < until` on the unfiltered path, but only
-  `firstHeardAt <= until` on the IATA-filtered path, so the exact `until`
-  boundary is inconsistent upstream. Traces: `firstHeardAt >= since` and
-  `firstHeardAt <= until` — an inclusive upper bound. Stats series:
-  hours in `[since, until)`. Observer comparison: `heard_at` in
-  `[since, until)`. Messages: `sentAt >= since` only. Packet
-  `firstToLastMs` is `max(observations[].heardAt) - min(...)` over
-  observer-reported clocks, not the server `firstHeardAt`/`lastHeardAt`
-  delta; fewer than two observations leave it zero.
-- Scope filters compare with SQL equality, so scope names are case-sensitive
-  (`#se13` matches, `#SE13` does not) across nodes, packets, traces, and
-  messages — unlike IATA inputs, which the MCP layer normalizes to uppercase.
-- Exact-ID lookups return HTTP 404 with an upstream `not_found` code for
-  well-formed but unknown node, packet, and trace identifiers.
-
-The official web UI lives in
-[`MeshCore-Beacon/beacon-web`](https://github.com/MeshCore-Beacon/beacon-web).
-Clone it when a question concerns how the official UI displays data (field
-semantics, labels, formats) rather than what the REST API returns; for
-example it labels packet `firstToLastMs` as "Heard over" next to the
-first/last server timestamps. It is an upstream consumer, not part of this
-repository, and never blocks a change here.
-
-## Run locally
+The Rust source, lockfile and tests live in `rust/`. Use the pinned toolchain
+from CI (currently 1.99.1):
 
 ```sh
-cp .env.example .env
-# Edit BEACON_BASE_URL.
-npm ci --ignore-scripts
-npm run openapi:check
-npm test
-npm run dev
-```
-
-Production-style execution always pulls the published image from GitHub
-Packages:
-
-```sh
-docker compose pull
-BEACON_BASE_URL=https://beacon.example.org docker compose up -d
-```
-
-The Compose port binds to loopback by default. Put a TLS reverse proxy in front
-when exposing it. A regular public deployment routes a dedicated subdomain to
-the application, whose MCP endpoint is `/`.
-
-Every successful push to `main` publishes multi-architecture `edge` and Git SHA
-images to GitHub Packages. A `vX.Y.Z` tag also publishes `X.Y.Z` and `X.Y`:
-
-```sh
-docker pull ghcr.io/bjorkan/beacon-mcp:edge
-```
-
-## Container deployment
-
-Deployment and Compose must always use an image published at
-`ghcr.io/bjorkan/beacon-mcp`; never build the deployment image on the target
-host. The examples below retain the last known published `2.0.7` image;
-do not substitute `2.1.1` until that image has been published. Pull and run:
-
-```sh
-docker pull ghcr.io/bjorkan/beacon-mcp:2.0.7
-
-docker run --rm -p 127.0.0.1:3000:3000 \
-  --stop-timeout 15 \
-  -e BEACON_BASE_URL=https://beacon.example.org \
-  ghcr.io/bjorkan/beacon-mcp:2.0.7
-```
-
-Hardened example:
-
-```sh
-docker run --rm --name beacon-mcp \
-  --stop-timeout 15 \
-  --user 1000:1000 \
-  --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m \
-  --cap-drop=ALL --security-opt=no-new-privileges:true \
-  --memory=256m --cpus=0.5 --pids-limit=100 \
-  -p 127.0.0.1:3000:3000 \
-  -e BEACON_BASE_URL=https://beacon.example.org \
-  ghcr.io/bjorkan/beacon-mcp:2.0.7
-```
-
-The final `node:24-bookworm-slim` stage contains compiled JavaScript,
-production dependencies, package metadata, and the Node healthcheck only. The
-official base image is pinned to its multi-architecture digest and maintained
-by Renovate. BuildKit cache mounts accelerate npm downloads without adding the
-cache to an image layer. The runtime runs as the image's `node` user (UID/GID
-1000), uses exec-form `CMD`, and writes no application files. Logs go to
-stdout/stderr; Compose uses the rotating local log driver. Set
-`BEACON_MCP_IMAGE` to an immutable semantic-version tag, Git SHA tag, or image
-digest in production; Compose still targets the last known published `2.0.7` tag.
-Publish the updated image first, or set
-`BEACON_MCP_IMAGE` to the exact tested SHA/digest; `edge` evaluates the latest
-`main` branch and need not match this release.
-
-All direct dependencies are JavaScript-only and support both targets. CI builds
-both platforms, publishes only from `main` or `vX.Y.Z` tags, and attaches SBOM
-and provenance attestations. Local image builds are reserved for development,
-CI, and `tests/container/run.sh` verification—not deployment.
-
-## Configuration
-
-Configuration is parsed once with Zod during startup. Invalid values stop the
-process.
-
-| Variable                           |   Default | Meaning                                                   |
-| ---------------------------------- | --------: | --------------------------------------------------------- |
-| `HOST`                             | `0.0.0.0` | Listen address                                            |
-| `PORT`                             |    `3000` | Unprivileged listen port                                  |
-| `BEACON_BASE_URL`                  |  required | Fixed upstream base; credentials/query/fragment forbidden |
-| `BEACON_TIMEOUT_MS`                |   `10000` | Normal request timeout, 100–120000 ms                     |
-| `BEACON_STATS_TIMEOUT_MS`          |   `20000` | Analytics and cross-IATA route timeout, 100–300000 ms     |
-| `LOG_LEVEL`                        |    `info` | Log level setting                                         |
-| `BEACON_SUBSCRIPTIONS_ENABLED`     |    `true` | Enable the modern resource subscription listener          |
-| `BEACON_WS_URL`                    |   derived | Optional Beacon `ws/wss` endpoint ending in `/ws`         |
-| `BEACON_SUBSCRIPTIONS_MAX_STREAMS` |      `64` | Maximum concurrent SSE subscription streams (1–1024)      |
-| `BEACON_SUBSCRIPTIONS_DEBOUNCE_MS` |     `500` | Coalescing window per resource URI (0–5000 ms)            |
-| `SHUTDOWN_GRACE_MS`                |   `10000` | Bounded shutdown grace period                             |
-
-The upstream response limit is fixed at 5 MiB. MCP remains unauthenticated
-and request-stateless; enabled listen streams and an upstream WebSocket are
-transient process-local transport state, not durable sessions. The
-legacy-era fallback adds no session state: every POST is served by a fresh MCP
-instance, and legacy GET/DELETE session operations are answered with 405.
-
-## MCP client and discovery
-
-Point a modern MCP client at the root of a dedicated subdomain, such as
-`https://mcp.example.org`. A discovery request is:
-
-```sh
-curl -sS https://mcp.example.org \
-  -H 'Content-Type: application/json' \
-  -H 'Accept: application/json, text/event-stream' \
-  -H 'MCP-Protocol-Version: 2026-07-28' \
-  -H 'MCP-Method: server/discover' \
-  -d '{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientInfo":{"name":"curl","version":"1.0.0"},"io.modelcontextprotocol/clientCapabilities":{}}}}'
-```
-
-## Tools
-
-| Area              | Tools                                                                                                                |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------- |
-| Server            | `beacon_get_server_info`                                                                                             |
-| Geography         | `beacon_list_iatas`, `beacon_list_regions`, `beacon_list_scopes`                                                     |
-| Nodes             | `beacon_search_nodes`, `beacon_get_node`                                                                             |
-| Observers         | `beacon_search_observers`, `beacon_get_observer`, `beacon_get_observer_activity`                                     |
-| Packets           | `beacon_search_packets`, `beacon_get_packet`                                                                         |
-| Messages/channels | `beacon_search_messages`, `beacon_list_channels`, `beacon_get_channel_messages`                                      |
-| Routes            | `beacon_list_routes`, `beacon_search_routes`, `beacon_find_cross_iata_routes`                                        |
-| Traces            | `beacon_search_traces`, `beacon_get_trace`                                                                           |
-| Analytics         | `beacon_get_network_overview`, `beacon_get_network_series`, `beacon_compare_observers`, `beacon_get_top_advertisers` |
-
-Times are strict RFC3339 UTC inputs and become Beacon epoch milliseconds. IATAs
-are uppercased. `since` must be earlier than `until`. Scope names are
-case-sensitive upstream and are passed through as written. Lists default to 20
-and reject limits above 50. A list response is never allowed to grow beyond the
-requested bound.
-
-Paginated results use `{ items, pagination: { hasMore, nextCursor? } }`. The
-shape of `nextCursor` varies by endpoint:
-
-- Numeric `cursor` for `list_scopes`, `search_messages`, and
-  `get_channel_messages`. `search_nodes`, `search_observers`, and
-  `search_packets` return the opaque `pageCursor` as well as the numeric
-  `cursor` when both are available. Pass both back for precise pages on
-  Beacon 2.1+ and backward compatibility with older servers. Sorted node
-  lists only return `pageCursor`; packet `hashPrefix` only returns `cursor`.
-- Compound `{ cursor, cursorId }` for `list_routes`.
-- Compound `{ cursor, cursorTag }` for `search_traces`.
-- Opaque `pageCursor` for `list_channels` (Beacon's legacy numeric channel
-  cursor is intentionally not exposed).
-
-Endpoints backed by upstream arrays with no pagination mechanism
-(`list_iatas`, `list_regions`, `search_routes`, `find_cross_iata_routes`)
-return `{ hasMore: false, truncated?: true }` with no `nextCursor`; clients
-can narrow the filters but cannot request a nonexistent next page. These four
-tools also read the upstream array incrementally: the HTTP transfer is
-cancelled as soon as the requested limit of complete elements has been parsed,
-so the limit bounds the actual work (upstream exposes no limit parameter on
-`/routes/search` or `/routes/cross`, and both can return tens of megabytes).
-`beacon_get_top_advertisers` is a separate bounded top-N endpoint with a required
-`sort` (`flood` or `direct`) and no continuation cursor.
-`truncated: true` therefore also appears when the read stopped before the
-upstream array terminator was seen — including when the fixed 5 MiB upstream
-body cap was hit after at least one complete element; hitting the cap with no
-complete element remains a `RESPONSE_TOO_LARGE` error. Time-window semantics
-are per endpoint and documented in each tool description; see the upstream
-comparison section for the exact upstream bounds.
-
-Tool errors carry a canonical classification in `structuredContent.error.code`
-following the gRPC code vocabulary: `INVALID_ARGUMENT` (local validation and
-upstream 400), `NOT_FOUND` (upstream 404), `DEADLINE_EXCEEDED` (upstream
-timeout), `RESPONSE_TOO_LARGE` (bounded response cap),
-`RESOURCE_EXHAUSTED` (upstream 429), `UNAVAILABLE` (other upstream failures),
-and `INTERNAL` (unexpected gateway errors). `type` keeps the exception class
-name, `status` the upstream HTTP status when present, `upstreamCode` the
-upstream error-envelope code when present, and `retryAfter` the 429 header.
-
-Every tool publishes an output schema for its structured result. Cross-field
-input constraints are enforced at runtime and documented in plain English in
-each tool description; the emitted MCP input JSON Schema uses only core
-keywords (`type`, `properties`, `required`, `enum`, `pattern`, numeric bounds)
-to stay compatible with older clients that cannot interpret `not`, `allOf`,
-`if`, or `dependentRequired`.
-
-Packet hashes are exactly 16 hexadecimal characters, trace tags exactly 8, and
-exact node public keys exactly 64; `pubkeyPrefix` remains available for partial
-node-key matching. Route hash parameters (`from`, `to`, `fromHash`, `toHash`) are exact-match on
-stored hop hashes, not general-purpose prefixes. Accepted lengths are 2 hex
-characters (1-byte hash), 4 (2-byte), or 6 (3-byte); only these three exact
-lengths currently exist in Beacon. Shorter hashes do not match as prefixes of
-longer ones.
-`payloadTypeName` uses the same canonical names returned in packet responses,
-while `txt_msg`, `grp_txt`, and `anon_req` remain accepted as legacy aliases.
-The canonical `reserved` filter covers numeric types 12–14.
-
-In packet details, packet-level `firstHeardAt` and `lastHeardAt` are Beacon
-server receive/upsert times. Each `observations[].heardAt` is the timestamp
-reported by that observer (with Beacon's drift clamp), so the extrema are not
-required to match. `firstToLastMs` is the span between the earliest and latest
-observer-reported `heardAt` values — an observer clock span, not the
-difference between the two packet-level timestamps — and is absent below two
-observations.
-
-## Security model
-
-- The client accepts an operation enum, not a caller-provided URL or path. Only
-  compiled public `GET` operations exist; `/api/v1/admin/*` is excluded at the
-  generated-type boundary and runtime boundary.
-- Every tool is explicitly annotated as read-only, non-destructive, idempotent,
-  and open-world. The open-world hint reflects access to a public external
-  Beacon deployment; it does not imply write access.
-- Callers cannot choose the upstream protocol, host, port, path, headers, or
-  credentials.
-- The MCP endpoint is public by design. Apply access control, rate limiting, or
-  geographic policy at the reverse proxy when a deployment requires it.
-- One retry with jitter is used only for network failures and HTTP 502/503/504
-  without `Retry-After`. HTTP 429 and 5xx responses with `Retry-After` are
-  never retried immediately; the header is returned to the client.
-- Pino logs Fastify request IDs, MCP tool names, HTTP status and latency, plus
-  upstream operation, status, retry attempt, latency, and result count. Headers,
-  message bodies, packet bodies, response bodies, stack traces, and environment
-  values are not logged.
-- Upstream bodies are streamed into a bounded buffer and rejected before JSON
-  parsing when they exceed the fixed 5 MiB limit.
-- The root filesystem may be read-only, all Linux capabilities may be dropped,
-  and no Docker socket or privileged namespace is used.
-
-The service does not trust `X-Forwarded-*` headers. A reverse proxy should
-terminate TLS, apply any deployment-specific client policy, and forward the
-dedicated subdomain to the application without rewriting its path. The
-`/healthz` and `/readyz` routes may be exposed separately to trusted monitoring.
-
-## Health, failure, and lifecycle
-
-- `GET /healthz` is a local liveness check and never contacts Beacon.
-- `GET /readyz` confirms that configuration loaded and the HTTP service started,
-  not upstream reachability.
-- Beacon outages produce tool errors while the gateway stays healthy; there is
-  no polling or runaway retry loop.
-- SIGTERM/SIGINT stops acceptance, waits up to `SHUTDOWN_GRACE_MS`, closes active
-  HTTP work, and exits cleanly. The Node process is PID 1.
-
-The Docker `HEALTHCHECK` uses a small Node script rather than adding curl. A
-reasonable starting allocation is 128–256 MiB and 0.25–0.5 CPU; tune from
-measurements.
-
-## Development and tests
-
-```sh
-npm ci --ignore-scripts
-npm run openapi:check
-npm run format:check
-npm run typecheck
-npm run lint
-npm run test:unit
-npm run test:contract
-npm run test:mcp
-npm run build
+cargo +1.99.1 fmt --manifest-path rust/Cargo.toml --all -- --check
+cargo +1.99.1 clippy --manifest-path rust/Cargo.toml --all-targets --locked -- -D warnings
+cargo +1.99.1 test --manifest-path rust/Cargo.toml --locked
+cargo +1.99.1 build --manifest-path rust/Cargo.toml --release --locked
 tests/container/run.sh
 ```
 
-Normal tests are offline. Contract tests use a local fetch mock with pinned
-Beacon response shapes. MCP tests exercise the real HTTP handler. The container
-suite builds the final image and checks health, readiness,
-MCP-to-mocked-Beacon connectivity, UID, read-only filesystem, dropped
-capabilities, no-new-privileges, resource bounds, and SIGTERM exit. Compose
-demonstrates the same hardening.
+For local execution set `BEACON_BASE_URL=https://beacon.example.org`, then
+`cargo run --manifest-path rust/Cargo.toml --locked`. The root MCP endpoint
+supports modern `server/discover`, `tools/list` and `tools/call` and stateless
+legacy initialization back through `2024-10-07`. Health routes are `/healthz`
+and `/readyz`; they do not probe the upstream server. The binary supports
+`--healthcheck` for the Docker and Compose health checks.
 
-CI also runs a production dependency audit. Workflow actions are pinned to
-full commit SHAs, checkout credentials are not persisted, token permissions
-are least-privilege, and jobs have bounded runtimes. Renovate maintains npm,
-Docker, and GitHub Actions dependencies using its best-practices preset;
-updates must be at least 14 days old before Renovate creates them.
-Release systems can additionally scan with Trivy/Grype and sign/verify with
-Cosign without changing the application.
+Only the fixed public GET `Operation` enum in `rust/src/client.rs` may contact
+upstream; never accept a caller-controlled host, path, credentials, headers or
+admin route. URL and body lengths are bounded. One jittered retry is allowed
+only for transient network failures or HTTP 502/503/504 **without**
+`Retry-After`; rate limits must not be retried immediately. Error messages
+from upstream 5xx must be redacted. Never log packet/message bodies, auth
+headers, upstream response bodies, stack traces or environment values.
 
-## Updating Beacon OpenAPI
+Each of the 23 tools publishes an input/output schema, description and
+read-only/idempotent/open-world hints. The checked-in JSON documents in
+`rust/src/*-tool-definitions.json` freeze the MCP discovery contract; update
+them with a reviewed contract change, not with a build-time download.
+Lists default to 20 and reject limits above 50; they never return more than
+requested. Numeric, opaque and compound cursors vary per endpoint. Four
+upstream-array tools return `hasMore:false` and only set `truncated:true` if
+the response was cut short; they have no fake continuation cursor.
+Tool errors use the canonical codes `INVALID_ARGUMENT`, `NOT_FOUND`,
+`DEADLINE_EXCEEDED`, `RESPONSE_TOO_LARGE`, `RESOURCE_EXHAUSTED`, `UNAVAILABLE`,
+and `INTERNAL`. Success text is a brief confirmation; structured data is
+never duplicated in the text block.
 
-Identify the latest published Beacon release, review that release's handlers,
-request/response types, Swagger contract, and matching docs changes, then pin
-the release tag's full immutable commit:
+## Configuration and deployment
 
-```sh
-npm run openapi:sync -- 0123456789abcdef0123456789abcdef01234567
-npm run openapi:generate
-npm run openapi:check
-npm test
-```
+`BEACON_BASE_URL` is mandatory (HTTP(S), no credentials/query/fragment).
+`HOST` defaults to `0.0.0.0`, `PORT` to `3000`; `LOG_LEVEL` accepts
+`fatal|error|warn|info|debug|trace|silent` and defaults to `info`.
+`BEACON_TIMEOUT_MS` defaults to 10000 (100–120000),
+`BEACON_STATS_TIMEOUT_MS` to 20000 (100–300000), and `SHUTDOWN_GRACE_MS`
+to 10000 (100–60000). `BEACON_SUBSCRIPTIONS_ENABLED` defaults to true;
+`BEACON_WS_URL` is an optional ws/wss URL ending in `/ws`, derived from the
+Beacon origin otherwise. Stream limit and debounce defaults are 64 and
+500 ms (ranges 1–1024 and 0–5000).
 
-Commit the vendor document, generated declarations, and updated
-`vendor/UPSTREAM.md` together. Production startup never contacts GitHub.
+Subscriptions request a fresh `/api/v1/ws-ticket` before each `/ws`
+connection; older servers returning 404 use a ticketless socket. The ticket
+and socket must reach the same upstream instance when origin checks are
+enabled. The listener validates the hello/subscribe handshake, limits frames
+to 128 KiB, reconnects, debounces updates and sends URI-filtered MCP SSE
+notifications. Legacy `resources/subscribe` is unsupported. Clients must
+re-read resources and recreate streams after disruptions.
 
-## Known limitations
+Build a local image only for development/CI verification; production deployment
+must **pull a published image** from `ghcr.io/bjorkan/beacon-mcp`, never build on
+the target host. Set `BEACON_MCP_IMAGE` to an immutable published SHA/digest
+when using `compose.yaml`. The Dockerfile compiles for amd64/arm64, runs as
+UID/GID 1000 with no application writes, and contains no development tools.
+The Compose example drops capabilities, sets a read-only rootfs, no-new-
+privileges, bounded memory/CPU/PIDs, rotates logs and terminates gracefully.
+Terminate TLS and apply any client access policy at the reverse proxy; the
+gateway does not trust `X-Forwarded-*`. Do not buffer subscription SSE streams.
 
-- The service is read-only and exposes 23 tools plus node/observer resource templates.
-- MCP `subscriptions/listen`, enabled by default and disabled with
-  `BEACON_SUBSCRIPTIONS_ENABLED=false`, uses a process-local `/ws` listener
-  with reconnect and debounce. Before each WebSocket connection it requests
-  `/api/v1/ws-ticket` and passes the short-lived ticket in the upgrade header;
-  older servers returning 404 connect without a ticket. Ticket and socket
-  must reach the same upstream process/address when `websocket.require_origin`
-  is enabled; load-balanced hosts require affinity. It sends change hints for
-  subscribed resource URIs only. Beacon `/ws` may lose events and has no replay;
-  the MCP client
-  must re-read resources and recreate lost listen streams. The legacy
-  `resources/subscribe` method remains unsupported; no offline delivery or
-  background MCP Events are implemented.
-- No admin endpoints, direct PostgreSQL/Redis/MQTT access, generic proxy
-  operation, OAuth server, persistent cache, or local sessions are implemented.
-- Readiness intentionally does not report transient Beacon availability.
-- `swagger2openapi` is intentionally retained despite upstream abandonment
-  (last release 2021). It is the only maintained-enough Swagger 2.0 to
-  OpenAPI 3 converter for the build-time `openapi:generate`/`openapi:check`
-  scripts, is dev-only and absent from production images, is pinned exactly,
-  runs offline against the vendored document, and its output is verified
-  byte-identical by `openapi:check`. Renovate's abandoned-dependency report
-  for it is informational and requires no action; replace it only if upstream
-  Beacon ever publishes OpenAPI 3 directly.
+The offline tests mock upstream REST/WebSocket behavior. Live checks against
+`beacon.meshat.se` must remain small and read-only; do not print message or
+packet contents or commit production smoke scripts. Keep stacked PRs buildable
+and Draft until the complete test, container and CI gates pass; do not merge
+automatically. An upstream outage produces a tool error, not an unhealthy
+gateway or a runaway retry loop.

@@ -3,11 +3,5 @@
   "extends": ["config:best-practices"],
   "minimumReleaseAge": "14 days",
   "internalChecksFilter": "strict",
-  "timezone": "Europe/Stockholm",
-  "packageRules": [
-    {
-      "matchPackageNames": ["typescript"],
-      "allowedVersions": "<6"
-    }
-  ]
+  "timezone": "Europe/Stockholm"
 }

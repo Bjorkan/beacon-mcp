@@ -1,10 +1,7 @@
-node_modules/
-dist/
 rust/target/
-coverage/
+__pycache__/
 .env
 .env.*
 !.env.example
-.npm/
 *.log
 .DS_Store

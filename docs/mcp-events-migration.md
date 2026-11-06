@@ -96,9 +96,8 @@ assign an ID once on ingestion and retain it for all retries of that occurrence.
   absent from discovery unless explicitly enabled **and** safe auth, storage
   and webhook delivery are actually configured. Outbound callbacks are a
   separate, opt-in trust boundary, not an extension of read-only Beacon GETs.
-- Each stacked branch compiles, retains TypeScript and Rust tests during
-  migration, and passes CI; do not merge automatically. The final Rust-only
-  build, test mocks, CI and runtime remain Node/npm/TypeScript-free.
+- Each stacked branch compiles and passes its CI; do not merge automatically.
+  The gateway, container checks and CI use the Rust toolchain.
 - Live `beacon.meshat.se` checks remain small and read-only: verify upstream
   ingress, never create webhook registrations or print packet/message content.
   Webhook correctness uses local mocks plus an authorized controlled client
