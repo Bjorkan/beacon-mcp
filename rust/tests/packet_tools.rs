@@ -142,6 +142,19 @@ async fn calls_all_five_packet_and_channel_tools_with_filters_and_cursors() {
             !result["result"]["structuredContent"][field].is_null(),
             "{name}: {result}"
         );
+        let text = result["result"]["content"][0]["text"]
+            .as_str()
+            .expect("MCP text confirmation");
+        let count = result["result"]["structuredContent"]["items"]
+            .as_array()
+            .map(Vec::len);
+        assert_eq!(
+            text,
+            count
+                .map(|n| format!("Beacon returned {n} item(s)."))
+                .unwrap_or_else(|| "Beacon request succeeded.".into()),
+            "packet or message data must not be duplicated as text"
+        );
         if name == "beacon_list_channels" {
             assert_eq!(
                 result["result"]["structuredContent"]["pagination"]["nextCursor"],
