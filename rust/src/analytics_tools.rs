@@ -96,6 +96,8 @@ impl AnalyticsTools {
             format!("Read Beacon analytics: {name}"),
             Arc::new(object),
         );
+        tool.output_schema =
+            crate::tools::output_schema(include_str!("analytics-output-schemas.json"), name);
         tool.annotations = Some(
             ToolAnnotations::new()
                 .read_only(true)
