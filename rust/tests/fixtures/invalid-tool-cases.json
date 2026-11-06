@@ -1,0 +1,270 @@
+[
+  {
+    "name": "beacon_search_nodes",
+    "arguments": {
+      "iatas": [
+        "bad value"
+      ]
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: iatas.0: Invalid string: must match pattern /^[A-Za-z0-9]{3}$/",
+    "error": null
+  },
+  {
+    "name": "beacon_search_nodes",
+    "arguments": {
+      "iatas": [
+        " arn "
+      ],
+      "region": "se"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: iatas.0: Invalid string: must match pattern /^[A-Za-z0-9]{3}$/",
+    "error": null
+  },
+  {
+    "name": "beacon_search_nodes",
+    "arguments": {
+      "sort": "name",
+      "cursor": 1
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: numeric cursor works only with default lastSeen descending order",
+    "error": null
+  },
+  {
+    "name": "beacon_search_nodes",
+    "arguments": {
+      "pageCursor": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: pageCursor: Too big: expected string to have <=512 characters",
+    "error": null
+  },
+  {
+    "name": "beacon_search_nodes",
+    "arguments": {
+      "region": "se",
+      "regionId": 1
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: region and regionId are mutually exclusive",
+    "error": null
+  },
+  {
+    "name": "beacon_search_nodes",
+    "arguments": {
+      "type": "foo"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: type: Invalid input: expected number, received string",
+    "error": null
+  },
+  {
+    "name": "beacon_search_nodes",
+    "arguments": {
+      "type": 9
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: type: Too big: expected number to be <=4",
+    "error": null
+  },
+  {
+    "name": "beacon_search_nodes",
+    "arguments": {
+      "typeName": "oops"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: typeName: Invalid option: expected one of \"companion\"|\"repeater\"|\"room_server\"|\"sensor\"",
+    "error": null
+  },
+  {
+    "name": "beacon_search_nodes",
+    "arguments": {
+      "pubkey": "aa"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: pubkey: Invalid string: must match pattern /^[0-9a-fA-F]{64}$/",
+    "error": null
+  },
+  {
+    "name": "beacon_search_nodes",
+    "arguments": {
+      "limit": 51
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: limit: Too big: expected number to be <=50",
+    "error": null
+  },
+  {
+    "name": "beacon_search_nodes",
+    "arguments": {
+      "since": "foo"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: Unrecognized key: \"since\"",
+    "error": null
+  },
+  {
+    "name": "beacon_search_observers",
+    "arguments": {
+      "type": 1
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_observers: type: Invalid input: expected string, received number",
+    "error": null
+  },
+  {
+    "name": "beacon_search_observers",
+    "arguments": {
+      "status": "offline",
+      "regionId": 0
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_observers: regionId: Too small: expected number to be >0",
+    "error": null
+  },
+  {
+    "name": "beacon_search_packets",
+    "arguments": {
+      "hashPrefix": "aab"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_packets: hashPrefix: Invalid string: must match pattern /^[0-9a-fA-F]{4,16}$/",
+    "error": null
+  },
+  {
+    "name": "beacon_search_packets",
+    "arguments": {
+      "hashPrefix": "aabb",
+      "pageCursor": "opaque"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_packets: hashPrefix pages with cursor, not pageCursor",
+    "error": null
+  },
+  {
+    "name": "beacon_search_packets",
+    "arguments": {
+      "payloadTypeName": "reserved",
+      "payloadTypes": [
+        12
+      ]
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_packets: payloadTypeName cannot be combined with payloadType or payloadTypes",
+    "error": null
+  },
+  {
+    "name": "beacon_search_packets",
+    "arguments": {
+      "routeTypes": [
+        5
+      ]
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_packets: routeTypes.0: Too big: expected number to be <=3",
+    "error": null
+  },
+  {
+    "name": "beacon_search_packets",
+    "arguments": {
+      "since": "2026-02-30T15:30:00Z"
+    },
+    "text": "since must be a valid calendar timestamp",
+    "error": {
+      "code": "INVALID_ARGUMENT",
+      "type": "ValidationError"
+    }
+  },
+  {
+    "name": "beacon_search_messages",
+    "arguments": {
+      "since": "2026-02-30T15:30:00Z"
+    },
+    "text": "since must be a valid calendar timestamp",
+    "error": {
+      "code": "INVALID_ARGUMENT",
+      "type": "ValidationError"
+    }
+  },
+  {
+    "name": "beacon_get_packet",
+    "arguments": {
+      "hash": "a"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_get_packet: hash: Invalid string: must match pattern /^[0-9a-fA-F]{16}$/",
+    "error": null
+  },
+  {
+    "name": "beacon_get_trace",
+    "arguments": {
+      "tag": "xyz"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_get_trace: tag: Invalid string: must match pattern /^[0-9a-fA-F]{8}$/",
+    "error": null
+  },
+  {
+    "name": "beacon_get_node",
+    "arguments": {
+      "id": "../admin/config"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_get_node: id: Invalid UUID",
+    "error": null
+  },
+  {
+    "name": "beacon_list_routes",
+    "arguments": {
+      "iatas": [
+        "ARN"
+      ],
+      "iata": "MMX"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_list_routes: iata and iatas are mutually exclusive",
+    "error": null
+  },
+  {
+    "name": "beacon_search_routes",
+    "arguments": {
+      "from": "a",
+      "to": "b"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_routes: from: Invalid string: must match pattern /^(?:[0-9a-fA-F]{2}){1,4}$/, to: Invalid string: must match pattern /^(?:[0-9a-fA-F]{2}){1,4}$/",
+    "error": null
+  },
+  {
+    "name": "beacon_find_cross_iata_routes",
+    "arguments": {
+      "fromHash": "aa",
+      "toHash": "bb",
+      "fromIata": "ARN"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_find_cross_iata_routes: fromIata and toIata must be given together",
+    "error": null
+  },
+  {
+    "name": "beacon_get_network_series",
+    "arguments": {
+      "since": "2026-10-05T00:00:00Z",
+      "until": "2026-10-04T00:00:00Z"
+    },
+    "text": "since must be earlier than until",
+    "error": {
+      "code": "INVALID_ARGUMENT",
+      "type": "ValidationError"
+    }
+  },
+  {
+    "name": "beacon_compare_observers",
+    "arguments": {},
+    "text": "Input validation error: Invalid arguments for tool beacon_compare_observers: observerA: Invalid input: expected string, received undefined, observerB: Invalid input: expected string, received undefined, since: Invalid input: expected string, received undefined, until: Invalid input: expected string, received undefined",
+    "error": null
+  },
+  {
+    "name": "beacon_get_top_advertisers",
+    "arguments": {},
+    "text": "Input validation error: Invalid arguments for tool beacon_get_top_advertisers: sort: Invalid option: expected one of \"flood\"|\"direct\"",
+    "error": null
+  },
+  {
+    "name": "beacon_get_observer_activity",
+    "arguments": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "range": "72h",
+      "interval": "5m"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_get_observer_activity: range must be 48h or less for intervals under 1h",
+    "error": null
+  },
+  {
+    "name": "beacon_search_nodes",
+    "arguments": {
+      "arbitraryPath": "/admin"
+    },
+    "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: Unrecognized key: \"arbitraryPath\"",
+    "error": null
+  }
+]
