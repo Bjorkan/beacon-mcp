@@ -1,1 +1,917 @@
-{"beacon_get_channel_messages":{"$schema":"https://json-schema.org/draft/2020-12/schema","additionalProperties":false,"properties":{"items":{"items":{"additionalProperties":{},"properties":{"channelHash":{"type":["string","null"]},"content":{"type":["string","null"]},"id":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"observationCount":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"packetHash":{"type":["string","null"]},"scope":{"type":["string","null"]},"scopeStatus":{"anyOf":[{"enum":["matched","unscoped","unknown","unavailable"],"type":"string"},{"type":"null"}]},"senderName":{"type":["string","null"]},"sentAt":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}],"description":"Unix epoch milliseconds (UTC)"}},"type":"object"},"type":"array"},"pagination":{"additionalProperties":false,"properties":{"hasMore":{"type":"boolean"},"nextCursor":{"additionalProperties":false,"description":"Continuation page cursor; pass the value to the next call as-is","properties":{"cursor":{"maximum":9007199254740991,"minimum":0,"type":"integer"}},"required":["cursor"],"type":"object"}},"required":["hasMore"],"type":"object"}},"required":["items","pagination"],"type":"object"},"beacon_get_packet":{"$schema":"https://json-schema.org/draft/2020-12/schema","additionalProperties":{},"properties":{"channelHash":{"type":["string","null"]},"decrypted":{"type":["boolean","null"]},"firstHeardAt":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}],"description":"Unix epoch milliseconds (UTC)"},"firstToLastMs":{"description":"Span between the earliest and latest observer-reported heardAt across the packet's observations, using observer device clocks. It is not the difference between the server-side firstHeardAt and lastHeardAt receive times; absent when the packet has fewer than two observations","type":["number","null"]},"header":{"anyOf":[{"additionalProperties":{},"properties":{"payloadType":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"payloadTypeName":{"anyOf":[{"enum":["request","response","text_message","acknowledgement","advert","group_text","group_data","anonymous_request","path","trace","multipart","control","reserved","raw_custom","unknown"],"type":"string"},{"type":"null"}]},"payloadVersion":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"raw":{"type":["string","null"]},"routeType":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"routeTypeName":{"type":["string","null"]}},"type":"object"},{"type":"null"}]},"lastHeardAt":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}],"description":"Unix epoch milliseconds (UTC)"},"observationCount":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"observations":{"anyOf":[{"items":{"additionalProperties":{},"properties":{"heardAt":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}],"description":"Unix epoch milliseconds (UTC)"},"iata":{"type":["string","null"]},"id":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"observerId":{"type":["string","null"]},"observerName":{"type":["string","null"]},"pathBytes":{"type":["string","null"]},"pathLength":{"anyOf":[{"additionalProperties":{},"properties":{"hashSize":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"hopCount":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"raw":{"type":["string","null"]}},"type":"object"},{"type":"null"}]},"propagationTimeMs":{"type":["number","null"]},"radio":{"anyOf":[{"additionalProperties":{},"properties":{"bandwidthKhz":{"type":["number","null"]},"codingRate":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"freqMhz":{"type":["number","null"]},"spreadFactor":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]}},"type":"object"},{"type":"null"}]},"resolvedDestination":{"anyOf":[{"additionalProperties":{},"properties":{"confidence":{"type":["string","null"]},"nodes":{"anyOf":[{"items":{"additionalProperties":{},"properties":{"id":{"type":["string","null"]},"latitude":{"type":["number","null"]},"longitude":{"type":["number","null"]},"name":{"type":["string","null"]},"publicKey":{"type":["string","null"]}},"type":"object"},"type":"array"},{"type":"null"}]},"snr":{"type":["number","null"]}},"type":"object"},{"type":"null"}]},"resolvedPath":{"anyOf":[{"items":{"additionalProperties":{},"properties":{"confidence":{"type":["string","null"]},"nodes":{"anyOf":[{"items":{"additionalProperties":{},"properties":{"id":{"type":["string","null"]},"latitude":{"type":["number","null"]},"longitude":{"type":["number","null"]},"name":{"type":["string","null"]},"publicKey":{"type":["string","null"]}},"type":"object"},"type":"array"},{"type":"null"}]},"snr":{"type":["number","null"]}},"type":"object"},"type":"array"},{"type":"null"}]},"resolvedSource":{"anyOf":[{"additionalProperties":{},"properties":{"confidence":{"type":["string","null"]},"nodes":{"anyOf":[{"items":{"additionalProperties":{},"properties":{"id":{"type":["string","null"]},"latitude":{"type":["number","null"]},"longitude":{"type":["number","null"]},"name":{"type":["string","null"]},"publicKey":{"type":["string","null"]}},"type":"object"},"type":"array"},{"type":"null"}]},"snr":{"type":["number","null"]}},"type":"object"},{"type":"null"}]},"rssi":{"type":["number","null"]},"snr":{"type":["number","null"]},"sourceBroker":{"type":["string","null"]}},"type":"object"},"type":"array"},{"type":"null"}]},"originPubkey":{"type":["string","null"]},"packetHash":{"type":["string","null"]},"parsedPayload":{"anyOf":[{},{"type":"null"}]},"rawPayload":{"type":["string","null"]},"resolvedRoute":{"anyOf":[{"items":{"additionalProperties":{},"properties":{"confidence":{"type":["string","null"]},"nodes":{"anyOf":[{"items":{"additionalProperties":{},"properties":{"id":{"type":["string","null"]},"latitude":{"type":["number","null"]},"longitude":{"type":["number","null"]},"name":{"type":["string","null"]},"publicKey":{"type":["string","null"]}},"type":"object"},"type":"array"},{"type":"null"}]},"snr":{"type":["number","null"]}},"type":"object"},"type":"array"},{"type":"null"}]},"scope":{"type":["string","null"]},"transportCodes":{"anyOf":[{"additionalProperties":{},"properties":{"regionCode":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"subRegionCode":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]}},"type":"object"},{"type":"null"}]}},"type":"object"},"beacon_list_channels":{"$schema":"https://json-schema.org/draft/2020-12/schema","additionalProperties":false,"properties":{"items":{"items":{"additionalProperties":{},"properties":{"channelHash":{"type":["string","null"]},"id":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"isHashtag":{"type":["boolean","null"]},"keyKnown":{"type":["boolean","null"]},"lastSeen":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}],"description":"Unix epoch milliseconds (UTC)"},"name":{"type":["string","null"]}},"type":"object"},"type":"array"},"pagination":{"additionalProperties":false,"properties":{"hasMore":{"type":"boolean"},"nextCursor":{"additionalProperties":false,"description":"Continuation opaque page cursor; pass the value to the next call as-is","properties":{"pageCursor":{"type":"string"}},"required":["pageCursor"],"type":"object"}},"required":["hasMore"],"type":"object"}},"required":["items","pagination"],"type":"object"},"beacon_search_messages":{"$schema":"https://json-schema.org/draft/2020-12/schema","additionalProperties":false,"properties":{"items":{"items":{"additionalProperties":{},"properties":{"channelHash":{"type":["string","null"]},"content":{"type":["string","null"]},"id":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"observationCount":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"packetHash":{"type":["string","null"]},"scope":{"type":["string","null"]},"scopeStatus":{"anyOf":[{"enum":["matched","unscoped","unknown","unavailable"],"type":"string"},{"type":"null"}]},"senderName":{"type":["string","null"]},"sentAt":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}],"description":"Unix epoch milliseconds (UTC)"}},"type":"object"},"type":"array"},"pagination":{"additionalProperties":false,"properties":{"hasMore":{"type":"boolean"},"nextCursor":{"additionalProperties":false,"description":"Continuation page cursor; pass the value to the next call as-is","properties":{"cursor":{"maximum":9007199254740991,"minimum":0,"type":"integer"}},"required":["cursor"],"type":"object"}},"required":["hasMore"],"type":"object"}},"required":["items","pagination"],"type":"object"},"beacon_search_packets":{"$schema":"https://json-schema.org/draft/2020-12/schema","additionalProperties":false,"properties":{"items":{"items":{"additionalProperties":{},"properties":{"firstHeardAt":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}],"description":"Unix epoch milliseconds (UTC)"},"lastHeardAt":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}],"description":"Unix epoch milliseconds (UTC)"},"latestObserver":{"anyOf":[{"additionalProperties":{},"properties":{"displayName":{"type":["string","null"]},"iata":{"type":["string","null"]},"id":{"type":["string","null"]},"pathBytes":{"type":["string","null"]},"pathLength":{"anyOf":[{"additionalProperties":{},"properties":{"hashSize":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"hopCount":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"raw":{"type":["string","null"]}},"type":"object"},{"type":"null"}]},"resolvedDestination":{"anyOf":[{"additionalProperties":{},"properties":{"confidence":{"type":["string","null"]},"nodes":{"anyOf":[{"items":{"additionalProperties":{},"properties":{"id":{"type":["string","null"]},"latitude":{"type":["number","null"]},"longitude":{"type":["number","null"]},"name":{"type":["string","null"]},"publicKey":{"type":["string","null"]}},"type":"object"},"type":"array"},{"type":"null"}]},"snr":{"type":["number","null"]}},"type":"object"},{"type":"null"}]},"resolvedPath":{"anyOf":[{"items":{"additionalProperties":{},"properties":{"confidence":{"type":["string","null"]},"nodes":{"anyOf":[{"items":{"additionalProperties":{},"properties":{"id":{"type":["string","null"]},"latitude":{"type":["number","null"]},"longitude":{"type":["number","null"]},"name":{"type":["string","null"]},"publicKey":{"type":["string","null"]}},"type":"object"},"type":"array"},{"type":"null"}]},"snr":{"type":["number","null"]}},"type":"object"},"type":"array"},{"type":"null"}]},"resolvedSource":{"anyOf":[{"additionalProperties":{},"properties":{"confidence":{"type":["string","null"]},"nodes":{"anyOf":[{"items":{"additionalProperties":{},"properties":{"id":{"type":["string","null"]},"latitude":{"type":["number","null"]},"longitude":{"type":["number","null"]},"name":{"type":["string","null"]},"publicKey":{"type":["string","null"]}},"type":"object"},"type":"array"},{"type":"null"}]},"snr":{"type":["number","null"]}},"type":"object"},{"type":"null"}]}},"type":"object"},{"type":"null"}]},"observationCount":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"packetHash":{"type":["string","null"]},"payloadType":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"payloadTypeName":{"anyOf":[{"enum":["request","response","text_message","acknowledgement","advert","group_text","group_data","anonymous_request","path","trace","multipart","control","reserved","raw_custom","unknown"],"type":"string"},{"type":"null"}]},"routeType":{"anyOf":[{"maximum":9007199254740991,"minimum":-9007199254740991,"type":"integer"},{"type":"null"}]},"routeTypeName":{"type":["string","null"]},"scope":{"type":["string","null"]},"summary":{"type":["string","null"]}},"type":"object"},"type":"array"},"pagination":{"additionalProperties":false,"properties":{"hasMore":{"type":"boolean"},"nextCursor":{"anyOf":[{"additionalProperties":false,"description":"Continuation page cursor; pass the value to the next call as-is","properties":{"cursor":{"maximum":9007199254740991,"minimum":0,"type":"integer"}},"required":["cursor"],"type":"object"},{"additionalProperties":false,"description":"Pass pageCursor and, when present, cursor unchanged with the same filters and sort; older servers ignore pageCursor","properties":{"cursor":{"maximum":9007199254740991,"minimum":0,"type":"integer"},"pageCursor":{"type":"string"}},"required":["pageCursor"],"type":"object"}]}},"required":["hasMore"],"type":"object"}},"required":["items","pagination"],"type":"object"}}
+{
+  "beacon_get_channel_messages": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "items": {
+        "items": {
+          "additionalProperties": {},
+          "properties": {
+            "channelHash": { "type": ["string", "null"] },
+            "content": { "type": ["string", "null"] },
+            "id": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                { "type": "null" }
+              ]
+            },
+            "observationCount": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                { "type": "null" }
+              ]
+            },
+            "packetHash": { "type": ["string", "null"] },
+            "scope": { "type": ["string", "null"] },
+            "scopeStatus": {
+              "anyOf": [
+                {
+                  "enum": ["matched", "unscoped", "unknown", "unavailable"],
+                  "type": "string"
+                },
+                { "type": "null" }
+              ]
+            },
+            "senderName": { "type": ["string", "null"] },
+            "sentAt": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                { "type": "null" }
+              ],
+              "description": "Unix epoch milliseconds (UTC)"
+            }
+          },
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "pagination": {
+        "additionalProperties": false,
+        "properties": {
+          "hasMore": { "type": "boolean" },
+          "nextCursor": {
+            "additionalProperties": false,
+            "description": "Continuation page cursor; pass the value to the next call as-is",
+            "properties": {
+              "cursor": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": ["cursor"],
+            "type": "object"
+          }
+        },
+        "required": ["hasMore"],
+        "type": "object"
+      }
+    },
+    "required": ["items", "pagination"],
+    "type": "object"
+  },
+  "beacon_get_packet": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": {},
+    "properties": {
+      "channelHash": { "type": ["string", "null"] },
+      "decrypted": { "type": ["boolean", "null"] },
+      "firstHeardAt": {
+        "anyOf": [
+          {
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          { "type": "null" }
+        ],
+        "description": "Unix epoch milliseconds (UTC)"
+      },
+      "firstToLastMs": {
+        "description": "Span between the earliest and latest observer-reported heardAt across the packet's observations, using observer device clocks. It is not the difference between the server-side firstHeardAt and lastHeardAt receive times; absent when the packet has fewer than two observations",
+        "type": ["number", "null"]
+      },
+      "header": {
+        "anyOf": [
+          {
+            "additionalProperties": {},
+            "properties": {
+              "payloadType": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "payloadTypeName": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "request",
+                      "response",
+                      "text_message",
+                      "acknowledgement",
+                      "advert",
+                      "group_text",
+                      "group_data",
+                      "anonymous_request",
+                      "path",
+                      "trace",
+                      "multipart",
+                      "control",
+                      "reserved",
+                      "raw_custom",
+                      "unknown"
+                    ],
+                    "type": "string"
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "payloadVersion": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "raw": { "type": ["string", "null"] },
+              "routeType": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "routeTypeName": { "type": ["string", "null"] }
+            },
+            "type": "object"
+          },
+          { "type": "null" }
+        ]
+      },
+      "lastHeardAt": {
+        "anyOf": [
+          {
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          { "type": "null" }
+        ],
+        "description": "Unix epoch milliseconds (UTC)"
+      },
+      "observationCount": {
+        "anyOf": [
+          {
+            "maximum": 9007199254740991,
+            "minimum": -9007199254740991,
+            "type": "integer"
+          },
+          { "type": "null" }
+        ]
+      },
+      "observations": {
+        "anyOf": [
+          {
+            "items": {
+              "additionalProperties": {},
+              "properties": {
+                "heardAt": {
+                  "anyOf": [
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    },
+                    { "type": "null" }
+                  ],
+                  "description": "Unix epoch milliseconds (UTC)"
+                },
+                "iata": { "type": ["string", "null"] },
+                "id": {
+                  "anyOf": [
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "observerId": { "type": ["string", "null"] },
+                "observerName": { "type": ["string", "null"] },
+                "pathBytes": { "type": ["string", "null"] },
+                "pathLength": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": {},
+                      "properties": {
+                        "hashSize": {
+                          "anyOf": [
+                            {
+                              "maximum": 9007199254740991,
+                              "minimum": -9007199254740991,
+                              "type": "integer"
+                            },
+                            { "type": "null" }
+                          ]
+                        },
+                        "hopCount": {
+                          "anyOf": [
+                            {
+                              "maximum": 9007199254740991,
+                              "minimum": -9007199254740991,
+                              "type": "integer"
+                            },
+                            { "type": "null" }
+                          ]
+                        },
+                        "raw": { "type": ["string", "null"] }
+                      },
+                      "type": "object"
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "propagationTimeMs": { "type": ["number", "null"] },
+                "radio": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": {},
+                      "properties": {
+                        "bandwidthKhz": { "type": ["number", "null"] },
+                        "codingRate": {
+                          "anyOf": [
+                            {
+                              "maximum": 9007199254740991,
+                              "minimum": -9007199254740991,
+                              "type": "integer"
+                            },
+                            { "type": "null" }
+                          ]
+                        },
+                        "freqMhz": { "type": ["number", "null"] },
+                        "spreadFactor": {
+                          "anyOf": [
+                            {
+                              "maximum": 9007199254740991,
+                              "minimum": -9007199254740991,
+                              "type": "integer"
+                            },
+                            { "type": "null" }
+                          ]
+                        }
+                      },
+                      "type": "object"
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "resolvedDestination": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": {},
+                      "properties": {
+                        "confidence": { "type": ["string", "null"] },
+                        "nodes": {
+                          "anyOf": [
+                            {
+                              "items": {
+                                "additionalProperties": {},
+                                "properties": {
+                                  "id": { "type": ["string", "null"] },
+                                  "latitude": { "type": ["number", "null"] },
+                                  "longitude": { "type": ["number", "null"] },
+                                  "name": { "type": ["string", "null"] },
+                                  "publicKey": { "type": ["string", "null"] }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            { "type": "null" }
+                          ]
+                        },
+                        "snr": { "type": ["number", "null"] }
+                      },
+                      "type": "object"
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "resolvedPath": {
+                  "anyOf": [
+                    {
+                      "items": {
+                        "additionalProperties": {},
+                        "properties": {
+                          "confidence": { "type": ["string", "null"] },
+                          "nodes": {
+                            "anyOf": [
+                              {
+                                "items": {
+                                  "additionalProperties": {},
+                                  "properties": {
+                                    "id": { "type": ["string", "null"] },
+                                    "latitude": { "type": ["number", "null"] },
+                                    "longitude": { "type": ["number", "null"] },
+                                    "name": { "type": ["string", "null"] },
+                                    "publicKey": { "type": ["string", "null"] }
+                                  },
+                                  "type": "object"
+                                },
+                                "type": "array"
+                              },
+                              { "type": "null" }
+                            ]
+                          },
+                          "snr": { "type": ["number", "null"] }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "resolvedSource": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": {},
+                      "properties": {
+                        "confidence": { "type": ["string", "null"] },
+                        "nodes": {
+                          "anyOf": [
+                            {
+                              "items": {
+                                "additionalProperties": {},
+                                "properties": {
+                                  "id": { "type": ["string", "null"] },
+                                  "latitude": { "type": ["number", "null"] },
+                                  "longitude": { "type": ["number", "null"] },
+                                  "name": { "type": ["string", "null"] },
+                                  "publicKey": { "type": ["string", "null"] }
+                                },
+                                "type": "object"
+                              },
+                              "type": "array"
+                            },
+                            { "type": "null" }
+                          ]
+                        },
+                        "snr": { "type": ["number", "null"] }
+                      },
+                      "type": "object"
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "rssi": { "type": ["number", "null"] },
+                "snr": { "type": ["number", "null"] },
+                "sourceBroker": { "type": ["string", "null"] }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          { "type": "null" }
+        ]
+      },
+      "originPubkey": { "type": ["string", "null"] },
+      "packetHash": { "type": ["string", "null"] },
+      "parsedPayload": { "anyOf": [{}, { "type": "null" }] },
+      "rawPayload": { "type": ["string", "null"] },
+      "resolvedRoute": {
+        "anyOf": [
+          {
+            "items": {
+              "additionalProperties": {},
+              "properties": {
+                "confidence": { "type": ["string", "null"] },
+                "nodes": {
+                  "anyOf": [
+                    {
+                      "items": {
+                        "additionalProperties": {},
+                        "properties": {
+                          "id": { "type": ["string", "null"] },
+                          "latitude": { "type": ["number", "null"] },
+                          "longitude": { "type": ["number", "null"] },
+                          "name": { "type": ["string", "null"] },
+                          "publicKey": { "type": ["string", "null"] }
+                        },
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    { "type": "null" }
+                  ]
+                },
+                "snr": { "type": ["number", "null"] }
+              },
+              "type": "object"
+            },
+            "type": "array"
+          },
+          { "type": "null" }
+        ]
+      },
+      "scope": { "type": ["string", "null"] },
+      "transportCodes": {
+        "anyOf": [
+          {
+            "additionalProperties": {},
+            "properties": {
+              "regionCode": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  { "type": "null" }
+                ]
+              },
+              "subRegionCode": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  { "type": "null" }
+                ]
+              }
+            },
+            "type": "object"
+          },
+          { "type": "null" }
+        ]
+      }
+    },
+    "type": "object"
+  },
+  "beacon_list_channels": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "items": {
+        "items": {
+          "additionalProperties": {},
+          "properties": {
+            "channelHash": { "type": ["string", "null"] },
+            "id": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                { "type": "null" }
+              ]
+            },
+            "isHashtag": { "type": ["boolean", "null"] },
+            "keyKnown": { "type": ["boolean", "null"] },
+            "lastSeen": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                { "type": "null" }
+              ],
+              "description": "Unix epoch milliseconds (UTC)"
+            },
+            "name": { "type": ["string", "null"] }
+          },
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "pagination": {
+        "additionalProperties": false,
+        "properties": {
+          "hasMore": { "type": "boolean" },
+          "nextCursor": {
+            "additionalProperties": false,
+            "description": "Continuation opaque page cursor; pass the value to the next call as-is",
+            "properties": { "pageCursor": { "type": "string" } },
+            "required": ["pageCursor"],
+            "type": "object"
+          }
+        },
+        "required": ["hasMore"],
+        "type": "object"
+      }
+    },
+    "required": ["items", "pagination"],
+    "type": "object"
+  },
+  "beacon_search_messages": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "items": {
+        "items": {
+          "additionalProperties": {},
+          "properties": {
+            "channelHash": { "type": ["string", "null"] },
+            "content": { "type": ["string", "null"] },
+            "id": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                { "type": "null" }
+              ]
+            },
+            "observationCount": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                { "type": "null" }
+              ]
+            },
+            "packetHash": { "type": ["string", "null"] },
+            "scope": { "type": ["string", "null"] },
+            "scopeStatus": {
+              "anyOf": [
+                {
+                  "enum": ["matched", "unscoped", "unknown", "unavailable"],
+                  "type": "string"
+                },
+                { "type": "null" }
+              ]
+            },
+            "senderName": { "type": ["string", "null"] },
+            "sentAt": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                { "type": "null" }
+              ],
+              "description": "Unix epoch milliseconds (UTC)"
+            }
+          },
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "pagination": {
+        "additionalProperties": false,
+        "properties": {
+          "hasMore": { "type": "boolean" },
+          "nextCursor": {
+            "additionalProperties": false,
+            "description": "Continuation page cursor; pass the value to the next call as-is",
+            "properties": {
+              "cursor": {
+                "maximum": 9007199254740991,
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": ["cursor"],
+            "type": "object"
+          }
+        },
+        "required": ["hasMore"],
+        "type": "object"
+      }
+    },
+    "required": ["items", "pagination"],
+    "type": "object"
+  },
+  "beacon_search_packets": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "additionalProperties": false,
+    "properties": {
+      "items": {
+        "items": {
+          "additionalProperties": {},
+          "properties": {
+            "firstHeardAt": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                { "type": "null" }
+              ],
+              "description": "Unix epoch milliseconds (UTC)"
+            },
+            "lastHeardAt": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                { "type": "null" }
+              ],
+              "description": "Unix epoch milliseconds (UTC)"
+            },
+            "latestObserver": {
+              "anyOf": [
+                {
+                  "additionalProperties": {},
+                  "properties": {
+                    "displayName": { "type": ["string", "null"] },
+                    "iata": { "type": ["string", "null"] },
+                    "id": { "type": ["string", "null"] },
+                    "pathBytes": { "type": ["string", "null"] },
+                    "pathLength": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": {},
+                          "properties": {
+                            "hashSize": {
+                              "anyOf": [
+                                {
+                                  "maximum": 9007199254740991,
+                                  "minimum": -9007199254740991,
+                                  "type": "integer"
+                                },
+                                { "type": "null" }
+                              ]
+                            },
+                            "hopCount": {
+                              "anyOf": [
+                                {
+                                  "maximum": 9007199254740991,
+                                  "minimum": -9007199254740991,
+                                  "type": "integer"
+                                },
+                                { "type": "null" }
+                              ]
+                            },
+                            "raw": { "type": ["string", "null"] }
+                          },
+                          "type": "object"
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "resolvedDestination": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": {},
+                          "properties": {
+                            "confidence": { "type": ["string", "null"] },
+                            "nodes": {
+                              "anyOf": [
+                                {
+                                  "items": {
+                                    "additionalProperties": {},
+                                    "properties": {
+                                      "id": { "type": ["string", "null"] },
+                                      "latitude": {
+                                        "type": ["number", "null"]
+                                      },
+                                      "longitude": {
+                                        "type": ["number", "null"]
+                                      },
+                                      "name": { "type": ["string", "null"] },
+                                      "publicKey": {
+                                        "type": ["string", "null"]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "type": "array"
+                                },
+                                { "type": "null" }
+                              ]
+                            },
+                            "snr": { "type": ["number", "null"] }
+                          },
+                          "type": "object"
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "resolvedPath": {
+                      "anyOf": [
+                        {
+                          "items": {
+                            "additionalProperties": {},
+                            "properties": {
+                              "confidence": { "type": ["string", "null"] },
+                              "nodes": {
+                                "anyOf": [
+                                  {
+                                    "items": {
+                                      "additionalProperties": {},
+                                      "properties": {
+                                        "id": { "type": ["string", "null"] },
+                                        "latitude": {
+                                          "type": ["number", "null"]
+                                        },
+                                        "longitude": {
+                                          "type": ["number", "null"]
+                                        },
+                                        "name": { "type": ["string", "null"] },
+                                        "publicKey": {
+                                          "type": ["string", "null"]
+                                        }
+                                      },
+                                      "type": "object"
+                                    },
+                                    "type": "array"
+                                  },
+                                  { "type": "null" }
+                                ]
+                              },
+                              "snr": { "type": ["number", "null"] }
+                            },
+                            "type": "object"
+                          },
+                          "type": "array"
+                        },
+                        { "type": "null" }
+                      ]
+                    },
+                    "resolvedSource": {
+                      "anyOf": [
+                        {
+                          "additionalProperties": {},
+                          "properties": {
+                            "confidence": { "type": ["string", "null"] },
+                            "nodes": {
+                              "anyOf": [
+                                {
+                                  "items": {
+                                    "additionalProperties": {},
+                                    "properties": {
+                                      "id": { "type": ["string", "null"] },
+                                      "latitude": {
+                                        "type": ["number", "null"]
+                                      },
+                                      "longitude": {
+                                        "type": ["number", "null"]
+                                      },
+                                      "name": { "type": ["string", "null"] },
+                                      "publicKey": {
+                                        "type": ["string", "null"]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "type": "array"
+                                },
+                                { "type": "null" }
+                              ]
+                            },
+                            "snr": { "type": ["number", "null"] }
+                          },
+                          "type": "object"
+                        },
+                        { "type": "null" }
+                      ]
+                    }
+                  },
+                  "type": "object"
+                },
+                { "type": "null" }
+              ]
+            },
+            "observationCount": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                { "type": "null" }
+              ]
+            },
+            "packetHash": { "type": ["string", "null"] },
+            "payloadType": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                { "type": "null" }
+              ]
+            },
+            "payloadTypeName": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "request",
+                    "response",
+                    "text_message",
+                    "acknowledgement",
+                    "advert",
+                    "group_text",
+                    "group_data",
+                    "anonymous_request",
+                    "path",
+                    "trace",
+                    "multipart",
+                    "control",
+                    "reserved",
+                    "raw_custom",
+                    "unknown"
+                  ],
+                  "type": "string"
+                },
+                { "type": "null" }
+              ]
+            },
+            "routeType": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": -9007199254740991,
+                  "type": "integer"
+                },
+                { "type": "null" }
+              ]
+            },
+            "routeTypeName": { "type": ["string", "null"] },
+            "scope": { "type": ["string", "null"] },
+            "summary": { "type": ["string", "null"] }
+          },
+          "type": "object"
+        },
+        "type": "array"
+      },
+      "pagination": {
+        "additionalProperties": false,
+        "properties": {
+          "hasMore": { "type": "boolean" },
+          "nextCursor": {
+            "anyOf": [
+              {
+                "additionalProperties": false,
+                "description": "Continuation page cursor; pass the value to the next call as-is",
+                "properties": {
+                  "cursor": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  }
+                },
+                "required": ["cursor"],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "description": "Pass pageCursor and, when present, cursor unchanged with the same filters and sort; older servers ignore pageCursor",
+                "properties": {
+                  "cursor": {
+                    "maximum": 9007199254740991,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "pageCursor": { "type": "string" }
+                },
+                "required": ["pageCursor"],
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "required": ["hasMore"],
+        "type": "object"
+      }
+    },
+    "required": ["items", "pagination"],
+    "type": "object"
+  }
+}
