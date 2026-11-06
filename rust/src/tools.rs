@@ -1,8 +1,5 @@
-use std::sync::Arc;
-
 use chrono::{DateTime, Utc};
-use rmcp::model::{JsonObject, Tool, ToolAnnotations};
-use schemars::JsonSchema;
+use rmcp::model::{JsonObject, Tool};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -25,7 +22,7 @@ pub struct CoreTools {
     client: BeaconClient,
 }
 
-#[derive(Deserialize, JsonSchema, Default)]
+#[derive(Deserialize, Default)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Args {
     id: Option<String>,
@@ -100,11 +97,11 @@ fn fields(name: &str) -> Option<&'static [&'static str]> {
     })
 }
 
-/// Frozen JSON Schemas exported from the TypeScript gateway's `tools/list`.
-/// Kept as data so production and Rust-only CI need no Node toolchain.
-pub(crate) fn output_schema(document: &'static str, name: &str) -> Option<Arc<JsonObject>> {
-    let schemas: Value = serde_json::from_str(document).expect("valid frozen output schemas");
-    schemas.get(name)?.as_object().cloned().map(Arc::new)
+/// Frozen tool contract including descriptions, input/output schemas and hints.
+/// Runtime and CI parse this checked-in data without a separate schema generator.
+pub(crate) fn tool_definition(document: &str, name: &str) -> Option<Tool> {
+    let definitions: Value = serde_json::from_str(document).expect("valid frozen tool definitions");
+    serde_json::from_value(definitions.get(name)?.clone()).ok()
 }
 
 impl CoreTools {
@@ -120,31 +117,8 @@ impl CoreTools {
     }
 
     pub fn definition(&self, name: &str) -> Option<Tool> {
-        let allowed = fields(name)?;
-        let mut schema = serde_json::to_value(schemars::schema_for!(Args)).ok()?;
-        let props = schema.get_mut("properties")?.as_object_mut()?;
-        props.retain(|field, _| allowed.contains(&field.as_str()));
-        if matches!(
-            name,
-            "beacon_get_node" | "beacon_get_observer" | "beacon_get_observer_activity"
-        ) {
-            schema["required"] = json!(["id"]);
-        }
-        let schema: JsonObject = schema.as_object()?.clone();
-        let mut tool = Tool::new(
-            name.to_owned(),
-            format!("Read public Beacon data: {name}"),
-            Arc::new(schema),
-        );
-        tool.output_schema = output_schema(include_str!("core-output-schemas.json"), name);
-        tool.annotations = Some(
-            ToolAnnotations::new()
-                .read_only(true)
-                .destructive(false)
-                .idempotent(true)
-                .open_world(true),
-        );
-        Some(tool)
+        fields(name)?;
+        tool_definition(include_str!("core-tool-definitions.json"), name)
     }
 
     pub async fn execute(
