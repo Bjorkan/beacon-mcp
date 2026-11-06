@@ -131,7 +131,7 @@ async fn advertises_exactly_the_original_23_tools_and_calls_every_analytics_tool
     for (name, args, field) in [
         (
             "beacon_get_top_advertisers",
-            json!({"sort":"flood","iatas":["arn"],"limit":1}),
+            json!({"sort":"flood","iatas":[" arn "],"limit":1}),
             "items",
         ),
         (

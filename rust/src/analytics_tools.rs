@@ -117,6 +117,7 @@ impl AnalyticsTools {
             if iatas.is_empty()
                 || iatas.len() > 20
                 || iatas.iter().any(|code| {
+                    let code = code.trim();
                     code.len() != 3 || !code.bytes().all(|byte| byte.is_ascii_alphanumeric())
                 })
             {
@@ -127,7 +128,7 @@ impl AnalyticsTools {
                 Some(
                     iatas
                         .iter()
-                        .map(|value| value.to_ascii_uppercase())
+                        .map(|value| value.trim().to_ascii_uppercase())
                         .collect::<Vec<_>>()
                         .join(","),
                 ),
