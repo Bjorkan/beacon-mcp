@@ -6,4 +6,5 @@ pub mod resources;
 pub mod result;
 pub mod routing_tools;
 pub mod server;
+pub mod subscriptions;
 pub mod tools;

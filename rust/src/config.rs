@@ -9,6 +9,15 @@ pub struct Config {
     pub beacon_timeout: Duration,
     pub stats_timeout: Duration,
     pub shutdown_grace: Duration,
+    pub subscriptions: SubscriptionConfig,
+}
+
+#[derive(Clone, Debug)]
+pub struct SubscriptionConfig {
+    pub enabled: bool,
+    pub ws_url: Url,
+    pub max_streams: usize,
+    pub debounce: Duration,
 }
 
 impl Config {
@@ -60,6 +69,45 @@ impl Config {
         }
         let path = format!("{}/", beacon_base_url.path().trim_end_matches('/'));
         beacon_base_url.set_path(&path);
+        let ws_url = match get("BEACON_WS_URL").filter(|value| !value.is_empty()) {
+            Some(value) => Url::parse(&value).map_err(|_| "invalid BEACON_WS_URL")?,
+            None => {
+                let mut derived = beacon_base_url.clone();
+                derived
+                    .set_scheme(if derived.scheme() == "https" {
+                        "wss"
+                    } else {
+                        "ws"
+                    })
+                    .map_err(|_| "invalid Beacon WS scheme")?;
+                derived.set_path("/ws");
+                derived
+            }
+        };
+        if !["ws", "wss"].contains(&ws_url.scheme())
+            || ws_url.host_str().is_none()
+            || !ws_url.username().is_empty()
+            || ws_url.password().is_some()
+            || ws_url.query().is_some()
+            || ws_url.fragment().is_some()
+            || !ws_url.path().ends_with("/ws")
+        {
+            return Err("BEACON_WS_URL must be a ws/wss URL ending in /ws without credentials, query or fragment".into());
+        }
+        let enabled = match get("BEACON_SUBSCRIPTIONS_ENABLED").as_deref() {
+            None | Some("true") => true,
+            Some("false") => false,
+            _ => return Err("BEACON_SUBSCRIPTIONS_ENABLED must be true or false".into()),
+        };
+        let max_streams =
+            parse_u64(&mut get, "BEACON_SUBSCRIPTIONS_MAX_STREAMS", 64, 1, 1024)? as usize;
+        let debounce = Duration::from_millis(parse_u64(
+            &mut get,
+            "BEACON_SUBSCRIPTIONS_DEBOUNCE_MS",
+            500,
+            0,
+            5000,
+        )?);
         Ok(Self {
             bind,
             log_level,
@@ -85,6 +133,12 @@ impl Config {
                 100,
                 60_000,
             )?),
+            subscriptions: SubscriptionConfig {
+                enabled,
+                ws_url,
+                max_streams,
+                debounce,
+            },
         })
     }
 }
@@ -161,5 +215,37 @@ mod tests {
         for (key, value) in [("HOST", ""), ("HOST", "bad host"), ("LOG_LEVEL", "verbose")] {
             assert!(parse(&[("BEACON_BASE_URL", "https://x.test"), (key, value)]).is_err());
         }
+    }
+
+    #[test]
+    fn subscription_defaults_and_strict_bounds() {
+        let config = parse(&[("BEACON_BASE_URL", "https://beacon.example/prefix")]).unwrap();
+        assert_eq!(
+            config.subscriptions.ws_url.as_str(),
+            "wss://beacon.example/ws"
+        );
+        assert!(config.subscriptions.enabled);
+        assert_eq!(config.subscriptions.max_streams, 64);
+        assert!(
+            parse(&[
+                ("BEACON_BASE_URL", "https://beacon.example"),
+                ("BEACON_WS_URL", "https://example/ws")
+            ])
+            .is_err()
+        );
+        assert!(
+            parse(&[
+                ("BEACON_BASE_URL", "https://beacon.example"),
+                ("BEACON_SUBSCRIPTIONS_MAX_STREAMS", "0")
+            ])
+            .is_err()
+        );
+        assert!(
+            parse(&[
+                ("BEACON_BASE_URL", "https://beacon.example"),
+                ("BEACON_SUBSCRIPTIONS_ENABLED", "yes")
+            ])
+            .is_err()
+        );
     }
 }

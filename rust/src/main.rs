@@ -1,4 +1,9 @@
-use beacon_mcp_rust::{client::BeaconClient, config::Config, server};
+use beacon_mcp_rust::{
+    client::BeaconClient,
+    config::Config,
+    server,
+    subscriptions::{Live, bridge},
+};
 use tokio_util::sync::CancellationToken;
 
 #[tokio::main]
@@ -22,10 +27,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config.beacon_timeout,
         config.stats_timeout,
     );
+    let live = config.subscriptions.enabled.then(|| {
+        Live::new(
+            config.subscriptions.max_streams,
+            config.subscriptions.debounce,
+            shutdown.clone(),
+        )
+    });
+    let bridge_task = live.as_ref().map(|live| {
+        tokio::spawn(bridge(
+            client.clone(),
+            config.subscriptions.ws_url.clone(),
+            live.clone(),
+        ))
+    });
     let serve = async {
-        axum::serve(listener, server::router(shutdown.clone(), client))
-            .with_graceful_shutdown(shutdown.clone().cancelled_owned())
-            .await
+        axum::serve(
+            listener,
+            server::router_with_live(shutdown.clone(), client, live),
+        )
+        .with_graceful_shutdown(shutdown.clone().cancelled_owned())
+        .await
     };
     tokio::pin!(serve);
     let signal = async {
@@ -49,6 +71,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             shutdown.cancel();
             tokio::time::timeout(config.shutdown_grace, &mut serve).await??;
         }
+    }
+    shutdown.cancel();
+    if let Some(task) = bridge_task {
+        let _ = tokio::time::timeout(std::time::Duration::from_secs(2), task).await;
     }
     Ok(())
 }

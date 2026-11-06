@@ -15,6 +15,42 @@ pub fn success(value: Value) -> CallToolResult {
     result
 }
 
+/// Zod/tool-schema failures in the previous MCP server were plain tool errors,
+/// unlike Beacon HTTP 400 responses, which retain structured error metadata.
+pub fn invalid_input(name: &str, reason: &str) -> CallToolResult {
+    let mut result = CallToolResult::default();
+    result.is_error = Some(true);
+    result.content = vec![ContentBlock::text(format!(
+        "Input validation error: Invalid arguments for tool {name}: {reason}"
+    ))];
+    result
+}
+
+/// Invalid calendar dates and time-window order reach the TypeScript adapter
+/// after schema validation; unlike schema failures they have classified metadata.
+pub fn adapter_input_error(message: &str) -> CallToolResult {
+    let mut result = CallToolResult::structured_error(json!({
+        "error": {"code": "INVALID_ARGUMENT", "type": "ValidationError"}
+    }));
+    result.content = vec![ContentBlock::text(message)];
+    result
+}
+
+#[cfg(test)]
+#[test]
+fn local_input_errors_are_not_upstream_errors() {
+    let result =
+        serde_json::to_value(invalid_input("beacon_get_packet", "hash: Required")).unwrap();
+    assert_eq!(result["isError"], true);
+    assert!(result.get("structuredContent").is_none());
+    assert!(
+        result["content"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("Input validation error:")
+    );
+}
+
 pub fn error(error: GatewayError) -> CallToolResult {
     let kind = match (error.code, error.status.is_some()) {
         (ErrorCode::InvalidArgument, false) => "BeaconInputError",
