@@ -6,8 +6,8 @@ use axum::{Router, routing::get};
 use rmcp::{
     ErrorData as McpError, ServerHandler,
     model::{
-        CallToolRequestParams, CallToolResponse, ListResourceTemplatesResult,
-        ListToolsResult, PaginatedRequestParams, ReadResourceRequestParams, ReadResourceResponse,
+        CallToolRequestParams, CallToolResponse, ListResourceTemplatesResult, ListToolsResult,
+        PaginatedRequestParams, ReadResourceRequestParams, ReadResourceResponse,
         ReadResourceResult, ResourceContents, ResourceTemplate, ServerCapabilities, ServerConfig,
         Tool,
     },
