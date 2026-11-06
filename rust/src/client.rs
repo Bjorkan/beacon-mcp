@@ -101,6 +101,19 @@ pub enum ErrorCode {
     Unavailable,
 }
 
+impl ErrorCode {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::InvalidArgument => "INVALID_ARGUMENT",
+            Self::NotFound => "NOT_FOUND",
+            Self::DeadlineExceeded => "DEADLINE_EXCEEDED",
+            Self::ResponseTooLarge => "RESPONSE_TOO_LARGE",
+            Self::ResourceExhausted => "RESOURCE_EXHAUSTED",
+            Self::Unavailable => "UNAVAILABLE",
+        }
+    }
+}
+
 #[derive(Debug, Error)]
 #[error("{message}")]
 pub struct GatewayError {
@@ -112,7 +125,7 @@ pub struct GatewayError {
 }
 
 impl GatewayError {
-    fn new(code: ErrorCode, message: impl Into<String>) -> Self {
+    pub(crate) fn new(code: ErrorCode, message: impl Into<String>) -> Self {
         Self {
             code,
             message: message.into(),
@@ -167,9 +180,22 @@ impl BeaconClient {
             })?;
             let (value, suffix) = match kind {
                 "uuid" | "uuid/activity" => (
-                    uuid::Uuid::parse_str(id)
-                        .map_err(|_| GatewayError::new(ErrorCode::InvalidArgument, "invalid UUID"))?
-                        .to_string(),
+                    {
+                        let uuid = uuid::Uuid::parse_str(id).map_err(|_| {
+                            GatewayError::new(ErrorCode::InvalidArgument, "invalid UUID")
+                        })?;
+                        if id.len() != 36
+                            || uuid.get_version_num() == 0
+                            || uuid.get_version_num() > 8
+                            || uuid.get_variant() != uuid::Variant::RFC4122
+                        {
+                            return Err(GatewayError::new(
+                                ErrorCode::InvalidArgument,
+                                "invalid UUID",
+                            ));
+                        }
+                        uuid.to_string()
+                    },
                     if kind == "uuid/activity" {
                         Some("activity")
                     } else {

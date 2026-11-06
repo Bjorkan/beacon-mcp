@@ -1,7 +1,12 @@
+use crate::{client::BeaconClient, tools::CoreTools};
 use axum::{Router, routing::get};
 use rmcp::{
-    ServerHandler,
-    model::{ServerCapabilities, ServerConfig},
+    ErrorData as McpError, ServerHandler,
+    model::{
+        CallToolRequestParams, CallToolResponse, ListToolsResult, PaginatedRequestParams,
+        ServerCapabilities, ServerConfig, Tool,
+    },
+    service::{RequestContext, RoleServer},
     transport::streamable_http_server::{
         StreamableHttpServerConfig, StreamableHttpService, session::local::LocalSessionManager,
     },
@@ -10,8 +15,10 @@ use serde_json::{Value, json};
 use tokio_util::sync::CancellationToken;
 
 /// Foundation only. Tools are added with their implementation and tests in later layers.
-#[derive(Clone, Default)]
-pub struct BeaconServer;
+#[derive(Clone)]
+pub struct BeaconServer {
+    pub tools: CoreTools,
+}
 
 impl ServerHandler for BeaconServer {
     fn get_info(&self) -> ServerConfig {
@@ -20,15 +27,50 @@ impl ServerHandler for BeaconServer {
         info.server_info.version = "2.1.1".into();
         info
     }
+
+    async fn list_tools(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListToolsResult, McpError> {
+        Ok(ListToolsResult {
+            tools: self.tools.list(),
+            ..Default::default()
+        })
+    }
+
+    fn get_tool(&self, name: &str) -> Option<Tool> {
+        self.tools.definition(name)
+    }
+
+    async fn call_tool(
+        &self,
+        request: CallToolRequestParams,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<CallToolResponse, McpError> {
+        let result = match self
+            .tools
+            .execute(request.name.as_ref(), request.arguments)
+            .await
+        {
+            Ok(value) => crate::result::success(value),
+            Err(error) => crate::result::error(error),
+        };
+        Ok(result.into())
+    }
 }
 
 async fn health() -> axum::Json<Value> {
     axum::Json(json!({ "status": "ok" }))
 }
 
-pub fn router(shutdown: CancellationToken) -> Router {
+pub fn router(shutdown: CancellationToken, client: BeaconClient) -> Router {
     let mcp: StreamableHttpService<BeaconServer, LocalSessionManager> = StreamableHttpService::new(
-        || Ok(BeaconServer),
+        move || {
+            Ok(BeaconServer {
+                tools: CoreTools::new(client.clone()),
+            })
+        },
         Default::default(),
         StreamableHttpServerConfig::default()
             .with_legacy_session_mode(false)

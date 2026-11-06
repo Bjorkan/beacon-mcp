@@ -1,4 +1,4 @@
-use beacon_mcp_rust::server;
+use beacon_mcp_rust::{client::BeaconClient, server};
 use tokio_util::sync::CancellationToken;
 
 #[tokio::test]
@@ -8,7 +8,12 @@ async fn health_readiness_and_mcp_discovery() {
     let addr = listener.local_addr().unwrap();
     let server_token = token.clone();
     let task = tokio::spawn(async move {
-        axum::serve(listener, server::router(server_token))
+        let client = BeaconClient::new(
+            "http://127.0.0.1:9/".parse().unwrap(),
+            std::time::Duration::from_secs(1),
+            std::time::Duration::from_secs(1),
+        );
+        axum::serve(listener, server::router(server_token, client))
             .await
             .unwrap();
     });
