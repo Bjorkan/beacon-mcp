@@ -53,15 +53,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         std::process::exit(if healthcheck() { 0 } else { 1 });
     }
     let config = Config::from_env()?;
+    let level = if config.log_level == "silent" {
+        "off"
+    } else if config.log_level == "fatal" {
+        // Rust tracing has no fatal level; report fatal messages at ERROR.
+        "error"
+    } else {
+        &config.log_level
+    };
+    let mut filter = tracing_subscriber::EnvFilter::new(level);
+    if config.log_level == "info" {
+        // Keep SDK WARN/ERROR diagnostics, not a multi-line service lifecycle
+        // trace for every stateless MCP request. Debug/trace remain opt-in.
+        filter = filter.add_directive("rmcp=warn".parse()?);
+    }
+    // Docker captures logs as text; ANSI colour escapes make them harder to
+    // search, compare and process in log collectors.
     tracing_subscriber::fmt()
-        .with_env_filter(if config.log_level == "silent" {
-            "off".to_owned()
-        } else if config.log_level == "fatal" {
-            // Rust tracing has no fatal level; report fatal messages at ERROR.
-            "error".to_owned()
-        } else {
-            config.log_level.clone()
-        })
+        .with_ansi(false)
+        .with_env_filter(filter)
         .init();
     let listener = tokio::net::TcpListener::bind(config.bind).await?;
     let shutdown = CancellationToken::new();
