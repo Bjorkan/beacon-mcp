@@ -2,11 +2,9 @@ use crate::{
     client::{BeaconClient, ErrorCode, GatewayError, Operation},
     packet_tools::timestamp,
 };
-use rmcp::model::{JsonObject, Tool, ToolAnnotations};
-use schemars::JsonSchema;
+use rmcp::model::{JsonObject, Tool};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::sync::Arc;
 
 const NAMES: [&str; 5] = [
     "beacon_list_routes",
@@ -21,7 +19,7 @@ pub struct RoutingTools {
     client: BeaconClient,
 }
 
-#[derive(Default, Deserialize, JsonSchema)]
+#[derive(Default, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Args {
     iata: Option<String>,
@@ -99,34 +97,8 @@ impl RoutingTools {
             .collect()
     }
     pub fn definition(&self, name: &str) -> Option<Tool> {
-        let allowed = fields(name)?;
-        let mut schema = serde_json::to_value(schemars::schema_for!(Args)).ok()?;
-        schema
-            .get_mut("properties")?
-            .as_object_mut()?
-            .retain(|key, _| allowed.contains(&key.as_str()));
-        match name {
-            "beacon_search_routes" => schema["required"] = json!(["from", "to"]),
-            "beacon_find_cross_iata_routes" => schema["required"] = json!(["fromHash", "toHash"]),
-            "beacon_get_trace" => schema["required"] = json!(["tag"]),
-            _ => {}
-        }
-        let object: JsonObject = schema.as_object()?.clone();
-        let mut tool = Tool::new(
-            name.to_owned(),
-            format!("Read public Beacon route or trace: {name}"),
-            Arc::new(object),
-        );
-        tool.output_schema =
-            crate::tools::output_schema(include_str!("routing-output-schemas.json"), name);
-        tool.annotations = Some(
-            ToolAnnotations::new()
-                .read_only(true)
-                .destructive(false)
-                .idempotent(true)
-                .open_world(true),
-        );
-        Some(tool)
+        fields(name)?;
+        crate::tools::tool_definition(include_str!("routing-tool-definitions.json"), name)
     }
     pub async fn execute(
         &self,
