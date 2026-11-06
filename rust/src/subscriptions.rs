@@ -9,8 +9,8 @@ use std::{
 };
 use tokio::sync::{Semaphore, broadcast};
 use tokio_tungstenite::{
-    connect_async,
-    tungstenite::{Message, client::IntoClientRequest},
+    connect_async_with_config,
+    tungstenite::{Message, client::IntoClientRequest, protocol::WebSocketConfig},
 };
 use tokio_util::sync::CancellationToken;
 use url::Url;
@@ -125,10 +125,18 @@ async fn connect_once(
                 .map_err(|_| "invalid WebSocket ticket header")?,
         );
     }
-    let (mut socket, _) = tokio::time::timeout(Duration::from_secs(10), connect_async(request))
-        .await
-        .map_err(|_| "WebSocket connection timed out")?
-        .map_err(|_| "WebSocket connection failed")?;
+    // Reject oversized frames before tungstenite allocates the default 16/64 MiB
+    // frame/message buffers. A Beacon WS envelope must fit in 128 KiB.
+    let bounds = WebSocketConfig::default()
+        .max_message_size(Some(131_072))
+        .max_frame_size(Some(131_072));
+    let (mut socket, _) = tokio::time::timeout(
+        Duration::from_secs(10),
+        connect_async_with_config(request, Some(bounds), false),
+    )
+    .await
+    .map_err(|_| "WebSocket connection timed out")?
+    .map_err(|_| "WebSocket connection failed")?;
     let mut ready = false;
     let mut ping_id = 0u64;
     let mut awaiting_pong = false;

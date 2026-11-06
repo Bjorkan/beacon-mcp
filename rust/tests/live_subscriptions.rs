@@ -225,6 +225,65 @@ async fn reconnect_fetches_new_ticket_and_legacy_404_connects_without_one() {
     }
 }
 
+#[tokio::test]
+async fn oversized_upstream_frame_is_closed_before_delivery() {
+    let ticket_listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://{}/", ticket_listener.local_addr().unwrap());
+    let ticket_server = tokio::spawn(async move {
+        axum::serve(
+            ticket_listener,
+            Router::new().route(
+                "/api/v1/ws-ticket",
+                get(|| async {
+                    (
+                        axum::http::StatusCode::NOT_FOUND,
+                        Json(json!({"error":{"code":"not_found"}})),
+                    )
+                }),
+            ),
+        )
+        .await
+        .unwrap();
+    });
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let ws_url = format!("ws://{}/ws", listener.local_addr().unwrap());
+    let mock = tokio::spawn(async move {
+        let (connection, _) = listener.accept().await.unwrap();
+        let mut socket = tokio_tungstenite::accept_async(connection).await.unwrap();
+        socket
+            .send(Message::Text("x".repeat(131_073).into()))
+            .await
+            .unwrap();
+        // The client drops the connection instead of buffering or publishing
+        // the oversized application message.
+        let closed = tokio::time::timeout(Duration::from_secs(2), socket.next())
+            .await
+            .expect("oversized frame did not close the connection");
+        assert!(!matches!(closed, Some(Ok(Message::Text(_)))));
+    });
+    let shutdown = CancellationToken::new();
+    let live = Live::new(2, Duration::ZERO, shutdown.clone());
+    let mut events = live.subscribe();
+    let client = BeaconClient::new(
+        base.parse().unwrap(),
+        Duration::from_secs(1),
+        Duration::from_secs(1),
+    );
+    let task = tokio::spawn(bridge(client, ws_url.parse().unwrap(), live));
+    tokio::time::timeout(Duration::from_secs(3), mock)
+        .await
+        .expect("oversized frame test did not establish WebSocket")
+        .unwrap();
+    assert!(
+        tokio::time::timeout(Duration::from_millis(50), events.recv())
+            .await
+            .is_err()
+    );
+    shutdown.cancel();
+    task.await.unwrap();
+    ticket_server.abort();
+}
+
 async fn listen(client: &reqwest::Client, root: &str, uri: &str) -> reqwest::Response {
     client
         .post(root)
