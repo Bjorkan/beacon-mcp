@@ -4,6 +4,7 @@
 use axum::{Json, Router, routing::get};
 use beacon_mcp_rust::{
     client::BeaconClient,
+    events::{GapReason, IngressMessage},
     server,
     subscriptions::{Live, bridge},
 };
@@ -88,6 +89,14 @@ async fn websocket_uses_fresh_ticket_and_dispatches_only_valid_events() {
                 .unwrap();
             socket
                 .send(Message::Text(
+                    json!({"v":1,"type":"lagged","droppedCount":2})
+                        .to_string()
+                        .into(),
+                ))
+                .await
+                .unwrap();
+            socket
+                .send(Message::Text(
                     json!({"v":1,"type":"event","event":"nodeUpdate","data":{"nodeId":NODE}})
                         .to_string()
                         .into(),
@@ -109,6 +118,7 @@ async fn websocket_uses_fresh_ticket_and_dispatches_only_valid_events() {
     let shutdown = CancellationToken::new();
     let live = Live::new(2, Duration::ZERO, shutdown.clone());
     let mut events = live.subscribe();
+    let mut occurrences = live.subscribe_occurrences();
     let client = BeaconClient::new(
         base.parse().unwrap(),
         Duration::from_secs(1),
@@ -131,6 +141,25 @@ async fn websocket_uses_fresh_ticket_and_dispatches_only_valid_events() {
         ]
     );
     assert_eq!(header.lock().unwrap().as_deref(), Some("secret"));
+    assert_eq!(
+        occurrences.recv().await.unwrap(),
+        IngressMessage::Gap(GapReason::UpstreamLagged)
+    );
+    for (name, id) in [
+        ("beacon.node.updated", NODE),
+        ("beacon.observer.status_changed", OBSERVER),
+    ] {
+        let IngressMessage::Occurrence(event) =
+            tokio::time::timeout(Duration::from_secs(2), occurrences.recv())
+                .await
+                .unwrap()
+                .unwrap()
+        else {
+            panic!("expected occurrence")
+        };
+        assert_eq!(event.name, name);
+        assert!(event.data.resource_uri.ends_with(id));
+    }
     assert!(
         tokio::time::timeout(Duration::from_millis(25), events.recv())
             .await
@@ -225,6 +254,7 @@ async fn reconnect_fetches_new_ticket_and_legacy_404_connects_without_one() {
         let shutdown = CancellationToken::new();
         let live = Live::new(2, Duration::ZERO, shutdown.clone());
         let mut events = live.subscribe();
+        let mut occurrences = live.subscribe_occurrences();
         let client = BeaconClient::new(
             base.parse().unwrap(),
             Duration::from_secs(1),
@@ -240,6 +270,18 @@ async fn reconnect_fetches_new_ticket_and_legacy_404_connects_without_one() {
                 format!("beacon://nodes/{NODE}")
             );
         }
+        assert!(matches!(
+            occurrences.recv().await.unwrap(),
+            IngressMessage::Occurrence(_)
+        ));
+        assert_eq!(
+            occurrences.recv().await.unwrap(),
+            IngressMessage::Gap(GapReason::Disconnected)
+        );
+        assert!(matches!(
+            occurrences.recv().await.unwrap(),
+            IngressMessage::Occurrence(_)
+        ));
         assert_eq!(count.load(Ordering::SeqCst), 2);
         shutdown.cancel();
         task.await.unwrap();

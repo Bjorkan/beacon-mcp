@@ -1,5 +1,5 @@
 use crate::client::{BeaconClient, ErrorCode, Operation};
-use crate::resources::parse_uri;
+use crate::events::{EventOccurrence, EventReceiver, GapReason, IngressMessage};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::Value;
 use std::{
@@ -18,6 +18,7 @@ use url::Url;
 /// Bounded, process-local bus. There is no replay; clients re-read a resource after updates.
 pub struct Live {
     sender: broadcast::Sender<String>,
+    occurrences: broadcast::Sender<IngressMessage>,
     pending: Arc<Mutex<HashSet<String>>>,
     pub permits: Arc<Semaphore>,
     pub shutdown: CancellationToken,
@@ -27,8 +28,10 @@ pub struct Live {
 impl Live {
     pub fn new(max_streams: usize, debounce: Duration, shutdown: CancellationToken) -> Arc<Self> {
         let (sender, _) = broadcast::channel(1024);
+        let (occurrences, _) = broadcast::channel(1024);
         Arc::new(Self {
             sender,
+            occurrences,
             pending: Arc::new(Mutex::new(HashSet::new())),
             permits: Arc::new(Semaphore::new(max_streams)),
             shutdown,
@@ -38,20 +41,22 @@ impl Live {
     pub fn subscribe(&self) -> broadcast::Receiver<String> {
         self.sender.subscribe()
     }
+    /// A separate, non-debounced bounded feed. Consumers must handle gaps;
+    /// this feed cannot serve as an outbox or a replay cursor.
+    pub fn subscribe_occurrences(&self) -> EventReceiver {
+        EventReceiver::new(self.occurrences.subscribe())
+    }
+    pub fn gap(&self, reason: GapReason) {
+        let _ = self.occurrences.send(IngressMessage::Gap(reason));
+    }
     pub fn received(&self, event: &str, data: &Value) {
-        let (kind, field) = match event {
-            "nodeUpdate" => ("nodes", "nodeId"),
-            "observerStatus" => ("observers", "observerId"),
-            _ => return,
-        };
-        let Some(id) = data.get(field).and_then(Value::as_str) else {
+        let Some(occurrence) = EventOccurrence::from_upstream(event, data) else {
             return;
         };
-        let uri = format!("beacon://{kind}/{id}");
-        let Some((kind, id)) = parse_uri(&uri) else {
-            return;
-        };
-        let uri = format!("beacon://{kind}/{id}");
+        let uri = occurrence.data.resource_uri.clone();
+        let _ = self
+            .occurrences
+            .send(IngressMessage::Occurrence(occurrence));
         let mut pending = self.pending.lock().expect("notification queue");
         if pending.len() >= 1024 || !pending.insert(uri.clone()) {
             return;
@@ -83,6 +88,7 @@ pub async fn bridge(client: BeaconClient, ws_url: Url, live: Arc<Live>) {
             result=connect_once(&client,&ws_url,&live,&mut retry)=>result,
         };
         if let Err(error) = outcome {
+            live.gap(GapReason::Disconnected);
             tracing::warn!(
                 reason = error,
                 "Beacon WebSocket disconnected; update notifications may have been missed"
@@ -171,7 +177,7 @@ async fn connect_once(
                         tracing::info!("Beacon WebSocket subscribed to resource updates");
                     },
                     Some("pong") if value["id"]==format!("mcp-ping-{ping_id}")=>{awaiting_pong=false;},
-                    Some("lagged")=>{tracing::warn!("Beacon WebSocket dropped events; no replay available");},
+                    Some("lagged")=>{live.gap(GapReason::UpstreamLagged);tracing::warn!("Beacon WebSocket dropped events; no replay available");},
                     Some("event") if ready=>{
                         if let Some(event)=value["event"].as_str() {live.received(event,&value["data"]);}
                     }

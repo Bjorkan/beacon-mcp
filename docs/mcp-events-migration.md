@@ -7,6 +7,15 @@ registrations, or send callbacks. Keep #17 open until its acceptance criteria
 have been verified. This branch follows `rust/live-subscriptions` in GitHub
 stack #24; further implementation belongs in small Draft PRs above it.
 
+The first implementation layer now exposes an **internal-only** bounded,
+process-local `EventReceiver` from the shared Beacon WebSocket. It emits
+individual validated node/observer occurrences (fresh UUID per ingress,
+UTC timestamp, canonical resource URI and ID) before resource-hint debounce.
+Upstream `lagged`, reconnect/disconnect and slow-consumer overflow are explicit
+gap signals. This is **not** a replay log or delivery queue: an occurrence
+is lost if no consumer receives it, a process restarts, or Beacon drops it.
+No MCP `events/*` methods or capabilities are exposed yet.
+
 ## Contract and compatibility
 
 The experimental [Events design sketch][sketch] was reviewed at commit
