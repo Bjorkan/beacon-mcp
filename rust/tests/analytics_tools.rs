@@ -144,6 +144,12 @@ async fn advertises_exactly_the_original_23_tools_and_calls_every_analytics_tool
     ] {
         let result = rpc(&client, &root, "tools/call", Some(name), args).await;
         assert_eq!(result["result"]["isError"], false, "{name}: {result}");
+        if name == "beacon_get_top_advertisers" {
+            assert_eq!(
+                result["result"]["structuredContent"]["pagination"],
+                json!({"hasMore":false})
+            );
+        }
         assert!(
             !result["result"]["structuredContent"][field].is_null(),
             "{name}: {result}"

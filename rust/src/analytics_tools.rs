@@ -199,8 +199,12 @@ impl AnalyticsTools {
                     .array_page(Operation::TopAdvertisers, &query, limit as usize + 1)
                     .await?;
                 let truncated = !page.complete || page.items.len() > limit as usize;
+                let mut pagination = json!({"hasMore":false});
+                if truncated {
+                    pagination["truncated"] = json!(true);
+                }
                 return Ok(
-                    json!({"items":page.items.into_iter().take(limit as usize).collect::<Vec<_>>(),"pagination":{"hasMore":false,"truncated":truncated}}),
+                    json!({"items":page.items.into_iter().take(limit as usize).collect::<Vec<_>>(),"pagination":pagination}),
                 );
             }
             _ => unreachable!("checked by fields"),
