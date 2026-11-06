@@ -20,7 +20,7 @@ file when assessing a row, not only the number of tests.
 | `tests/unit/subscriptions.test.ts` (6)          | UUID validation, bounded debounce, ticket race with shutdown, WS hello/ack/event/pong, URL configuration                                                                | `rust/src/subscriptions.rs` tests                                                                                                              | Pending  | 7           | Pending                                                                |
 | `tests/contract/client.test.ts` (16)            | Fixed GET paths, URL cap, safe headers, malformed JSON, bounded and incremental reads, cancellation, timeout, retry/429/503/Retry-After, admin rejection, stats timeout | `rust/tests/client.rs`                                                                                                                         | Partial  | 3           | 8 Rust cases pass; chunk-boundary and full parity still pending        |
 | `tests/mcp/http.test.ts` (15)                   | All 23 tool names, schemas, discovery, filters and ID validation, actual tool calls, result/error classification, modern and legacy protocol, health/readiness          | `rust/tests/http.rs`, `rust/tests/core_tools.rs`, `rust/tests/packet_tools.rs`, `rust/tests/routing_tools.rs`, `rust/tests/analytics_tools.rs` | Partial  | 2–6         | Fixture verifies 23 names and successful calls; broader parity pending |
-| `tests/mcp/subscriptions.test.ts` (6)           | Resource templates and reads, disabled/legacy capability, SSE ack and targeting, two streams, active-stream shutdown                                                    | `rust/tests/subscriptions.rs`                                                                                                                  | Pending  | 7           | Pending                                                                |
+| `tests/mcp/subscriptions.test.ts` (6)           | Resource templates and reads, disabled/legacy capability, SSE ack and targeting, two streams, active-stream shutdown                                                    | `rust/tests/resources.rs` + pending `rust/tests/subscriptions.rs`                                                                              | Partial  | 7           | Both templates and reads pass; live streams pending                    |
 | `tests/container/run.sh` + `mock-beacon.mjs`    | Mocked HTTP integration, nonroot, readonly FS, capabilities, resource limits, health/readiness, SIGTERM                                                                 | `tests/container/run.sh` + Rust mock                                                                                                           | Pending  | 8–9         | Pending                                                                |
 
 Totals: **71 pre-existing `it` cases** (the tool-inventory assertion extends an
@@ -60,6 +60,12 @@ summary; series and observer comparison require an explicit time window.
 `rust/tests/analytics_tools.rs` uses the original 23-name fixture and includes
 successful MCP calls and invalid-input checks for all four analytics tools.
 More comprehensive parity and subscriptions are still required before cutover.
+
+The resource layer lists node/observer URI templates and reads canonical
+`beacon://` UUID URIs through fixed public GET operations. `rust/tests/resources.rs`
+exercises both over MCP HTTP and rejects path, fragment, encoded-segment and
+nil-UUID injection. Resource subscriptions are **not yet advertised**; the
+WebSocket, debouncing, and `subscriptions/listen` work remains a separate layer.
 
 ## Required invariants for every intermediate layer
 
