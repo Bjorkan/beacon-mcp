@@ -67,6 +67,14 @@ The gateway is built in Rust. For a local build, use
 set to your Beacon server. Production deployments pull a published image;
 `compose.yaml` requires an explicit `BEACON_MCP_IMAGE` SHA or digest.
 
+At the default `LOG_LEVEL=info`, the gateway logs one concise line per
+incoming request to the MCP root, including the HTTP/MCP method, tool name
+when available, HTTP status and response-header latency. Health checks are
+not logged; SDK lifecycle INFO noise is filtered out. No request or response
+body is logged. Legacy clients without MCP method headers are labelled
+`unspecified`, and a 200 HTTP status can still contain an MCP tool error.
+Set `LOG_LEVEL=debug` or `trace` for verbose troubleshooting.
+
 ## Live resource subscriptions (on by default)
 
 The gateway enables MCP `subscriptions/listen` (revision `2026-07-28`) by
