@@ -1,8 +1,5 @@
-use std::sync::Arc;
-
 use chrono::DateTime;
-use rmcp::model::{JsonObject, Tool, ToolAnnotations};
-use schemars::JsonSchema;
+use rmcp::model::{JsonObject, Tool};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
@@ -24,7 +21,7 @@ pub struct PacketTools {
     client: BeaconClient,
 }
 
-#[derive(Default, Deserialize, JsonSchema)]
+#[derive(Default, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Args {
     hash: Option<String>,
@@ -138,34 +135,8 @@ impl PacketTools {
             .collect()
     }
     pub fn definition(&self, name: &str) -> Option<Tool> {
-        let allowed = fields(name)?;
-        let mut schema = serde_json::to_value(schemars::schema_for!(Args)).ok()?;
-        schema
-            .get_mut("properties")?
-            .as_object_mut()?
-            .retain(|field, _| allowed.contains(&field.as_str()));
-        if name == "beacon_get_packet" {
-            schema["required"] = json!(["hash"]);
-        }
-        if name == "beacon_get_channel_messages" {
-            schema["required"] = json!(["channelId"]);
-        }
-        let object: JsonObject = schema.as_object()?.clone();
-        let mut tool = Tool::new(
-            name.to_owned(),
-            format!("Read public Beacon data: {name}"),
-            Arc::new(object),
-        );
-        tool.output_schema =
-            crate::tools::output_schema(include_str!("packet-output-schemas.json"), name);
-        tool.annotations = Some(
-            ToolAnnotations::new()
-                .read_only(true)
-                .destructive(false)
-                .idempotent(true)
-                .open_world(true),
-        );
-        Some(tool)
+        fields(name)?;
+        crate::tools::tool_definition(include_str!("packet-tool-definitions.json"), name)
     }
 
     pub async fn execute(
