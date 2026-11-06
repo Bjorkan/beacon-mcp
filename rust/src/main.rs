@@ -67,7 +67,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // trace for every stateless MCP request. Debug/trace remain opt-in.
         filter = filter.add_directive("rmcp=warn".parse()?);
     }
-    tracing_subscriber::fmt().with_env_filter(filter).init();
+    // Docker captures logs as text; ANSI colour escapes make them harder to
+    // search, compare and process in log collectors.
+    tracing_subscriber::fmt()
+        .with_ansi(false)
+        .with_env_filter(filter)
+        .init();
     let listener = tokio::net::TcpListener::bind(config.bind).await?;
     let shutdown = CancellationToken::new();
     tracing::info!(address = %listener.local_addr()?, "Beacon MCP Rust foundation listening");
