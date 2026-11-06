@@ -95,6 +95,18 @@ never duplicated in the text block.
 `BEACON_BASE_URL` is mandatory (HTTP(S), no credentials/query/fragment).
 `HOST` defaults to `0.0.0.0`, `PORT` to `3000`; `LOG_LEVEL` accepts
 `fatal|error|warn|info|debug|trace|silent` and defaults to `info`.
+At `info`, one structured line is emitted for every HTTP request to the
+MCP root (`/`): HTTP method, sanitized MCP method/tool name (when provided
+in the `Mcp-Method`/`Mcp-Name` headers), HTTP status and response-header
+latency in milliseconds. Health/readiness probes are excluded. Older clients
+without MCP headers are reported as `mcp_method=unspecified` rather than
+buffering or inspecting their JSON body. Long-lived SSE streams are timed only
+until their response headers, not until disconnection. HTTP 200 does not
+guarantee tool-level success: an MCP result can carry `isError: true`.
+Normal `rmcp` SDK INFO lifecycle chatter is suppressed; WARN/ERROR remains
+visible. `LOG_LEVEL=debug` or `trace` explicitly restores verbose SDK logs.
+Never include arguments, messages, packet data, user headers or query strings
+in access logs.
 `BEACON_TIMEOUT_MS` defaults to 10000 (100–120000),
 `BEACON_STATS_TIMEOUT_MS` to 20000 (100–300000), and `SHUTDOWN_GRACE_MS`
 to 10000 (100–60000). `BEACON_SUBSCRIPTIONS_ENABLED` defaults to true;
