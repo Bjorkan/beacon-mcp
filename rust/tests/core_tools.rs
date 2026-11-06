@@ -143,6 +143,18 @@ async fn lists_only_implemented_tools_and_calls_all_nine() {
         assert!(names.contains(&name));
         let result = rpc(&client, &root, "tools/call", Some(name), args).await;
         assert_eq!(result["result"]["isError"], false, "{name}: {result}");
+        let expected_text = if result["result"]["structuredContent"]["items"].is_array() {
+            format!(
+                "Beacon returned {} item(s).",
+                result["result"]["structuredContent"]["items"]
+                    .as_array()
+                    .unwrap()
+                    .len()
+            )
+        } else {
+            "Beacon request succeeded.".into()
+        };
+        assert_eq!(result["result"]["content"][0]["text"], expected_text);
         assert!(
             !result["result"]["structuredContent"][field].is_null(),
             "{name}: {result}"
@@ -240,6 +252,19 @@ async fn rejects_invalid_filters_and_reports_upstream_errors() {
     assert_eq!(
         unknown["result"]["structuredContent"]["error"]["code"],
         "NOT_FOUND"
+    );
+    assert_eq!(
+        unknown["result"]["structuredContent"]["error"]["type"],
+        "BeaconNotFoundError"
+    );
+    assert_eq!(
+        unknown["result"]["structuredContent"]["error"]["status"],
+        404
+    );
+    assert!(
+        unknown["result"]["structuredContent"]["error"]
+            .get("message")
+            .is_none()
     );
     token.cancel();
     for task in tasks {

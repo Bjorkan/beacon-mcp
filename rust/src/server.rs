@@ -3,8 +3,8 @@ use axum::{Router, routing::get};
 use rmcp::{
     ErrorData as McpError, ServerHandler,
     model::{
-        CallToolRequestParams, CallToolResponse, CallToolResult, ListToolsResult,
-        PaginatedRequestParams, ServerCapabilities, ServerConfig, Tool,
+        CallToolRequestParams, CallToolResponse, ListToolsResult, PaginatedRequestParams,
+        ServerCapabilities, ServerConfig, Tool,
     },
     service::{RequestContext, RoleServer},
     transport::streamable_http_server::{
@@ -53,14 +53,8 @@ impl ServerHandler for BeaconServer {
             .execute(request.name.as_ref(), request.arguments)
             .await
         {
-            Ok(value) => CallToolResult::structured(value),
-            Err(error) => CallToolResult::structured_error(serde_json::json!({"error": {
-                "code": error.code.as_str(),
-                "message": error.message,
-                "status": error.status.map(|value| value.as_u16()),
-                "upstreamCode": error.upstream_code,
-                "retryAfter": error.retry_after,
-            }})),
+            Ok(value) => crate::result::success(value),
+            Err(error) => crate::result::error(error),
         };
         Ok(result.into())
     }
