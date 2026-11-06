@@ -37,6 +37,12 @@ impl ServerHandler for BeaconServer {
     ) -> Result<InitializeResult, McpError> {
         context.peer.set_peer_info(request.clone());
         let mut info = self.negotiate_initialize(&request)?;
+        // rmcp 3.8 no longer lists 2024-10-07 among its built-in revisions,
+        // but the existing gateway still serves its stateless initialize.
+        if request.protocol_version.as_str() == "2024-10-07" {
+            info.protocol_version =
+                serde_json::from_str("\"2024-10-07\"").expect("valid legacy protocol revision");
+        }
         // subscribe in the legacy capability means resources/subscribe, not
         // the modern subscriptions/listen stream supported by this gateway.
         if let Some(resources) = info.capabilities.resources.as_mut() {

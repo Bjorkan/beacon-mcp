@@ -497,16 +497,22 @@ async fn legacy_initialize_does_not_advertise_resource_subscribe() {
         let app = server::router_with_live(shutdown.clone(), client, Some(live));
         async move { axum::serve(listener, app).await.unwrap() }
     });
-    let response=reqwest::Client::new().post(root)
-        .header("Accept","application/json, text/event-stream")
-        .header("MCP-Protocol-Version","2025-11-25")
-        .json(&json!({"jsonrpc":"2.0","id":3,"method":"initialize","params":{
-            "protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"legacy","version":"1"}
-        }})).send().await.unwrap();
-    assert_eq!(response.status(), 200);
-    let body = response.text().await.unwrap();
-    assert!(body.contains("resources"), "{body}");
-    assert!(!body.contains("\"subscribe\":true"), "{body}");
+    for revision in ["2025-11-25", "2024-10-07"] {
+        let response=reqwest::Client::new().post(&root)
+            .header("Accept","application/json, text/event-stream")
+            .header("MCP-Protocol-Version",revision)
+            .json(&json!({"jsonrpc":"2.0","id":3,"method":"initialize","params":{
+                "protocolVersion":revision,"capabilities":{},"clientInfo":{"name":"legacy","version":"1"}
+            }})).send().await.unwrap();
+        assert_eq!(response.status(), 200);
+        let body = response.text().await.unwrap();
+        assert!(
+            body.contains(&format!("\"protocolVersion\":\"{revision}\"")),
+            "{body}"
+        );
+        assert!(body.contains("resources"), "{body}");
+        assert!(!body.contains("\"subscribe\":true"), "{body}");
+    }
     shutdown.cancel();
     task.abort();
 }
