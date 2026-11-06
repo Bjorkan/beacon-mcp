@@ -237,7 +237,7 @@ impl CoreTools {
             }
             let normalized = iatas
                 .iter()
-                .map(|code| code.to_ascii_uppercase())
+                .map(|code| code.trim().to_ascii_uppercase())
                 .collect::<Vec<_>>();
             if normalized
                 .iter()

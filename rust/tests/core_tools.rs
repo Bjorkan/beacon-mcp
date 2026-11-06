@@ -188,6 +188,15 @@ async fn lists_only_implemented_tools_and_calls_all_nine() {
         json!({"limit":1,"pageCursor":"opaque:next", "cursor":1000}),
     )
     .await;
+    let normalized = rpc(
+        &client,
+        &root,
+        "tools/call",
+        Some("beacon_search_nodes"),
+        json!({"iatas":[" arn "]}),
+    )
+    .await;
+    assert_eq!(normalized["result"]["isError"], false);
     assert_eq!(
         node_page["result"]["structuredContent"]["pagination"]["nextCursor"]["pageCursor"],
         "v1:1000000:uuid"
@@ -239,7 +248,7 @@ async fn rejects_invalid_filters_and_reports_upstream_errors() {
         ("beacon_search_nodes", json!({"region":"se","regionId":1})),
         ("beacon_search_nodes", json!({"sort":"name","cursor":123})),
         ("beacon_search_nodes", json!({"regionId":2147483648u64})),
-        ("beacon_search_nodes", json!({"iatas":[" arn "]})),
+        ("beacon_search_nodes", json!({"iatas":["bad value"]})),
         ("beacon_search_nodes", json!({"typeName":"not_a_node_type"})),
         ("beacon_search_observers", json!({"type":1})),
         ("beacon_search_observers", json!({"type":" "})),
