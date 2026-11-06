@@ -190,11 +190,13 @@ mod tests {
             assert!(parse(&[("BEACON_BASE_URL", url)]).is_err());
         }
         assert!(parse(&[("BEACON_BASE_URL", "https://x.test"), ("PORT", "80")]).is_err());
-        assert!(parse(&[
-            ("BEACON_BASE_URL", "https://x.test"),
-            ("BEACON_TIMEOUT_MS", "0")
-        ])
-        .is_err());
+        assert!(
+            parse(&[
+                ("BEACON_BASE_URL", "https://x.test"),
+                ("BEACON_TIMEOUT_MS", "0")
+            ])
+            .is_err()
+        );
     }
 
     #[test]
@@ -224,20 +226,26 @@ mod tests {
         );
         assert!(config.subscriptions.enabled);
         assert_eq!(config.subscriptions.max_streams, 64);
-        assert!(parse(&[
-            ("BEACON_BASE_URL", "https://beacon.example"),
-            ("BEACON_WS_URL", "https://example/ws")
-        ])
-        .is_err());
-        assert!(parse(&[
-            ("BEACON_BASE_URL", "https://beacon.example"),
-            ("BEACON_SUBSCRIPTIONS_MAX_STREAMS", "0")
-        ])
-        .is_err());
-        assert!(parse(&[
-            ("BEACON_BASE_URL", "https://beacon.example"),
-            ("BEACON_SUBSCRIPTIONS_ENABLED", "yes")
-        ])
-        .is_err());
+        assert!(
+            parse(&[
+                ("BEACON_BASE_URL", "https://beacon.example"),
+                ("BEACON_WS_URL", "https://example/ws")
+            ])
+            .is_err()
+        );
+        assert!(
+            parse(&[
+                ("BEACON_BASE_URL", "https://beacon.example"),
+                ("BEACON_SUBSCRIPTIONS_MAX_STREAMS", "0")
+            ])
+            .is_err()
+        );
+        assert!(
+            parse(&[
+                ("BEACON_BASE_URL", "https://beacon.example"),
+                ("BEACON_SUBSCRIPTIONS_ENABLED", "yes")
+            ])
+            .is_err()
+        );
     }
 }
