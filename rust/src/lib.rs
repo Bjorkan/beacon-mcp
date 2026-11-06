@@ -2,5 +2,6 @@ pub mod client;
 pub mod config;
 pub mod packet_tools;
 pub mod result;
+pub mod routing_tools;
 pub mod server;
 pub mod tools;

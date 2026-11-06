@@ -92,7 +92,7 @@ fn hex(text: &str, min: usize, max: usize) -> bool {
     (min..=max).contains(&text.len()) && text.bytes().all(|byte| byte.is_ascii_hexdigit())
 }
 
-fn timestamp(text: &str) -> Result<i64, GatewayError> {
+pub(crate) fn timestamp(text: &str) -> Result<i64, GatewayError> {
     if text.len() > 24 || !text.ends_with('Z') || !text.contains('T') {
         return Err(invalid("timestamp must be RFC3339 UTC"));
     }
