@@ -196,10 +196,6 @@ async fn analytics_validation_fails_before_network() {
             json!({"until":"2026-10-01T00:00:00Z"}),
         ),
         (
-            "beacon_get_network_series",
-            json!({"since":"2026-10-02T00:00:00Z","until":"2026-10-01T00:00:00Z"}),
-        ),
-        (
             "beacon_compare_observers",
             json!({"observerA":A,"observerB":A,"since":"2026-10-01T00:00:00Z","until":"2026-10-02T00:00:00Z"}),
         ),
@@ -215,6 +211,21 @@ async fn analytics_validation_fails_before_network() {
             "{name}: {response}"
         );
     }
+    // Reversed time windows are adapter-level calendar errors, so they keep
+    // the structured ValidationError metadata the previous gateway returned.
+    let response = rpc(
+        &client,
+        &root,
+        "tools/call",
+        Some("beacon_get_network_series"),
+        json!({"since":"2026-10-02T00:00:00Z","until":"2026-10-01T00:00:00Z"}),
+    )
+    .await;
+    assert_eq!(response["result"]["isError"], true, "{response}");
+    assert_eq!(
+        response["result"]["structuredContent"]["error"],
+        json!({"code":"INVALID_ARGUMENT","type":"ValidationError"})
+    );
     assert!(seen.lock().unwrap().is_empty());
     token.cancel();
     for task in tasks {

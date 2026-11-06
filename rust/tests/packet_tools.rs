@@ -218,10 +218,6 @@ async fn rejects_invalid_inputs_without_contacting_upstream_and_reports_not_foun
             json!({"hashPrefix":"abcdef","pageCursor":"token"}),
         ),
         (
-            "beacon_search_packets",
-            json!({"since":"2026-10-02T00:00:00Z","until":"2026-10-01T00:00:00Z"}),
-        ),
-        (
             "beacon_search_messages",
             json!({"channelId":7,"channelHash":"ab"}),
         ),
@@ -236,6 +232,21 @@ async fn rejects_invalid_inputs_without_contacting_upstream_and_reports_not_foun
             "{name}: {response}"
         );
     }
+    // Reversed time windows are adapter-level calendar errors and keep the
+    // structured ValidationError metadata the previous gateway returned.
+    let response = rpc(
+        &client,
+        &root,
+        "tools/call",
+        Some("beacon_search_packets"),
+        json!({"since":"2026-10-02T00:00:00Z","until":"2026-10-01T00:00:00Z"}),
+    )
+    .await;
+    assert_eq!(response["result"]["isError"], true, "{response}");
+    assert_eq!(
+        response["result"]["structuredContent"]["error"],
+        json!({"code":"INVALID_ARGUMENT","type":"ValidationError"})
+    );
     assert!(seen.lock().unwrap().is_empty());
     let missing = rpc(
         &client,
