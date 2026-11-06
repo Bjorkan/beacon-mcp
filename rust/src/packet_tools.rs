@@ -162,12 +162,20 @@ impl PacketTools {
         {
             return Err(invalid("invalid region filter"));
         }
+        if args.hash_prefix.is_some() && args.page_cursor.is_some() {
+            return Err(invalid("hashPrefix pages with cursor, not pageCursor"));
+        }
+        if args.payload_type_name.is_some()
+            && (args.payload_type.is_some() || args.payload_types.is_some())
+        {
+            return Err(invalid(
+                "payloadTypeName cannot be combined with payloadType or payloadTypes",
+            ));
+        }
         if args.scope.is_some() && args.scopes.is_some()
             || args.payload_type.is_some()
                 && (args.payload_types.is_some() || args.payload_type_name.is_some())
-            || args.payload_types.is_some() && args.payload_type_name.is_some()
             || args.route_type.is_some() && args.route_types.is_some()
-            || args.hash_prefix.is_some() && args.page_cursor.is_some()
             || args.channel_id.is_some() && args.channel_hash.is_some()
         {
             return Err(invalid("mutually exclusive filters"));
