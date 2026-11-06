@@ -2,11 +2,9 @@ use crate::{
     client::{BeaconClient, ErrorCode, GatewayError, Operation},
     packet_tools::timestamp,
 };
-use rmcp::model::{JsonObject, Tool, ToolAnnotations};
-use schemars::JsonSchema;
+use rmcp::model::{JsonObject, Tool};
 use serde::Deserialize;
 use serde_json::{Value, json};
-use std::sync::Arc;
 use uuid::{Uuid, Variant};
 
 const NAMES: [&str; 4] = [
@@ -20,7 +18,7 @@ pub struct AnalyticsTools {
     client: BeaconClient,
 }
 
-#[derive(Default, Deserialize, JsonSchema)]
+#[derive(Default, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Args {
     iatas: Option<Vec<String>>,
@@ -76,36 +74,8 @@ impl AnalyticsTools {
             .collect()
     }
     pub fn definition(&self, name: &str) -> Option<Tool> {
-        let allowed = fields(name)?;
-        let mut schema = serde_json::to_value(schemars::schema_for!(Args)).ok()?;
-        schema
-            .get_mut("properties")?
-            .as_object_mut()?
-            .retain(|key, _| allowed.contains(&key.as_str()));
-        match name {
-            "beacon_get_top_advertisers" => schema["required"] = json!(["sort"]),
-            "beacon_get_network_series" => schema["required"] = json!(["since", "until"]),
-            "beacon_compare_observers" => {
-                schema["required"] = json!(["observerA", "observerB", "since", "until"])
-            }
-            _ => {}
-        }
-        let object: JsonObject = schema.as_object()?.clone();
-        let mut tool = Tool::new(
-            name.to_owned(),
-            format!("Read Beacon analytics: {name}"),
-            Arc::new(object),
-        );
-        tool.output_schema =
-            crate::tools::output_schema(include_str!("analytics-output-schemas.json"), name);
-        tool.annotations = Some(
-            ToolAnnotations::new()
-                .read_only(true)
-                .destructive(false)
-                .idempotent(true)
-                .open_world(true),
-        );
-        Some(tool)
+        fields(name)?;
+        crate::tools::tool_definition(include_str!("analytics-tool-definitions.json"), name)
     }
     pub async fn execute(
         &self,

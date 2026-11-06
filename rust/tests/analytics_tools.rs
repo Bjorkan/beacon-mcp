@@ -110,11 +110,11 @@ async fn advertises_exactly_the_original_23_tools_and_calls_every_analytics_tool
     let (client, root, seen, token, tasks) = setup().await;
     let listed = rpc(&client, &root, "tools/list", None, json!({})).await;
     let expected_schemas: Value =
-        serde_json::from_str(include_str!("../src/analytics-output-schemas.json")).unwrap();
+        serde_json::from_str(include_str!("../src/analytics-tool-definitions.json")).unwrap();
     for tool in listed["result"]["tools"].as_array().unwrap() {
         let name = tool["name"].as_str().unwrap();
         if let Some(expected) = expected_schemas.get(name) {
-            assert_eq!(tool["outputSchema"], *expected, "{name} output schema");
+            assert_eq!(tool, expected, "{name} tool metadata");
         }
     }
     let mut names = listed["result"]["tools"]
