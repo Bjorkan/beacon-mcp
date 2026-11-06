@@ -80,3 +80,54 @@ fn shutdown_grace_does_not_limit_normal_uptime() {
         "shutdown grace expired before a shutdown signal: {exited:?}"
     );
 }
+
+#[test]
+fn silent_logging_and_ipv6_bind_are_effective_at_runtime() {
+    use std::{
+        io::{Read, Write},
+        net::{TcpListener, TcpStream},
+        process::{Command, Stdio},
+        thread,
+        time::Duration,
+    };
+
+    // Some container hosts intentionally disable IPv6; the configuration
+    // parser is tested separately even when an IPv6 runtime probe is unavailable.
+    let Ok(reservation) = TcpListener::bind("[::1]:0") else {
+        return;
+    };
+    let port = reservation.local_addr().unwrap().port();
+    drop(reservation);
+    let mut child = Command::new(env!("CARGO_BIN_EXE_beacon-mcp-rust"))
+        .env("HOST", "::1")
+        .env("PORT", port.to_string())
+        .env("BEACON_BASE_URL", "http://127.0.0.1:9/")
+        .env("LOG_LEVEL", "silent")
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let mut responded = false;
+    for _ in 0..50 {
+        if let Ok(mut stream) = TcpStream::connect(("::1", port)) {
+            stream
+                .set_read_timeout(Some(Duration::from_secs(1)))
+                .unwrap();
+            stream
+                .write_all(b"GET /healthz HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+                .unwrap();
+            let mut response = String::new();
+            stream.read_to_string(&mut response).unwrap();
+            responded = response.contains("200 OK") && response.contains("\"status\":\"ok\"");
+            break;
+        }
+        thread::sleep(Duration::from_millis(20));
+    }
+    child.kill().unwrap();
+    let output = child.wait_with_output().unwrap();
+    assert!(responded, "IPv6 health request did not succeed");
+    assert!(
+        output.stdout.is_empty() && output.stderr.is_empty(),
+        "LOG_LEVEL=silent emitted logs"
+    );
+}

@@ -3,12 +3,17 @@ use tokio_util::sync::CancellationToken;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    tracing_subscriber::fmt()
-        .with_env_filter(
-            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "info".into()),
-        )
-        .init();
     let config = Config::from_env()?;
+    tracing_subscriber::fmt()
+        .with_env_filter(if config.log_level == "silent" {
+            "off".to_owned()
+        } else if config.log_level == "fatal" {
+            // Rust tracing has no fatal level; report fatal messages at ERROR.
+            "error".to_owned()
+        } else {
+            config.log_level.clone()
+        })
+        .init();
     let listener = tokio::net::TcpListener::bind(config.bind).await?;
     let shutdown = CancellationToken::new();
     tracing::info!(address = %listener.local_addr()?, "Beacon MCP Rust foundation listening");

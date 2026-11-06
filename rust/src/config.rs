@@ -1,9 +1,10 @@
-use std::{env, net::SocketAddr, time::Duration};
+use std::{env, net::IpAddr, time::Duration};
 use url::Url;
 
 #[derive(Clone, Debug)]
 pub struct Config {
-    pub bind: SocketAddr,
+    pub bind: String,
+    pub log_level: String,
     pub beacon_base_url: Url,
     pub beacon_timeout: Duration,
     pub stats_timeout: Duration,
@@ -20,9 +21,29 @@ impl Config {
         let port: u16 = parse_u64(&mut get, "PORT", 3000, 1024, 65535)?
             .try_into()
             .map_err(|_| "invalid PORT".to_string())?;
-        let bind = format!("{host}:{port}")
-            .parse::<SocketAddr>()
-            .map_err(|_| "HOST must be a numeric IP address".to_string())?;
+        let bind = if let Ok(address) = host.parse::<IpAddr>() {
+            std::net::SocketAddr::new(address, port).to_string()
+        } else if host.len() <= 253
+            && host.split('.').all(|label| {
+                !label.is_empty()
+                    && label.len() <= 63
+                    && label
+                        .bytes()
+                        .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')
+                    && !label.starts_with('-')
+                    && !label.ends_with('-')
+            })
+        {
+            format!("{host}:{port}")
+        } else {
+            return Err("HOST must be an IP address or hostname".into());
+        };
+        let log_level = get("LOG_LEVEL").unwrap_or_else(|| "info".into());
+        if !["fatal", "error", "warn", "info", "debug", "trace", "silent"]
+            .contains(&log_level.as_str())
+        {
+            return Err("invalid LOG_LEVEL".into());
+        }
         let source = get("BEACON_BASE_URL").ok_or("BEACON_BASE_URL is required")?;
         let mut beacon_base_url = Url::parse(&source).map_err(|_| "invalid BEACON_BASE_URL")?;
         if !["http", "https"].contains(&beacon_base_url.scheme())
@@ -41,6 +62,7 @@ impl Config {
         beacon_base_url.set_path(&path);
         Ok(Self {
             bind,
+            log_level,
             beacon_base_url,
             beacon_timeout: Duration::from_millis(parse_u64(
                 &mut get,
@@ -105,6 +127,7 @@ mod tests {
         );
         assert_eq!(config.bind.to_string(), "0.0.0.0:3000");
         assert_eq!(config.beacon_timeout.as_millis(), 10_000);
+        assert_eq!(config.log_level, "info");
     }
 
     #[test]
@@ -120,5 +143,23 @@ mod tests {
             ])
             .is_err()
         );
+    }
+
+    #[test]
+    fn accepts_ipv6_and_hostnames_and_validates_log_level() {
+        let ipv6 = parse(&[("BEACON_BASE_URL", "https://x.test"), ("HOST", "::1")]).unwrap();
+        assert_eq!(ipv6.bind, "[::1]:3000");
+        let hostname =
+            parse(&[("BEACON_BASE_URL", "https://x.test"), ("HOST", "localhost")]).unwrap();
+        assert_eq!(hostname.bind, "localhost:3000");
+        let silent = parse(&[
+            ("BEACON_BASE_URL", "https://x.test"),
+            ("LOG_LEVEL", "silent"),
+        ])
+        .unwrap();
+        assert_eq!(silent.log_level, "silent");
+        for (key, value) in [("HOST", ""), ("HOST", "bad host"), ("LOG_LEVEL", "verbose")] {
+            assert!(parse(&[("BEACON_BASE_URL", "https://x.test"), (key, value)]).is_err());
+        }
     }
 }
