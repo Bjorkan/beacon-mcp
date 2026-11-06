@@ -32,28 +32,53 @@ fn validate_field(value: &Value, schema: &Value, path: &str) -> Result<(), Strin
         _ => true,
     };
     if !valid_type {
-        return Err(format!("{path}: Invalid input: expected {kind}"));
+        let expected = if kind == "integer" { "number" } else { kind };
+        let received = match value {
+            Value::Null => "null",
+            Value::String(_) => "string",
+            Value::Number(_) => "number",
+            Value::Bool(_) => "boolean",
+            Value::Array(_) => "array",
+            Value::Object(_) => "object",
+        };
+        return Err(format!(
+            "{path}: Invalid input: expected {expected}, received {received}"
+        ));
     }
     if let Some(options) = schema["enum"].as_array()
         && !options.contains(value)
     {
-        return Err(format!("{path}: Invalid option"));
+        let choices = options
+            .iter()
+            .filter_map(Value::as_str)
+            .map(|value| format!("\"{value}\""))
+            .collect::<Vec<_>>()
+            .join("|");
+        return Err(format!("{path}: Invalid option: expected one of {choices}"));
     }
     if let Some(text) = value.as_str() {
-        if schema["minLength"]
-            .as_u64()
-            .is_some_and(|min| text.chars().count() < min as usize)
-            || schema["maxLength"]
-                .as_u64()
-                .is_some_and(|max| text.chars().count() > max as usize)
+        if let Some(min) = schema["minLength"].as_u64()
+            && text.chars().count() < min as usize
         {
-            return Err(format!("{path}: Invalid string length"));
+            return Err(format!(
+                "{path}: Too small: expected string to have >={min} characters"
+            ));
+        }
+        if let Some(max) = schema["maxLength"].as_u64()
+            && text.chars().count() > max as usize
+        {
+            return Err(format!(
+                "{path}: Too big: expected string to have <={max} characters"
+            ));
         }
         if let Some(pattern) = schema["pattern"].as_str()
             && !regex::Regex::new(pattern)
                 .expect("valid frozen input pattern")
                 .is_match(text)
         {
+            if schema["format"] == "uuid" {
+                return Err(format!("{path}: Invalid UUID"));
+            }
             return Err(format!(
                 "{path}: Invalid string: must match pattern /{pattern}/"
             ));
@@ -78,7 +103,17 @@ fn validate_field(value: &Value, schema: &Value, path: &str) -> Result<(), Strin
             ),
         ] {
             if condition {
-                return Err(format!("{path}: Invalid number ({key})"));
+                let bound = schema[key].as_f64().expect("frozen numeric bound");
+                let bound = if bound.fract() == 0.0 {
+                    format!("{bound:.0}")
+                } else {
+                    bound.to_string()
+                };
+                return Err(match key {
+                    "maximum" => format!("{path}: Too big: expected number to be <={bound}"),
+                    "minimum" => format!("{path}: Too small: expected number to be >={bound}"),
+                    _ => format!("{path}: Too small: expected number to be >{bound}"),
+                });
             }
         }
     }
@@ -104,6 +139,7 @@ fn validate_tool_input(tool: &Tool, args: &rmcp::model::JsonObject) -> Result<()
     let properties = schema["properties"]
         .as_object()
         .expect("tool schema properties");
+    let mut errors = Vec::new();
     for field in schema
         .get("required")
         .and_then(Value::as_array)
@@ -112,16 +148,48 @@ fn validate_tool_input(tool: &Tool, args: &rmcp::model::JsonObject) -> Result<()
     {
         let field = field.as_str().expect("required field name");
         if !args.contains_key(field) {
-            return Err(format!("{field}: Required"));
+            let rule = &properties[field];
+            let reason = if let Some(options) = rule["enum"].as_array() {
+                format!(
+                    "Invalid option: expected one of {}",
+                    options
+                        .iter()
+                        .filter_map(Value::as_str)
+                        .map(|value| format!("\"{value}\""))
+                        .collect::<Vec<_>>()
+                        .join("|")
+                )
+            } else {
+                format!(
+                    "Invalid input: expected {}, received undefined",
+                    if rule["type"] == "integer" {
+                        "number"
+                    } else {
+                        rule["type"].as_str().unwrap_or("unknown")
+                    }
+                )
+            };
+            errors.push(format!("{field}: {reason}"));
         }
     }
+    let mut unknown = Vec::new();
     for (field, value) in args {
         let Some(rule) = properties.get(field) else {
-            return Err(format!("{field}: Unrecognized key"));
+            unknown.push(format!("\"{field}\""));
+            continue;
         };
-        validate_field(value, rule, field)?;
+        if let Err(message) = validate_field(value, rule, field) {
+            errors.push(message);
+        }
     }
-    Ok(())
+    if !unknown.is_empty() {
+        errors.push(format!("Unrecognized key: {}", unknown.join(", ")));
+    }
+    if errors.is_empty() {
+        Ok(())
+    } else {
+        Err(errors.join(", "))
+    }
 }
 
 #[derive(Clone)]
@@ -316,6 +384,14 @@ impl ServerHandler for BeaconServer {
         {
             return Ok(crate::result::invalid_input(request.name.as_ref(), &reason).into());
         }
+        let invalid_calendar_field = ["since", "until"].into_iter().find(|field| {
+            request
+                .arguments
+                .as_ref()
+                .and_then(|args| args.get(*field))
+                .and_then(Value::as_str)
+                .is_some_and(|text| crate::packet_tools::timestamp(text).is_err())
+        });
         let result = match if self
             .analytics_tools
             .definition(request.name.as_ref())
@@ -350,7 +426,19 @@ impl ServerHandler for BeaconServer {
                 if error.code == crate::client::ErrorCode::InvalidArgument
                     && error.status.is_none() =>
             {
-                crate::result::invalid_input(request.name.as_ref(), &error.message)
+                let adapter_message = match error.message.as_str() {
+                    "invalid UTC calendar date" => {
+                        let field = invalid_calendar_field.unwrap_or("time");
+                        Some(format!("{field} must be a valid calendar timestamp"))
+                    }
+                    "since must be before until" => Some("since must be earlier than until".into()),
+                    _ => None,
+                };
+                if let Some(message) = adapter_message {
+                    crate::result::adapter_input_error(&message)
+                } else {
+                    crate::result::invalid_input(request.name.as_ref(), &error.message)
+                }
             }
             Err(error) => crate::result::error(error),
         };

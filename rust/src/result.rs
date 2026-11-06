@@ -26,6 +26,16 @@ pub fn invalid_input(name: &str, reason: &str) -> CallToolResult {
     result
 }
 
+/// Invalid calendar dates and time-window order reach the TypeScript adapter
+/// after schema validation; unlike schema failures they have classified metadata.
+pub fn adapter_input_error(message: &str) -> CallToolResult {
+    let mut result = CallToolResult::structured_error(json!({
+        "error": {"code": "INVALID_ARGUMENT", "type": "ValidationError"}
+    }));
+    result.content = vec![ContentBlock::text(message)];
+    result
+}
+
 #[cfg(test)]
 #[test]
 fn local_input_errors_are_not_upstream_errors() {

@@ -76,6 +76,50 @@ async fn invalid_tool_inputs_are_plain_errors_but_upstream_400_is_structured() {
                 .starts_with("Input validation error: Invalid arguments for tool")
         );
     }
+    for (name, arguments, message) in [
+        (
+            "beacon_search_packets",
+            serde_json::json!({"since":"2026-02-30T15:30:00Z"}),
+            "since must be a valid calendar timestamp",
+        ),
+        (
+            "beacon_search_messages",
+            serde_json::json!({"since":"2026-02-30T15:30:00Z"}),
+            "since must be a valid calendar timestamp",
+        ),
+        (
+            "beacon_get_network_series",
+            serde_json::json!({"since":"2026-10-05T00:00:00Z","until":"2026-10-04T00:00:00Z"}),
+            "since must be earlier than until",
+        ),
+    ] {
+        let reply: serde_json::Value = http
+            .post(&root)
+            .header("Accept", "application/json, text/event-stream")
+            .header("MCP-Protocol-Version", "2026-07-28")
+            .header("Mcp-Method", "tools/call")
+            .header("Mcp-Name", name)
+            .json(
+                &serde_json::json!({"jsonrpc":"2.0", "id":3, "method":"tools/call", "params":{
+                    "name":name,"arguments":arguments,"_meta":{
+                        "io.modelcontextprotocol/protocolVersion":"2026-07-28",
+                        "io.modelcontextprotocol/clientInfo":{"name":"test","version":"1"},
+                        "io.modelcontextprotocol/clientCapabilities":{}
+                    }
+                }}),
+            )
+            .send()
+            .await
+            .unwrap()
+            .json()
+            .await
+            .unwrap();
+        assert_eq!(
+            reply["result"]["structuredContent"]["error"],
+            serde_json::json!({"code":"INVALID_ARGUMENT","type":"ValidationError"})
+        );
+        assert_eq!(reply["result"]["content"][0]["text"], message);
+    }
     let name = "beacon_get_server_info";
     let reply: serde_json::Value = http
         .post(&root)
