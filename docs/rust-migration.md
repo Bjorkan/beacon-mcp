@@ -26,8 +26,8 @@ packet or message bodies.
 ## Open release gates
 
 Every PR in the stack must build and pass its checks. Keep all PRs Draft until
-the Rust-only final image and CI succeed across amd64 and arm64, the mock
-container hardening checks pass, and read-only live checks confirm core tools
+the Rust-only final image and CI succeed on amd64, the mock container
+hardening checks pass, and read-only live checks confirm core tools
 and subscription handshake. **Input-error parity remains under review:** the
 Rust handler validates the frozen schemas and returns unstructured MCP errors
 for schema rejections; calendar/window and upstream HTTP 400 errors retain

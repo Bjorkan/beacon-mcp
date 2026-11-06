@@ -113,7 +113,7 @@ re-read resources and recreate streams after disruptions.
 Build a local image only for development/CI verification; production deployment
 must **pull a published image** from `ghcr.io/bjorkan/beacon-mcp`, never build on
 the target host. Set `BEACON_MCP_IMAGE` to an immutable published SHA/digest
-when using `compose.yaml`. The Dockerfile compiles for amd64/arm64, runs as
+when using `compose.yaml`. The Dockerfile compiles for amd64, runs as
 UID/GID 1000 with no application writes, and contains no development tools.
 The Compose example drops capabilities, sets a read-only rootfs, no-new-
 privileges, bounded memory/CPU/PIDs, rotates logs and terminates gracefully.
