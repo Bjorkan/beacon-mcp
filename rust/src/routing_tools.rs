@@ -117,6 +117,8 @@ impl RoutingTools {
             format!("Read public Beacon route or trace: {name}"),
             Arc::new(object),
         );
+        tool.output_schema =
+            crate::tools::output_schema(include_str!("routing-output-schemas.json"), name);
         tool.annotations = Some(
             ToolAnnotations::new()
                 .read_only(true)
