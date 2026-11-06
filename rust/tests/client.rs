@@ -286,3 +286,33 @@ async fn returns_small_complete_array_and_rejects_invalid_array_requests() {
     );
     server.abort();
 }
+
+#[tokio::test]
+async fn accepts_bounded_non_array_page_envelopes_and_rejects_invalid_fallback() {
+    let (client, server) = mock(|req: Request<Body>| match req.uri().path() {
+        "/api/v1/iatas" => response(StatusCode::OK, r#"{"items":[1,2],"hasMore":false}"#),
+        "/api/v1/regions" => response(StatusCode::OK, r#"{"items":[1,2,3]}"#),
+        _ => response(StatusCode::OK, r#"{"items":"not an array"}"#),
+    })
+    .await;
+    assert_eq!(
+        client
+            .array_page(Operation::Iatas, &[], 3)
+            .await
+            .unwrap()
+            .items,
+        vec![1, 2]
+    );
+    let bounded = client.array_page(Operation::Regions, &[], 2).await.unwrap();
+    assert_eq!(bounded.items, vec![1, 2]);
+    assert!(!bounded.complete);
+    assert_eq!(
+        client
+            .array_page(Operation::RouteSearch, &[], 3)
+            .await
+            .unwrap_err()
+            .code,
+        ErrorCode::Unavailable
+    );
+    server.abort();
+}

@@ -422,7 +422,9 @@ async fn read_array_page(
                 if byte == b'[' {
                     started = true;
                 } else if !byte.is_ascii_whitespace() {
-                    return Err(invalid_array());
+                    // Some upstream array endpoints also return a JSON page
+                    // envelope. Read it with the same byte and item bounds.
+                    return read_envelope_page(response, buffer, max_items).await;
                 }
             } else if start.is_none() {
                 if byte == b']' {
@@ -494,6 +496,35 @@ async fn read_array_page(
         });
     }
     Err(invalid_array())
+}
+
+async fn read_envelope_page(
+    mut response: reqwest::Response,
+    mut bytes: Vec<u8>,
+    max_items: usize,
+) -> Result<ArrayPage, GatewayError> {
+    while let Some(chunk) = response
+        .chunk()
+        .await
+        .map_err(|_| GatewayError::new(ErrorCode::Unavailable, "Beacon response was interrupted"))?
+    {
+        if chunk.len() > MAX_BYTES - bytes.len() {
+            return Err(GatewayError::new(
+                ErrorCode::ResponseTooLarge,
+                "Beacon response exceeded 5 MiB",
+            ));
+        }
+        bytes.extend_from_slice(&chunk);
+    }
+    let value: Value = serde_json::from_slice(&bytes).map_err(|_| invalid_array())?;
+    let items = value
+        .as_array()
+        .or_else(|| value.get("items").and_then(Value::as_array))
+        .ok_or_else(invalid_array)?;
+    Ok(ArrayPage {
+        complete: items.len() <= max_items,
+        items: items.iter().take(max_items).cloned().collect(),
+    })
 }
 
 fn invalid_array() -> GatewayError {
