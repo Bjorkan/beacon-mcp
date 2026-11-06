@@ -316,3 +316,31 @@ async fn accepts_bounded_non_array_page_envelopes_and_rejects_invalid_fallback()
     );
     server.abort();
 }
+
+#[tokio::test]
+async fn accepts_no_content_and_classifies_malformed_error_bodies_by_status() {
+    let (client, server) = mock(|req: Request<Body>| match req.uri().path() {
+        "/api/v1/info" => response(StatusCode::NO_CONTENT, Body::empty()),
+        "/api/v1/nodes" => response(StatusCode::BAD_REQUEST, "not JSON"),
+        "/api/v1/packets" => response(StatusCode::TOO_MANY_REQUESTS, "not JSON"),
+        _ => response(StatusCode::NOT_FOUND, "not JSON"),
+    })
+    .await;
+    assert!(
+        client
+            .request(Operation::ServerInfo, None, &[])
+            .await
+            .unwrap()
+            .is_null()
+    );
+    for (operation, code) in [
+        (Operation::Nodes, ErrorCode::InvalidArgument),
+        (Operation::Packets, ErrorCode::ResourceExhausted),
+        (Operation::Traces, ErrorCode::NotFound),
+    ] {
+        let error = client.request(operation, None, &[]).await.unwrap_err();
+        assert_eq!(error.code, code);
+        assert!(error.status.is_some());
+    }
+    server.abort();
+}

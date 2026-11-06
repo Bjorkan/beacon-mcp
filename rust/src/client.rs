@@ -251,10 +251,19 @@ impl BeaconClient {
                 .get(reqwest::header::RETRY_AFTER)
                 .and_then(|v| v.to_str().ok())
                 .map(str::to_owned);
+            if status == StatusCode::NO_CONTENT {
+                return Ok(Value::Null);
+            }
             let bytes = read_bounded(response).await?;
-            let body: Value = serde_json::from_slice(&bytes).map_err(|_| {
-                GatewayError::new(ErrorCode::Unavailable, "Beacon returned invalid JSON")
-            })?;
+            let body: Value = if status.is_success() {
+                serde_json::from_slice(&bytes).map_err(|_| {
+                    GatewayError::new(ErrorCode::Unavailable, "Beacon returned invalid JSON")
+                })?
+            } else {
+                // Error envelopes are optional upstream; status and Retry-After
+                // still determine the error when the body is malformed.
+                serde_json::from_slice(&bytes).unwrap_or(Value::Null)
+            };
             if status.is_success() {
                 return Ok(body);
             }
