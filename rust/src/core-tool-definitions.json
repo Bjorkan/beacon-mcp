@@ -17,7 +17,9 @@
           "type": "string"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "type": "object"
     },
     "name": "beacon_get_node",
@@ -39,13 +41,22 @@
           "description": "Unix epoch milliseconds (UTC)"
         },
         "clockDriftSeconds": {
-          "type": ["number", "null"]
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "clockOutOfSync": {
-          "type": ["boolean", "null"]
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "defaultScope": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "firstSeen": {
           "anyOf": [
@@ -67,7 +78,10 @@
                 "additionalProperties": {},
                 "properties": {
                   "iata": {
-                    "type": ["string", "null"]
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "lastHeard": {
                     "anyOf": [
@@ -93,10 +107,16 @@
           ]
         },
         "id": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "isObserver": {
-          "type": ["boolean", "null"]
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "knownNeighborCount": {
           "anyOf": [
@@ -137,13 +157,22 @@
           "description": "Unix epoch milliseconds (UTC)"
         },
         "lat": {
-          "type": ["number", "null"]
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "lng": {
-          "type": ["number", "null"]
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "locationSource": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "meshmapper": {
           "anyOf": [
@@ -164,7 +193,10 @@
                   ]
                 },
                 "carpeater": {
-                  "type": ["boolean", "null"]
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
                 },
                 "defaultScope": {
                   "anyOf": [
@@ -172,13 +204,22 @@
                       "additionalProperties": {},
                       "properties": {
                         "name": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "source": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "state": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "updatedAt": {
                           "anyOf": [
@@ -215,7 +256,10 @@
                   "description": "Unix epoch milliseconds (UTC)"
                 },
                 "iata": {
-                  "type": ["string", "null"]
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "scopes": {
                   "anyOf": [
@@ -249,7 +293,10 @@
                             ]
                           },
                           "proof": {
-                            "type": ["string", "null"]
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "reportedAt": {
                             "anyOf": [
@@ -265,7 +312,10 @@
                             "description": "Unix epoch milliseconds (UTC)"
                           },
                           "scope": {
-                            "type": ["string", "null"]
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "uploadedAt": {
                             "anyOf": [
@@ -309,25 +359,46 @@
                       "additionalProperties": {},
                       "properties": {
                         "antenna": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "hardware": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "heightAslM": {
-                          "type": ["number", "null"]
+                          "type": [
+                            "number",
+                            "null"
+                          ]
                         },
                         "heightM": {
-                          "type": ["number", "null"]
+                          "type": [
+                            "number",
+                            "null"
+                          ]
                         },
                         "notes": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "power": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "powerSource": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         }
                       },
                       "type": "object"
@@ -354,10 +425,16 @@
           ]
         },
         "minFirmwareVersion": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "name": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "neighbors": {
           "anyOf": [
@@ -379,10 +456,16 @@
                     "description": "Unix epoch milliseconds (UTC)"
                   },
                   "iata": {
-                    "type": ["string", "null"]
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "id": {
-                    "type": ["string", "null"]
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "lastSeen": {
                     "anyOf": [
@@ -398,13 +481,22 @@
                     "description": "Unix epoch milliseconds (UTC)"
                   },
                   "lat": {
-                    "type": ["number", "null"]
+                    "type": [
+                      "number",
+                      "null"
+                    ]
                   },
                   "lng": {
-                    "type": ["number", "null"]
+                    "type": [
+                      "number",
+                      "null"
+                    ]
                   },
                   "name": {
-                    "type": ["string", "null"]
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "nodeType": {
                     "anyOf": [
@@ -419,7 +511,10 @@
                     ]
                   },
                   "nodeTypeName": {
-                    "type": ["string", "null"]
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "observationCount": {
                     "anyOf": [
@@ -434,10 +529,16 @@
                     ]
                   },
                   "publicKey": {
-                    "type": ["string", "null"]
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "snr": {
-                    "type": ["number", "null"]
+                    "type": [
+                      "number",
+                      "null"
+                    ]
                   }
                 },
                 "type": "object"
@@ -462,28 +563,52 @@
           ]
         },
         "nodeTypeName": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "observerId": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "possiblyForeign": {
-          "type": ["boolean", "null"]
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "publicKey": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "radio": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "stale": {
-          "type": ["boolean", "null"]
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "supportsMultibytePaths": {
-          "type": ["boolean", "null"]
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "supportsMultibyteTraces": {
-          "type": ["boolean", "null"]
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       },
       "type": "object"
@@ -507,7 +632,9 @@
           "type": "string"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "type": "object"
     },
     "name": "beacon_get_observer",
@@ -516,7 +643,10 @@
       "additionalProperties": {},
       "properties": {
         "batteryLevel": {
-          "type": ["number", "null"]
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "brokers": {
           "anyOf": [
@@ -551,7 +681,10 @@
                     "description": "Unix epoch milliseconds (UTC)"
                   },
                   "name": {
-                    "type": ["string", "null"]
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   }
                 },
                 "type": "object"
@@ -564,13 +697,22 @@
           ]
         },
         "displayName": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "firmwareBuild": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "firmwareVersion": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "firstSeen": {
           "anyOf": [
@@ -586,13 +728,22 @@
           "description": "Unix epoch milliseconds (UTC)"
         },
         "hardwareModel": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "iata": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "id": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "lastSeen": {
           "anyOf": [
@@ -633,16 +784,28 @@
           ]
         },
         "observerType": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "publicKey": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "radio": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "radioBwKhz": {
-          "type": ["number", "null"]
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "radioCr": {
           "anyOf": [
@@ -657,7 +820,10 @@
           ]
         },
         "radioFreqMhz": {
-          "type": ["number", "null"]
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "radioSf": {
           "anyOf": [
@@ -685,10 +851,16 @@
           ]
         },
         "softwareVersion": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "status": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "statusMetadata": {
           "anyOf": [
@@ -732,7 +904,13 @@
           "type": "string"
         },
         "interval": {
-          "enum": ["5m", "15m", "1h", "6h", "24h"],
+          "enum": [
+            "5m",
+            "15m",
+            "1h",
+            "6h",
+            "24h"
+          ],
           "type": "string"
         },
         "range": {
@@ -747,7 +925,9 @@
           "type": "string"
         }
       },
-      "required": ["id"],
+      "required": [
+        "id"
+      ],
       "type": "object"
     },
     "name": "beacon_get_observer_activity",
@@ -769,7 +949,10 @@
           "description": "Unix epoch milliseconds (UTC)"
         },
         "interval": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "payloadTypes": {
           "anyOf": [
@@ -845,7 +1028,10 @@
                 "additionalProperties": {},
                 "properties": {
                   "airtimeMs": {
-                    "type": ["number", "null"]
+                    "type": [
+                      "number",
+                      "null"
+                    ]
                   },
                   "observations": {
                     "anyOf": [
@@ -860,13 +1046,22 @@
                     ]
                   },
                   "rssiAvg": {
-                    "type": ["number", "null"]
+                    "type": [
+                      "number",
+                      "null"
+                    ]
                   },
                   "snrAvg": {
-                    "type": ["number", "null"]
+                    "type": [
+                      "number",
+                      "null"
+                    ]
                   },
                   "snrMin": {
-                    "type": ["number", "null"]
+                    "type": [
+                      "number",
+                      "null"
+                    ]
                   },
                   "t": {
                     "anyOf": [
@@ -897,7 +1092,10 @@
               "additionalProperties": {},
               "properties": {
                 "bwKhz": {
-                  "type": ["number", "null"]
+                  "type": [
+                    "number",
+                    "null"
+                  ]
                 },
                 "cr": {
                   "anyOf": [
@@ -912,7 +1110,10 @@
                   ]
                 },
                 "freqMhz": {
-                  "type": ["number", "null"]
+                  "type": [
+                    "number",
+                    "null"
+                  ]
                 },
                 "preambleSymbols": {
                   "anyOf": [
@@ -947,7 +1148,10 @@
           ]
         },
         "range": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "rawFrom": {
           "anyOf": [
@@ -976,7 +1180,10 @@
           "description": "Unix epoch milliseconds (UTC)"
         },
         "source": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "summary": {
           "anyOf": [
@@ -1167,16 +1374,28 @@
             "description": "Beacon geographic area identified by an IATA-style code; it is a network partition and not necessarily an airport",
             "properties": {
               "displayName": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "iata": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "lat": {
-                "type": ["number", "null"]
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "lon": {
-                "type": ["number", "null"]
+                "type": [
+                  "number",
+                  "null"
+                ]
               }
             },
             "type": "object"
@@ -1193,11 +1412,16 @@
               "type": "boolean"
             }
           },
-          "required": ["hasMore"],
+          "required": [
+            "hasMore"
+          ],
           "type": "object"
         }
       },
-      "required": ["items", "pagination"],
+      "required": [
+        "items",
+        "pagination"
+      ],
       "type": "object"
     }
   },
@@ -1233,13 +1457,22 @@
             "additionalProperties": {},
             "properties": {
               "centerLat": {
-                "type": ["number", "null"]
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "centerLng": {
-                "type": ["number", "null"]
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "description": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "iatas": {
                 "anyOf": [
@@ -1267,10 +1500,16 @@
                 ]
               },
               "name": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "slug": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "zoomLevel": {
                 "anyOf": [
@@ -1299,11 +1538,16 @@
               "type": "boolean"
             }
           },
-          "required": ["hasMore"],
+          "required": [
+            "hasMore"
+          ],
           "type": "object"
         }
       },
-      "required": ["items", "pagination"],
+      "required": [
+        "items",
+        "pagination"
+      ],
       "type": "object"
     }
   },
@@ -1383,15 +1627,22 @@
                   "type": "integer"
                 }
               },
-              "required": ["cursor"],
+              "required": [
+                "cursor"
+              ],
               "type": "object"
             }
           },
-          "required": ["hasMore"],
+          "required": [
+            "hasMore"
+          ],
           "type": "object"
         }
       },
-      "required": ["items", "pagination"],
+      "required": [
+        "items",
+        "pagination"
+      ],
       "type": "object"
     }
   },
@@ -1440,7 +1691,10 @@
           "type": "boolean"
         },
         "order": {
-          "enum": ["asc", "desc"],
+          "enum": [
+            "asc",
+            "desc"
+          ],
           "type": "string"
         },
         "pageCursor": {
@@ -1478,7 +1732,12 @@
           "type": "string"
         },
         "sort": {
-          "enum": ["lastSeen", "name", "type", "neighbors"],
+          "enum": [
+            "lastSeen",
+            "name",
+            "type",
+            "neighbors"
+          ],
           "type": "string"
         },
         "supportsMultibytePaths": {
@@ -1493,8 +1752,18 @@
           "type": "integer"
         },
         "typeName": {
-          "enum": ["companion", "repeater", "room_server", "sensor"],
+          "enum": [
+            "companion",
+            "repeater",
+            "room_server",
+            "sensor"
+          ],
           "type": "string"
+        },
+        "iata": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9]{3}$",
+          "description": "Single reception IATA code; normalized uppercase; cannot combine with iatas"
         }
       },
       "type": "object"
@@ -1509,7 +1778,10 @@
             "additionalProperties": {},
             "properties": {
               "defaultScope": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "iatas": {
                 "anyOf": [
@@ -1518,7 +1790,10 @@
                       "additionalProperties": {},
                       "properties": {
                         "iata": {
-                          "type": ["string", "null"]
+                          "type": [
+                            "string",
+                            "null"
+                          ]
                         },
                         "lastHeard": {
                           "anyOf": [
@@ -1544,10 +1819,16 @@
                 ]
               },
               "id": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "isObserver": {
-                "type": ["boolean", "null"]
+                "type": [
+                  "boolean",
+                  "null"
+                ]
               },
               "knownNeighborCount": {
                 "anyOf": [
@@ -1575,13 +1856,22 @@
                 "description": "Unix epoch milliseconds (UTC)"
               },
               "lat": {
-                "type": ["number", "null"]
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "lng": {
-                "type": ["number", "null"]
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "name": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "neighborIds": {
                 "anyOf": [
@@ -1609,22 +1899,40 @@
                 ]
               },
               "nodeTypeName": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "observerId": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "possiblyForeign": {
-                "type": ["boolean", "null"]
+                "type": [
+                  "boolean",
+                  "null"
+                ]
               },
               "publicKey": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "radio": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "stale": {
-                "type": ["boolean", "null"]
+                "type": [
+                  "boolean",
+                  "null"
+                ]
               }
             },
             "type": "object"
@@ -1632,7 +1940,10 @@
           "type": "array"
         },
         "order": {
-          "enum": ["asc", "desc"],
+          "enum": [
+            "asc",
+            "desc"
+          ],
           "type": "string"
         },
         "pagination": {
@@ -1653,7 +1964,9 @@
                       "type": "integer"
                     }
                   },
-                  "required": ["cursor"],
+                  "required": [
+                    "cursor"
+                  ],
                   "type": "object"
                 },
                 {
@@ -1669,21 +1982,33 @@
                       "type": "string"
                     }
                   },
-                  "required": ["pageCursor"],
+                  "required": [
+                    "pageCursor"
+                  ],
                   "type": "object"
                 }
               ]
             }
           },
-          "required": ["hasMore"],
+          "required": [
+            "hasMore"
+          ],
           "type": "object"
         },
         "sort": {
-          "enum": ["lastSeen", "name", "type", "neighbors"],
+          "enum": [
+            "lastSeen",
+            "name",
+            "type",
+            "neighbors"
+          ],
           "type": "string"
         }
       },
-      "required": ["items", "pagination"],
+      "required": [
+        "items",
+        "pagination"
+      ],
       "type": "object"
     }
   },
@@ -1756,13 +2081,21 @@
           "type": "string"
         },
         "status": {
-          "enum": ["online", "offline"],
+          "enum": [
+            "online",
+            "offline"
+          ],
           "type": "string"
         },
         "type": {
           "maxLength": 128,
           "minLength": 1,
           "type": "string"
+        },
+        "iata": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9]{3}$",
+          "description": "Single reception IATA code; normalized uppercase; cannot combine with iatas"
         }
       },
       "type": "object"
@@ -1777,19 +2110,34 @@
             "additionalProperties": {},
             "properties": {
               "displayName": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "iata": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "id": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "observerType": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "radio": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "scopes": {
                 "anyOf": [
@@ -1805,7 +2153,10 @@
                 ]
               },
               "status": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "type": "object"
@@ -1830,7 +2181,9 @@
                       "type": "integer"
                     }
                   },
-                  "required": ["cursor"],
+                  "required": [
+                    "cursor"
+                  ],
                   "type": "object"
                 },
                 {
@@ -1846,17 +2199,24 @@
                       "type": "string"
                     }
                   },
-                  "required": ["pageCursor"],
+                  "required": [
+                    "pageCursor"
+                  ],
                   "type": "object"
                 }
               ]
             }
           },
-          "required": ["hasMore"],
+          "required": [
+            "hasMore"
+          ],
           "type": "object"
         }
       },
-      "required": ["items", "pagination"],
+      "required": [
+        "items",
+        "pagination"
+      ],
       "type": "object"
     }
   }
