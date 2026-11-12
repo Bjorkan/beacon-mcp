@@ -74,6 +74,11 @@ async fn rejects_invalid_ids_and_oversized_urls_before_network() {
         (Operation::Node, "../admin/config"),
         (Operation::Packet, "../admin/config"),
         (Operation::Trace, "not-hex"),
+        (Operation::ScopeDetail, "."),
+        (Operation::ScopeDetail, ".."),
+        (Operation::ScopeDetail, "../admin"),
+        (Operation::ScopeDetail, "%2e%2e"),
+        (Operation::ScopeDetail, "foo/bar"),
     ] {
         assert_eq!(
             client.request(op, Some(id), &[]).await.unwrap_err().code,
@@ -342,5 +347,22 @@ async fn accepts_no_content_and_classifies_malformed_error_bodies_by_status() {
         assert_eq!(error.code, code);
         assert!(error.status.is_some());
     }
+    server.abort();
+}
+
+#[tokio::test]
+async fn additional_unpaged_api_arrays_stop_without_buffering_full_body() {
+    let (client, server) = mock(|req: Request<Body>| {
+        assert_eq!(req.uri().path(), "/api/v1/stats/node-types");
+        let item = r#"{"nodeType":2,"nodeTypeName":"repeater","count":1}"#;
+        response(StatusCode::OK, format!("[{}]", vec![item; 150_000].join(",")))
+    })
+    .await;
+    let result = client
+        .array_page_with_id(Operation::NodeTypes, None, &[], 2)
+        .await
+        .unwrap();
+    assert_eq!(result.items.len(), 2);
+    assert!(!result.complete);
     server.abort();
 }
