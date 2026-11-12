@@ -100,6 +100,8 @@ pub fn get(request: &GetPromptRequestParams) -> Result<GetPromptResponse, McpErr
         }
         _ => return Err(McpError::invalid_params("Unknown Beacon prompt", None)),
     };
-    Ok(GetPromptResponse::new(vec![PromptMessage::new_text(Role::User, message)])
-        .with_description("Public Beacon read-only analysis workflow"))
+    Ok(
+        GetPromptResponse::new(vec![PromptMessage::new_text(Role::User, message)])
+            .with_description("Public Beacon read-only analysis workflow"),
+    )
 }
