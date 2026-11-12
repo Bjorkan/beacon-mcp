@@ -2,7 +2,8 @@
 use rmcp::{
     ErrorData as McpError,
     model::{
-        GetPromptRequestParams, GetPromptResponse, ListPromptsResult, Prompt, PromptArgument,
+        GetPromptRequestParams, GetPromptResponse, GetPromptResult, ListPromptsResult, Prompt,
+        PromptArgument,
         PromptMessage, Role,
     },
 };
@@ -100,8 +101,8 @@ pub fn get(request: &GetPromptRequestParams) -> Result<GetPromptResponse, McpErr
         }
         _ => return Err(McpError::invalid_params("Unknown Beacon prompt", None)),
     };
-    Ok(
-        GetPromptResponse::new(vec![PromptMessage::new_text(Role::User, message)])
+    Ok(GetPromptResponse::Complete(
+        GetPromptResult::new(vec![PromptMessage::new_text(Role::User, message)])
             .with_description("Public Beacon read-only analysis workflow"),
-    )
+    ))
 }
