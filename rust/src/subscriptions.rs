@@ -302,20 +302,32 @@ mod tests {
             "channelMessage",
             &json!({"channelId":25,"content":"do-not-store"}),
         );
-        assert!(tokio::time::timeout(Duration::from_millis(30), quiet.recv())
-            .await
-            .is_err());
+        assert!(
+            tokio::time::timeout(Duration::from_millis(30), quiet.recv())
+                .await
+                .is_err()
+        );
 
         let live = Live::configured(1, Duration::ZERO, shutdown, true);
         let mut events = live.subscribe();
-        live.received("packetObservation", &json!({"packetHash":"AABBCCDDEEFF0011"}));
-        live.received("channelMessage", &json!({"channelId":25,"content":"secret"}));
+        live.received(
+            "packetObservation",
+            &json!({"packetHash":"AABBCCDDEEFF0011"}),
+        );
+        live.received(
+            "channelMessage",
+            &json!({"channelId":25,"content":"secret"}),
+        );
         live.received("packetObservation", &json!({"packetHash":"../../admin"}));
         live.received("channelMessage", &json!({"channelId":0}));
         let a = tokio::time::timeout(Duration::from_millis(300), events.recv())
-            .await.unwrap().unwrap();
+            .await
+            .unwrap()
+            .unwrap();
         let b = tokio::time::timeout(Duration::from_millis(300), events.recv())
-            .await.unwrap().unwrap();
+            .await
+            .unwrap()
+            .unwrap();
         let mut uris = [a, b];
         uris.sort();
         assert_eq!(
@@ -325,8 +337,10 @@ mod tests {
                 "beacon://packets/aabbccddeeff0011".to_owned()
             ]
         );
-        assert!(tokio::time::timeout(Duration::from_millis(30), events.recv())
-            .await.is_err());
+        assert!(
+            tokio::time::timeout(Duration::from_millis(30), events.recv())
+                .await
+                .is_err()
+        );
     }
-
 }
