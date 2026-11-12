@@ -1,5 +1,5 @@
 use crate::{
-    analytics_tools::AnalyticsTools, client::BeaconClient, packet_tools::PacketTools,
+    analytics_tools::AnalyticsTools, client::BeaconClient, extra_tools::ExtraTools, packet_tools::PacketTools,
     routing_tools::RoutingTools, subscriptions::Live, tools::CoreTools,
 };
 use axum::{Router, middleware, routing::get};
@@ -198,6 +198,7 @@ pub struct BeaconServer {
     pub packet_tools: PacketTools,
     pub routing_tools: RoutingTools,
     pub analytics_tools: AnalyticsTools,
+    pub extra_tools: ExtraTools,
     pub live: Option<Arc<Live>>,
 }
 
@@ -232,7 +233,7 @@ impl ServerHandler for BeaconServer {
         }
         let mut info = ServerConfig::new(capabilities.build());
         info.server_info.name = "beacon-mcp".into();
-        info.server_info.version = "2.1.1".into();
+        info.server_info.version = env!("CARGO_PKG_VERSION").into();
         info
     }
 
@@ -249,6 +250,7 @@ impl ServerHandler for BeaconServer {
                 .chain(self.packet_tools.list())
                 .chain(self.routing_tools.list())
                 .chain(self.analytics_tools.list())
+                .chain(self.extra_tools.list())
                 .collect(),
             ..Default::default()
         })
@@ -260,6 +262,7 @@ impl ServerHandler for BeaconServer {
             .or_else(|| self.packet_tools.definition(name))
             .or_else(|| self.routing_tools.definition(name))
             .or_else(|| self.analytics_tools.definition(name))
+            .or_else(|| self.extra_tools.definition(name))
     }
 
     async fn list_resource_templates(
@@ -392,7 +395,9 @@ impl ServerHandler for BeaconServer {
                 .and_then(Value::as_str)
                 .is_some_and(|text| crate::packet_tools::timestamp(text).is_err())
         });
-        let result = match if self
+        let result = match if self.extra_tools.definition(request.name.as_ref()).is_some() {
+            self.extra_tools.execute(request.name.as_ref(), request.arguments).await
+        } else if self
             .analytics_tools
             .definition(request.name.as_ref())
             .is_some()
@@ -466,6 +471,7 @@ pub fn router_with_live(
                 packet_tools: PacketTools::new(client.clone()),
                 routing_tools: RoutingTools::new(client.clone()),
                 analytics_tools: AnalyticsTools::new(client.clone()),
+                extra_tools: ExtraTools::new(client.clone()),
                 live: live.clone(),
             })
         },
