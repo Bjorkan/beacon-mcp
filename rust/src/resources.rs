@@ -27,8 +27,7 @@ pub fn parse_uri(uri: &str) -> Option<(&'static str, String)> {
                 return None;
             }
             let uuid = Uuid::parse_str(raw).ok()?;
-            if !(1..=8).contains(&uuid.get_version_num())
-                || uuid.get_variant() != Variant::RFC4122
+            if !(1..=8).contains(&uuid.get_version_num()) || uuid.get_variant() != Variant::RFC4122
             {
                 return None;
             }
@@ -80,7 +79,11 @@ mod tests {
                 "observers",
                 "123e4567-e89b-42d3-a456-426614174000",
             ),
-            ("beacon://packets/AABBCCDDEEFF0011", "packets", "aabbccddeeff0011"),
+            (
+                "beacon://packets/AABBCCDDEEFF0011",
+                "packets",
+                "aabbccddeeff0011",
+            ),
             ("beacon://traces/ABCDEF01", "traces", "abcdef01"),
             ("beacon://channels/25", "channels", "25"),
             ("beacon://regions/3", "regions", "3"),
