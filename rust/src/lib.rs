@@ -7,10 +7,10 @@
 pub mod analytics_tools;
 pub mod client;
 pub mod composite_tools;
-pub mod prompts;
 pub mod config;
 pub mod extra_tools;
 pub mod packet_tools;
+pub mod prompts;
 pub mod request_logging;
 pub mod resources;
 pub mod result;
