@@ -1,6 +1,6 @@
 use crate::{
-    analytics_tools::AnalyticsTools, client::BeaconClient, extra_tools::ExtraTools, packet_tools::PacketTools,
-    routing_tools::RoutingTools, subscriptions::Live, tools::CoreTools,
+    analytics_tools::AnalyticsTools, client::BeaconClient, extra_tools::ExtraTools,
+    packet_tools::PacketTools, routing_tools::RoutingTools, subscriptions::Live, tools::CoreTools,
 };
 use axum::{Router, middleware, routing::get};
 use rmcp::{
@@ -396,7 +396,9 @@ impl ServerHandler for BeaconServer {
                 .is_some_and(|text| crate::packet_tools::timestamp(text).is_err())
         });
         let result = match if self.extra_tools.definition(request.name.as_ref()).is_some() {
-            self.extra_tools.execute(request.name.as_ref(), request.arguments).await
+            self.extra_tools
+                .execute(request.name.as_ref(), request.arguments)
+                .await
         } else if self
             .analytics_tools
             .definition(request.name.as_ref())
