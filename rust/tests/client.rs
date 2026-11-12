@@ -355,7 +355,10 @@ async fn additional_unpaged_api_arrays_stop_without_buffering_full_body() {
     let (client, server) = mock(|req: Request<Body>| {
         assert_eq!(req.uri().path(), "/api/v1/stats/node-types");
         let item = r#"{"nodeType":2,"nodeTypeName":"repeater","count":1}"#;
-        response(StatusCode::OK, format!("[{}]", vec![item; 150_000].join(",")))
+        response(
+            StatusCode::OK,
+            format!("[{}]", vec![item; 150_000].join(",")),
+        )
     })
     .await;
     let result = client
