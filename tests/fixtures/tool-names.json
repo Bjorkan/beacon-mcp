@@ -47,5 +47,7 @@
   "beacon_get_signal_stats",
   "beacon_get_top_nodes",
   "beacon_get_top_observers",
-  "beacon_get_top_talkers"
+  "beacon_get_top_talkers",
+  "beacon_diagnose_node",
+  "beacon_compare_regions"
 ]
