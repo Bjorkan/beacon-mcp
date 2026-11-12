@@ -73,12 +73,12 @@ fn operation(name: &str) -> Option<(Operation, Shape)> {
         "beacon_get_route_observations" => (RouteObservations, Object),
         "beacon_get_scope" => (ScopeDetail, Object),
         "beacon_get_clock_drift" => (ClockDrift, Array),
-        "beacon_get_node_types" => (NodeTypes, Object),
-        "beacon_get_observation_stats" => (ObservationStats, Object),
+        "beacon_get_node_types" => (NodeTypes, Array),
+        "beacon_get_observation_stats" => (ObservationStats, Array),
         "beacon_get_path_stats" => (PathStats, Object),
-        "beacon_get_payload_breakdown" => (PayloadBreakdown, Object),
-        "beacon_get_radio_presets" => (RadioPresets, Object),
-        "beacon_get_scope_stats" => (ScopeStats, Object),
+        "beacon_get_payload_breakdown" => (PayloadBreakdown, Array),
+        "beacon_get_radio_presets" => (RadioPresets, Array),
+        "beacon_get_scope_stats" => (ScopeStats, Array),
         "beacon_get_signal_stats" => (SignalStats, Object),
         "beacon_get_top_nodes" => (TopNodes, Array),
         "beacon_get_top_observers" => (TopObservers, Array),
@@ -247,7 +247,12 @@ impl ExtraTools {
             return Err(invalid("since must be before until"));
         }
         // The Beacon server applies a hard page cap, but this gateway is stricter.
-        if properties.contains_key("limit") {
+        if properties.contains_key("limit")
+            && !matches!(op, Operation::Brokers | Operation::NodeNeighbors
+                | Operation::NodeTypes | Operation::ObservationStats
+                | Operation::PayloadBreakdown | Operation::RadioPresets
+                | Operation::ScopeStats)
+        {
             query.push(("limit", limit.to_string()));
         }
         let response = self.client.request(op, identifier.as_deref(), &query).await?;
@@ -255,7 +260,10 @@ impl ExtraTools {
             Shape::Page => {
                 let mut result = page(response.clone(), limit as usize, false)?;
                 if name == "beacon_list_observer_directory" {
-                    for key in ["windowStart", "windowEnd", "coverage", "sort", "order"] {
+                    for key in [
+                        "windowStart", "windowEnd", "coverage", "sort", "effectiveSort",
+                        "generatedAt", "maxObservationCount", "observerTypes",
+                    ] {
                         if let Some(value) = response.get(key) {
                             result[key] = value.clone();
                         }
