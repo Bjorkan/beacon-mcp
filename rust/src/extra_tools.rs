@@ -92,7 +92,9 @@ fn duration(value: &str) -> Result<(), GatewayError> {
     let amount: u32 = amount.parse().map_err(|_| invalid("invalid duration"))?;
     let minutes = match unit {
         "m" => amount,
-        "h" => amount.checked_mul(60).ok_or_else(|| invalid("invalid duration"))?,
+        "h" => amount
+            .checked_mul(60)
+            .ok_or_else(|| invalid("invalid duration"))?,
         _ => return Err(invalid("duration must use whole minutes or hours")),
     };
     if minutes == 0 || minutes > 43_200 {
@@ -115,7 +117,10 @@ impl ExtraTools {
     }
 
     pub fn list(&self) -> Vec<Tool> {
-        NAMES.iter().filter_map(|name| self.definition(name)).collect()
+        NAMES
+            .iter()
+            .filter_map(|name| self.definition(name))
+            .collect()
     }
 
     pub fn definition(&self, name: &str) -> Option<Tool> {
@@ -129,7 +134,9 @@ impl ExtraTools {
         arguments: Option<JsonObject>,
     ) -> Result<Value, GatewayError> {
         let (op, shape) = operation(name).ok_or_else(|| invalid("unknown Beacon tool"))?;
-        let definition = self.definition(name).ok_or_else(|| invalid("unknown Beacon tool"))?;
+        let definition = self
+            .definition(name)
+            .ok_or_else(|| invalid("unknown Beacon tool"))?;
         let raw = arguments.unwrap_or_default();
         let properties = definition.input_schema["properties"]
             .as_object()
@@ -137,7 +144,11 @@ impl ExtraTools {
         if raw.keys().any(|key| !properties.contains_key(key)) {
             return Err(invalid("unknown filter"));
         }
-        for required in definition.input_schema["required"].as_array().into_iter().flatten() {
+        for required in definition.input_schema["required"]
+            .as_array()
+            .into_iter()
+            .flatten()
+        {
             if let Some(key) = required.as_str() {
                 if !raw.contains_key(key) {
                     return Err(invalid(format!("missing {key}")));
@@ -150,11 +161,15 @@ impl ExtraTools {
             return Err(invalid("mutually exclusive location filters"));
         }
         if name == "beacon_get_route_observations" {
-            if raw.contains_key("range") && (raw.contains_key("since")
-                || raw.contains_key("until") || raw.contains_key("pageCursor"))
+            if raw.contains_key("range")
+                && (raw.contains_key("since")
+                    || raw.contains_key("until")
+                    || raw.contains_key("pageCursor"))
                 || raw.contains_key("since") != raw.contains_key("until")
             {
-                return Err(invalid("range is exclusive with the explicit window and cursor; since and until must be paired"));
+                return Err(invalid(
+                    "range is exclusive with the explicit window and cursor; since and until must be paired",
+                ));
             }
         }
         let limit = match raw.get("limit") {
@@ -166,18 +181,30 @@ impl ExtraTools {
         }
 
         let identifier = match op {
-            Operation::ChannelDetail | Operation::RegionDetail
-            | Operation::IataDetail | Operation::IataBorder
-            | Operation::NodeActivity | Operation::NodeNeighbors
-            | Operation::NodeObservations | Operation::ObserverAdverts
-            | Operation::ObserverTelemetry | Operation::ScopeDetail => {
-                Some(raw.get("id").and_then(Value::as_str)
-                    .ok_or_else(|| invalid("id must be a string"))?.to_owned())
-            }
+            Operation::ChannelDetail
+            | Operation::RegionDetail
+            | Operation::IataDetail
+            | Operation::IataBorder
+            | Operation::NodeActivity
+            | Operation::NodeNeighbors
+            | Operation::NodeObservations
+            | Operation::ObserverAdverts
+            | Operation::ObserverTelemetry
+            | Operation::ScopeDetail => Some(
+                raw.get("id")
+                    .and_then(Value::as_str)
+                    .ok_or_else(|| invalid("id must be a string"))?
+                    .to_owned(),
+            ),
             Operation::RouteObservations => {
-                let code = iata(raw.get("iata").and_then(Value::as_str)
-                    .ok_or_else(|| invalid("missing route IATA"))?)?;
-                let hash = raw.get("pathKey").and_then(Value::as_str)
+                let code = iata(
+                    raw.get("iata")
+                        .and_then(Value::as_str)
+                        .ok_or_else(|| invalid("missing route IATA"))?,
+                )?;
+                let hash = raw
+                    .get("pathKey")
+                    .and_then(Value::as_str)
                     .ok_or_else(|| invalid("missing pathKey"))?;
                 Some(format!("{code}:{hash}"))
             }
@@ -187,7 +214,9 @@ impl ExtraTools {
         let mut start = None;
         let mut end = None;
         for (key, value) in &raw {
-            if key == "id" || key == "pathKey" || key == "limit"
+            if key == "id"
+                || key == "pathKey"
+                || key == "limit"
                 || key == "iata" && name == "beacon_get_route_observations"
             {
                 continue;
@@ -198,14 +227,21 @@ impl ExtraTools {
                     if codes.is_empty() || codes.len() > 20 {
                         return Err(invalid("iatas must contain 1-20 values"));
                     }
-                    codes.iter().map(|code| {
-                        iata(code.as_str().ok_or_else(|| invalid("invalid IATA"))?)
-                    }).collect::<Result<Vec<_>, _>>()?.join(",")
+                    codes
+                        .iter()
+                        .map(|code| iata(code.as_str().ok_or_else(|| invalid("invalid IATA"))?))
+                        .collect::<Result<Vec<_>, _>>()?
+                        .join(",")
                 }
                 "iata" => iata(value.as_str().ok_or_else(|| invalid("invalid iata"))?)?,
                 "since" | "until" => {
-                    let ms = timestamp(value.as_str().ok_or_else(|| invalid("invalid timestamp"))?)?;
-                    if key == "since" { start = Some(ms); } else { end = Some(ms); }
+                    let ms =
+                        timestamp(value.as_str().ok_or_else(|| invalid("invalid timestamp"))?)?;
+                    if key == "since" {
+                        start = Some(ms);
+                    } else {
+                        end = Some(ms);
+                    }
                     ms.to_string()
                 }
                 "range" => {
@@ -213,8 +249,8 @@ impl ExtraTools {
                     duration(text)?;
                     text.to_owned()
                 }
-                "cursor" | "afterId" | "afterObservationId" | "regionId"
-                | "payloadType" | "routeType" => {
+                "cursor" | "afterId" | "afterObservationId" | "regionId" | "payloadType"
+                | "routeType" => {
                     let number = value.as_u64().ok_or_else(|| invalid("invalid integer"))?;
                     if number > 9_007_199_254_740_991
                         || key == "regionId" && (number == 0 || number > i32::MAX as u64)
@@ -225,10 +261,16 @@ impl ExtraTools {
                     }
                     number.to_string()
                 }
-                "keyKnown" => value.as_bool().ok_or_else(|| invalid("invalid boolean"))?.to_string(),
+                "keyKnown" => value
+                    .as_bool()
+                    .ok_or_else(|| invalid("invalid boolean"))?
+                    .to_string(),
                 _ => {
-                    let text = value.as_str().ok_or_else(|| invalid("invalid text filter"))?;
-                    if text.trim().is_empty() || text.len() > 512
+                    let text = value
+                        .as_str()
+                        .ok_or_else(|| invalid("invalid text filter"))?;
+                    if text.trim().is_empty()
+                        || text.len() > 512
                         || text.chars().any(char::is_control)
                     {
                         return Err(invalid("invalid text filter"));
@@ -248,21 +290,36 @@ impl ExtraTools {
         }
         // The Beacon server applies a hard page cap, but this gateway is stricter.
         if properties.contains_key("limit")
-            && !matches!(op, Operation::Brokers | Operation::NodeNeighbors
-                | Operation::NodeTypes | Operation::ObservationStats
-                | Operation::PayloadBreakdown | Operation::RadioPresets
-                | Operation::ScopeStats)
+            && !matches!(
+                op,
+                Operation::Brokers
+                    | Operation::NodeNeighbors
+                    | Operation::NodeTypes
+                    | Operation::ObservationStats
+                    | Operation::PayloadBreakdown
+                    | Operation::RadioPresets
+                    | Operation::ScopeStats
+            )
         {
             query.push(("limit", limit.to_string()));
         }
-        let response = self.client.request(op, identifier.as_deref(), &query).await?;
+        let response = self
+            .client
+            .request(op, identifier.as_deref(), &query)
+            .await?;
         match shape {
             Shape::Page => {
                 let mut result = page(response.clone(), limit as usize, false)?;
                 if name == "beacon_list_observer_directory" {
                     for key in [
-                        "windowStart", "windowEnd", "coverage", "sort", "effectiveSort",
-                        "generatedAt", "maxObservationCount", "observerTypes",
+                        "windowStart",
+                        "windowEnd",
+                        "coverage",
+                        "sort",
+                        "effectiveSort",
+                        "generatedAt",
+                        "maxObservationCount",
+                        "observerTypes",
                     ] {
                         if let Some(value) = response.get(key) {
                             result[key] = value.clone();
@@ -294,7 +351,10 @@ impl ExtraTools {
                     // A few aggregation endpoints legitimately return arrays.
                     Ok(json!({"items":items}))
                 } else {
-                    Err(GatewayError::new(ErrorCode::Unavailable, "Beacon returned an invalid result"))
+                    Err(GatewayError::new(
+                        ErrorCode::Unavailable,
+                        "Beacon returned an invalid result",
+                    ))
                 }
             }
         }
