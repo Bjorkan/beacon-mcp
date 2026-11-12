@@ -32,13 +32,13 @@ async fn mock() -> (
                 let uri = request.uri().to_string();
                 seen.lock().unwrap().push(uri.clone());
                 let body = if uri.contains("/nodes/") && uri.contains("/activity") {
-                    json!({"range":"48h","points":[{"t":1762819200000,"observations":2}],
-                        "summary":{"observations":2},"windowStart":1762819200000})
+                    json!({"range":"48h","points":[{"t":1762819200000_i64,"observations":2}],
+                        "summary":{"observations":2},"windowStart":1762819200000_i64})
                 } else if uri.contains("/nodes/") && uri.contains("/observations") {
                     json!({"items":[{"id":9},{"id":8}],"hasMore":true,"nextCursor":8})
                 } else if uri.contains("/observers/directory") {
                     json!({"items":[{"id":ID,"observationCount":100}],"hasMore":true,
-                        "nextCursor":123,"windowStart":1234567890000,"windowEnd":1234567990000,
+                        "nextCursor":123,"windowStart":1234567890000_i64,"windowEnd":1234567990000_i64,
                         "coverage":{"complete":true},"maxObservationCount":100,
                         "effectiveSort":"traffic","observerTypes":["mqtt"]})
                 } else if uri.contains("/routes/") && uri.contains("/observations") {
