@@ -35,7 +35,7 @@ struct Args {
     region_id: Option<u32>,
     scope: Option<String>,
     name: Option<String>,
-    r#type: Option<Value>,
+    r#type: Option<NodeOrObserverType>,
     type_name: Option<String>,
     pubkey: Option<String>,
     pubkey_prefix: Option<String>,
@@ -49,6 +49,13 @@ struct Args {
     range: Option<String>,
     interval: Option<String>,
     until: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum NodeOrObserverType {
+    Node(u32),
+    Observer(String),
 }
 
 fn invalid(message: impl Into<String>) -> GatewayError {
@@ -103,8 +110,20 @@ fn fields(name: &str) -> Option<&'static [&'static str]> {
 /// Frozen tool contract including descriptions, input/output schemas and hints.
 /// Runtime and CI parse this checked-in data without a separate schema generator.
 pub(crate) fn tool_definition(document: &str, name: &str) -> Option<Tool> {
-    let definitions: Value = serde_json::from_str(document).expect("valid frozen tool definitions");
-    serde_json::from_value(definitions.get(name)?.clone()).ok()
+    let definitions: Value = match serde_json::from_str(document) {
+        Ok(value) => value,
+        Err(_) => {
+            tracing::error!(tool = name, "Invalid frozen tool definitions document");
+            return None;
+        }
+    };
+    match serde_json::from_value(definitions.get(name)?.clone()) {
+        Ok(tool) => Some(tool),
+        Err(_) => {
+            tracing::error!(tool = name, "Invalid frozen tool definition");
+            None
+        }
+    }
 }
 
 impl CoreTools {
@@ -207,11 +226,11 @@ impl CoreTools {
             return Err(invalid("invalid text filter"));
         }
         if let Some(kind) = args.r#type.as_ref() {
-            let valid = match name {
-                "beacon_search_nodes" => kind.as_u64().is_some_and(|n| (1..=4).contains(&n)),
-                "beacon_search_observers" => kind
-                    .as_str()
-                    .is_some_and(|text| !text.trim().is_empty() && text.len() <= 128),
+            let valid = match (name, kind) {
+                ("beacon_search_nodes", NodeOrObserverType::Node(n)) => (1..=4).contains(n),
+                ("beacon_search_observers", NodeOrObserverType::Observer(text)) => {
+                    !text.trim().is_empty() && text.len() <= 128
+                }
                 _ => false,
             };
             if !valid {
@@ -272,11 +291,9 @@ impl CoreTools {
         put("name", args.name);
         put(
             "type",
-            args.r#type.map(|value| {
-                value
-                    .as_str()
-                    .map(str::to_owned)
-                    .unwrap_or_else(|| value.to_string())
+            args.r#type.map(|value| match value {
+                NodeOrObserverType::Node(value) => value.to_string(),
+                NodeOrObserverType::Observer(value) => value,
             }),
         );
         put("typeName", args.type_name);
@@ -446,4 +463,11 @@ pub(crate) fn page(value: Value, limit: usize, include_sort: bool) -> Result<Val
         }
     }
     Ok(result)
+}
+
+#[cfg(test)]
+#[test]
+fn malformed_frozen_definitions_do_not_panic() {
+    assert!(tool_definition("{", "broken").is_none());
+    assert!(tool_definition(r#"{"broken":{"invalid":true}}"#, "broken").is_none());
 }
