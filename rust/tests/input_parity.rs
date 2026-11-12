@@ -17,7 +17,8 @@ async fn negative_input_results_match_previous_gateway() {
         "http://127.0.0.1:9/".parse().unwrap(),
         Duration::from_millis(100),
         Duration::from_millis(100),
-    ).expect("HTTP client configuration");
+    )
+    .expect("HTTP client configuration");
     let app = server::router(token.clone(), client);
     let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     let http = reqwest::Client::new();

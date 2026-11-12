@@ -12,7 +12,8 @@ async fn legacy_protocol_negotiates_without_session_and_does_not_filter_public_h
         "http://127.0.0.1:9/".parse().unwrap(),
         Duration::from_secs(1),
         Duration::from_secs(1),
-    ).expect("HTTP client configuration");
+    )
+    .expect("HTTP client configuration");
     let app = server::router(shutdown.clone(), client);
     let server = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     let http = reqwest::Client::new();

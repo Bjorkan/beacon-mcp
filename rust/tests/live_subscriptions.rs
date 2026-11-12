@@ -113,7 +113,8 @@ async fn websocket_uses_fresh_ticket_and_dispatches_only_valid_events() {
         base.parse().unwrap(),
         Duration::from_secs(1),
         Duration::from_secs(1),
-    ).expect("HTTP client configuration");
+    )
+    .expect("HTTP client configuration");
     let bridge_task = tokio::spawn(bridge(client, ws.parse().unwrap(), live));
     let first = tokio::time::timeout(Duration::from_secs(3), events.recv())
         .await
@@ -229,7 +230,8 @@ async fn reconnect_fetches_new_ticket_and_legacy_404_connects_without_one() {
             base.parse().unwrap(),
             Duration::from_secs(1),
             Duration::from_secs(1),
-        ).expect("HTTP client configuration");
+        )
+        .expect("HTTP client configuration");
         let task = tokio::spawn(bridge(client, ws.parse().unwrap(), live));
         for _ in 0..2 {
             assert_eq!(
@@ -291,7 +293,8 @@ async fn oversized_upstream_frame_is_closed_before_delivery() {
         base.parse().unwrap(),
         Duration::from_secs(1),
         Duration::from_secs(1),
-    ).expect("HTTP client configuration");
+    )
+    .expect("HTTP client configuration");
     let task = tokio::spawn(bridge(client, ws_url.parse().unwrap(), live));
     tokio::time::timeout(Duration::from_secs(3), mock)
         .await
@@ -353,7 +356,8 @@ async fn listen_sends_ack_and_only_matching_uri_then_cleans_up_on_shutdown() {
         "http://127.0.0.1:9/".parse().unwrap(),
         Duration::from_secs(1),
         Duration::from_secs(1),
-    ).expect("HTTP client configuration");
+    )
+    .expect("HTTP client configuration");
     let app = server::router_with_live(shutdown.clone(), client, Some(live.clone()));
     let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     let http = reqwest::Client::new();
@@ -404,7 +408,8 @@ async fn stream_permits_are_bounded_and_released_on_disconnect() {
         "http://127.0.0.1:9/".parse().unwrap(),
         Duration::from_secs(1),
         Duration::from_secs(1),
-    ).expect("HTTP client configuration");
+    )
+    .expect("HTTP client configuration");
     let task = tokio::spawn({
         let app = server::router_with_live(shutdown.clone(), client, Some(live.clone()));
         async move { axum::serve(listener, app).await.unwrap() }
@@ -447,7 +452,8 @@ async fn disabled_does_not_advertise_subscriptions_or_accept_listen() {
         "http://127.0.0.1:9/".parse().unwrap(),
         Duration::from_secs(1),
         Duration::from_secs(1),
-    ).expect("HTTP client configuration");
+    )
+    .expect("HTTP client configuration");
     let task = tokio::spawn({
         let app = server::router(shutdown.clone(), client);
         async move { axum::serve(listener, app).await.unwrap() }
@@ -492,7 +498,8 @@ async fn legacy_initialize_does_not_advertise_resource_subscribe() {
         "http://127.0.0.1:9/".parse().unwrap(),
         Duration::from_secs(1),
         Duration::from_secs(1),
-    ).expect("HTTP client configuration");
+    )
+    .expect("HTTP client configuration");
     let task = tokio::spawn({
         let app = server::router_with_live(shutdown.clone(), client, Some(live));
         async move { axum::serve(listener, app).await.unwrap() }
