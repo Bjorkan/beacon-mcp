@@ -15,7 +15,11 @@ use tokio_util::sync::CancellationToken;
 
 const NODE: &str = "123e4567-e89b-42d3-a456-426614174000";
 
-async fn mock() -> (CompositeTools, Arc<Mutex<Vec<String>>>, tokio::task::JoinHandle<()>) {
+async fn mock() -> (
+    CompositeTools,
+    Arc<Mutex<Vec<String>>>,
+    tokio::task::JoinHandle<()>,
+) {
     let paths = Arc::new(Mutex::new(Vec::new()));
     let app = Router::new().fallback(get({
         let paths = paths.clone();
@@ -102,11 +106,23 @@ async fn composite_inputs_are_checked_before_network() {
     let (tools, seen, task) = mock().await;
     for (name, input) in [
         ("beacon_diagnose_node", json!({"id":"../admin"})),
-        ("beacon_diagnose_node", json!({"id":NODE,"neighborLimit":21})),
+        (
+            "beacon_diagnose_node",
+            json!({"id":NODE,"neighborLimit":21}),
+        ),
         ("beacon_diagnose_node", json!({"id":NODE,"range":"800h"})),
-        ("beacon_compare_regions", json!({"iataA":"arn","iataB":"arn"})),
-        ("beacon_compare_regions", json!({"iataA":"ARN/..","iataB":"MMX"})),
-        ("beacon_compare_regions", json!({"iataA":"ARN","iataB":"MMX","unexpected":"x"})),
+        (
+            "beacon_compare_regions",
+            json!({"iataA":"arn","iataB":"arn"}),
+        ),
+        (
+            "beacon_compare_regions",
+            json!({"iataA":"ARN/..","iataB":"MMX"}),
+        ),
+        (
+            "beacon_compare_regions",
+            json!({"iataA":"ARN","iataB":"MMX","unexpected":"x"}),
+        ),
     ] {
         assert!(tools.execute(name, args(input)).await.is_err(), "{name}");
     }
