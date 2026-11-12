@@ -50,6 +50,32 @@ pub enum Operation {
     Overview,
     Series,
     ObserverComparison,
+    Brokers,
+    ChannelDetail,
+    IataDetail,
+    IataBorder,
+    MessagesBackfill,
+    NodeActivity,
+    NodeNeighbors,
+    NodeObservations,
+    ObserverAdverts,
+    ObserverTelemetry,
+    ObserverDirectory,
+    PacketsBackfill,
+    RegionDetail,
+    RouteObservations,
+    ScopeDetail,
+    ClockDrift,
+    NodeTypes,
+    ObservationStats,
+    PathStats,
+    PayloadBreakdown,
+    RadioPresets,
+    ScopeStats,
+    SignalStats,
+    TopNodes,
+    TopObservers,
+    TopTalkers,
 }
 
 impl Operation {
@@ -80,13 +106,56 @@ impl Operation {
             Overview => ("stats/overview", ""),
             Series => ("stats/series", ""),
             ObserverComparison => ("stats/observer-comparison", ""),
+            Brokers => ("brokers", ""),
+            ChannelDetail => ("channels", "number"),
+            IataDetail => ("iatas", "iata"),
+            IataBorder => ("iatas", "iata/border"),
+            MessagesBackfill => ("messages/backfill", ""),
+            NodeActivity => ("nodes", "uuid/activity"),
+            NodeNeighbors => ("nodes", "uuid/neighbors"),
+            NodeObservations => ("nodes", "uuid/observations"),
+            ObserverAdverts => ("observers", "uuid/adverts"),
+            ObserverTelemetry => ("observers", "uuid/telemetry"),
+            ObserverDirectory => ("observers/directory", ""),
+            PacketsBackfill => ("packets/backfill", ""),
+            RegionDetail => ("regions", "number"),
+            RouteObservations => ("routes", "route"),
+            ScopeDetail => ("scopes", "scope"),
+            ClockDrift => ("stats/clock-drift", ""),
+            NodeTypes => ("stats/node-types", ""),
+            ObservationStats => ("stats/observations", ""),
+            PathStats => ("stats/paths", ""),
+            PayloadBreakdown => ("stats/payload-breakdown", ""),
+            RadioPresets => ("stats/radio-presets", ""),
+            ScopeStats => ("stats/scopes", ""),
+            SignalStats => ("stats/signal", ""),
+            TopNodes => ("stats/top-nodes", ""),
+            TopObservers => ("stats/top-observers", ""),
+            TopTalkers => ("stats/top-talkers", ""),
         }
     }
 
     fn expensive(self) -> bool {
         matches!(
             self,
-            Self::Overview | Self::Series | Self::ObserverComparison | Self::CrossRoutes
+            Self::Overview
+                | Self::Series
+                | Self::ObserverComparison
+                | Self::CrossRoutes
+                | Self::NodeActivity
+                | Self::ObserverDirectory
+                | Self::RouteObservations
+                | Self::ClockDrift
+                | Self::NodeTypes
+                | Self::ObservationStats
+                | Self::PathStats
+                | Self::PayloadBreakdown
+                | Self::RadioPresets
+                | Self::ScopeStats
+                | Self::SignalStats
+                | Self::TopNodes
+                | Self::TopObservers
+                | Self::TopTalkers
         )
     }
 }
@@ -179,7 +248,8 @@ impl BeaconClient {
                 GatewayError::new(ErrorCode::InvalidArgument, "missing identifier")
             })?;
             let (value, suffix) = match kind {
-                "uuid" | "uuid/activity" => (
+                "uuid" | "uuid/activity" | "uuid/neighbors" | "uuid/observations"
+                | "uuid/adverts" | "uuid/telemetry" => (
                     {
                         let uuid = uuid::Uuid::parse_str(id).map_err(|_| {
                             GatewayError::new(ErrorCode::InvalidArgument, "invalid UUID")
@@ -196,11 +266,7 @@ impl BeaconClient {
                         }
                         uuid.to_string()
                     },
-                    if kind == "uuid/activity" {
-                        Some("activity")
-                    } else {
-                        None
-                    },
+                    kind.split_once('/').map(|(_, suffix)| suffix),
                 ),
                 "hash" if id.len() == 16 && id.bytes().all(|c| c.is_ascii_hexdigit()) => {
                     (id.to_ascii_lowercase(), None)
@@ -208,12 +274,54 @@ impl BeaconClient {
                 "tag" if id.len() == 8 && id.bytes().all(|c| c.is_ascii_hexdigit()) => {
                     (id.to_ascii_lowercase(), None)
                 }
-                "number/messages"
+                "number" | "number/messages"
                     if id
                         .parse::<u32>()
                         .is_ok_and(|n| n > 0 && n <= i32::MAX as u32) =>
                 {
-                    (id.to_owned(), Some("messages"))
+                    (id.to_owned(), kind.split_once('/').map(|(_, suffix)| suffix))
+                }
+                "iata" | "iata/border"
+                    if id.len() == 3 && id.bytes().all(|b| b.is_ascii_alphanumeric()) =>
+                {
+                    (id.to_ascii_uppercase(), kind.split_once('/').map(|(_, suffix)| suffix))
+                }
+                "scope"
+                    if !id.trim().is_empty()
+                        && id.len() <= 128
+                        && !id.chars().any(char::is_control) =>
+                {
+                    (id.to_owned(), None)
+                }
+                "route" => {
+                    let (iata, path_key) = id.split_once(':').ok_or_else(|| {
+                        GatewayError::new(ErrorCode::InvalidArgument, "invalid route identifier")
+                    })?;
+                    if iata.len() != 3
+                        || !iata.bytes().all(|b| b.is_ascii_alphanumeric())
+                        || path_key.len() != 32
+                        || !path_key.bytes().all(|b| b.is_ascii_hexdigit())
+                    {
+                        return Err(GatewayError::new(
+                            ErrorCode::InvalidArgument, "invalid route identifier",
+                        ));
+                    }
+                    let mut segments = url.path_segments_mut().map_err(|_| {
+                        GatewayError::new(ErrorCode::InvalidArgument, "invalid Beacon path")
+                    })?;
+                    segments.push(&iata.to_ascii_uppercase());
+                    segments.push(&path_key.to_ascii_lowercase());
+                    segments.push("observations");
+                    drop(segments);
+                    if !query.is_empty() {
+                        url.query_pairs_mut().extend_pairs(
+                            query.iter().map(|(key, value)| (*key, value.as_str()))
+                        );
+                    }
+                    if url.as_str().len() > MAX_URL {
+                        return Err(GatewayError::new(ErrorCode::InvalidArgument, "Beacon request filters are too large"));
+                    }
+                    return Ok(url);
                 }
                 _ => {
                     return Err(GatewayError::new(
@@ -265,7 +373,7 @@ impl BeaconClient {
                 } else {
                     self.timeout
                 })
-                .header(reqwest::header::USER_AGENT, "beacon-mcp/2.1.1")
+                .header(reqwest::header::USER_AGENT, "beacon-mcp/2.2.0")
                 .send()
                 .await;
             let response = match response {
@@ -352,7 +460,7 @@ impl BeaconClient {
                 } else {
                     self.timeout
                 })
-                .header(reqwest::header::USER_AGENT, "beacon-mcp/2.1.1")
+                .header(reqwest::header::USER_AGENT, "beacon-mcp/2.2.0")
                 .send()
                 .await;
             let response = match response {
