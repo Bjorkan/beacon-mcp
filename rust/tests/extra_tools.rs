@@ -51,16 +51,21 @@ async fn mock() -> (
                 } else {
                     json!({"result":"ok"})
                 };
-                Response::builder().status(StatusCode::OK)
-                    .body(Body::from(body.to_string())).unwrap()
+                Response::builder()
+                    .status(StatusCode::OK)
+                    .body(Body::from(body.to_string()))
+                    .unwrap()
             }
         }
     }));
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let url = format!("http://{}/", listener.local_addr().unwrap());
     let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
-    let client = BeaconClient::new(url.parse().unwrap(),
-        Duration::from_secs(2), Duration::from_secs(2));
+    let client = BeaconClient::new(
+        url.parse().unwrap(),
+        Duration::from_secs(2),
+        Duration::from_secs(2),
+    );
     (ExtraTools::new(client), seen, task)
 }
 
@@ -70,8 +75,11 @@ fn args(value: Value) -> Option<serde_json::Map<String, Value>> {
 
 #[test]
 fn frozen_discovery_has_all_additional_tools_and_read_only_hints() {
-    let client = BeaconClient::new("http://127.0.0.1:9/".parse().unwrap(),
-        Duration::from_secs(1), Duration::from_secs(1));
+    let client = BeaconClient::new(
+        "http://127.0.0.1:9/".parse().unwrap(),
+        Duration::from_secs(1),
+        Duration::from_secs(1),
+    );
     let tools = ExtraTools::new(client);
     let listed = tools.list();
     assert_eq!(listed.len(), 26);
@@ -93,11 +101,21 @@ fn frozen_discovery_has_all_additional_tools_and_read_only_hints() {
 #[tokio::test]
 async fn node_activity_and_observation_cursors_route_exactly() {
     let (tools, seen, task) = mock().await;
-    let activity = tools.execute("beacon_get_node_activity",
-        args(json!({"id":ID,"range":"48h"}))).await.unwrap();
+    let activity = tools
+        .execute(
+            "beacon_get_node_activity",
+            args(json!({"id":ID,"range":"48h"})),
+        )
+        .await
+        .unwrap();
     assert_eq!(activity["points"][0]["observations"], 2);
-    let page = tools.execute("beacon_get_node_observations",
-        args(json!({"id":ID,"cursor":2_147_483_649_u64,"limit":1}))).await.unwrap();
+    let page = tools
+        .execute(
+            "beacon_get_node_observations",
+            args(json!({"id":ID,"cursor":2_147_483_649_u64,"limit":1})),
+        )
+        .await
+        .unwrap();
     assert_eq!(page["items"].as_array().unwrap().len(), 1);
     assert_eq!(page["pagination"]["nextCursor"]["cursor"], 8);
     let paths = seen.lock().unwrap();
@@ -111,22 +129,30 @@ async fn node_activity_and_observation_cursors_route_exactly() {
 #[tokio::test]
 async fn route_evidence_uses_fixed_validated_path_segments() {
     let (tools, seen, task) = mock().await;
-    let evidence = tools.execute("beacon_get_route_observations",
-        args(json!({"iata":"arn","pathKey":PATH_KEY,"range":"24h","limit":5})))
-        .await.unwrap();
+    let evidence = tools
+        .execute(
+            "beacon_get_route_observations",
+            args(json!({"iata":"arn","pathKey":PATH_KEY,"range":"24h","limit":5})),
+        )
+        .await
+        .unwrap();
     assert_eq!(evidence["matchAvailable"], true);
-    assert!(seen.lock().unwrap()[0].starts_with(&format!(
-        "/api/v1/routes/ARN/{PATH_KEY}/observations?"
-    )));
+    assert!(
+        seen.lock().unwrap()[0]
+            .starts_with(&format!("/api/v1/routes/ARN/{PATH_KEY}/observations?"))
+    );
     for bad in [
         json!({"iata":"ARN","pathKey":"../../admin"}),
         json!({"iata":"../","pathKey":PATH_KEY}),
         json!({"iata":"ARN","pathKey":PATH_KEY,"range":"24h",
-            "since":"2026-11-01T00:00:00Z","until":"2026-11-02T00:00:00Z"})
+            "since":"2026-11-01T00:00:00Z","until":"2026-11-02T00:00:00Z"}),
     ] {
         assert_eq!(
-            tools.execute("beacon_get_route_observations", args(bad))
-                .await.unwrap_err().code,
+            tools
+                .execute("beacon_get_route_observations", args(bad))
+                .await
+                .unwrap_err()
+                .code,
             ErrorCode::InvalidArgument
         );
     }
@@ -137,14 +163,27 @@ async fn route_evidence_uses_fixed_validated_path_segments() {
 #[tokio::test]
 async fn backfill_and_unpaged_aggregations_are_bounded_and_preserve_ids() {
     let (tools, seen, task) = mock().await;
-    let page = tools.execute("beacon_backfill_packets",
-        args(json!({"afterObservationId":2_147_483_649_u64,"limit":1,
-            "iatas":["arn","mmx"]}))).await.unwrap();
+    let page = tools
+        .execute(
+            "beacon_backfill_packets",
+            args(json!({"afterObservationId":2_147_483_649_u64,"limit":1,
+            "iatas":["arn","mmx"]})),
+        )
+        .await
+        .unwrap();
     assert_eq!(page["items"].as_array().unwrap().len(), 1);
-    let types = tools.execute("beacon_get_node_types",
-        args(json!({"region":"sverige","limit":1}))).await.unwrap();
+    let types = tools
+        .execute(
+            "beacon_get_node_types",
+            args(json!({"region":"sverige","limit":1})),
+        )
+        .await
+        .unwrap();
     assert_eq!(types["items"].as_array().unwrap().len(), 1);
-    assert_eq!(types["pagination"], json!({"hasMore":false,"truncated":true}));
+    assert_eq!(
+        types["pagination"],
+        json!({"hasMore":false,"truncated":true})
+    );
     let paths = seen.lock().unwrap();
     assert!(paths[0].contains("afterObservationId=2147483649"));
     assert!(paths[0].contains("iatas=ARN%2CMMX"));
@@ -156,11 +195,16 @@ async fn backfill_and_unpaged_aggregations_are_bounded_and_preserve_ids() {
 #[tokio::test]
 async fn directory_preserves_window_and_coverage_on_continuation() {
     let (tools, seen, task) = mock().await;
-    let data = tools.execute("beacon_list_observer_directory",
-        args(json!({"limit":1,"sort":"traffic",
+    let data = tools
+        .execute(
+            "beacon_list_observer_directory",
+            args(json!({"limit":1,"sort":"traffic",
             "since":"2026-11-01T00:00:00Z",
             "until":"2026-11-02T00:00:00Z",
-            "cursor":12}))).await.unwrap();
+            "cursor":12})),
+        )
+        .await
+        .unwrap();
     assert_eq!(data["pagination"]["nextCursor"]["cursor"], 123);
     assert_eq!(data["windowStart"], 1_234_567_890_000_u64);
     assert_eq!(data["maxObservationCount"], 100);
