@@ -165,7 +165,11 @@ async fn prompts_are_discoverable_and_render_without_upstream_calls() {
         .json()
         .await
         .unwrap();
-    assert_eq!(list["result"]["prompts"].as_array().unwrap().len(), 3, "{list}");
+    assert_eq!(
+        list["result"]["prompts"].as_array().unwrap().len(),
+        3,
+        "{list}"
+    );
     for (name, arguments) in [
         ("beacon_node_diagnostics", json!({"id":NODE})),
         (
