@@ -144,7 +144,8 @@ impl ExtraTools {
         if raw.keys().any(|key| !properties.contains_key(key)) {
             return Err(invalid("unknown filter"));
         }
-        for required in definition.input_schema
+        for required in definition
+            .input_schema
             .get("required")
             .and_then(Value::as_array)
             .into_iter()
