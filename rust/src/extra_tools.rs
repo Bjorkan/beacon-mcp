@@ -304,6 +304,23 @@ impl ExtraTools {
         {
             query.push(("limit", limit.to_string()));
         }
+        // Unpaged public APIs can return large arrays: stop downloading after
+        // one extra item rather than buffering and parsing the full response.
+        if matches!(shape, Shape::Array) {
+            let result = self
+                .client
+                .array_page_with_id(op, identifier.as_deref(), &query, limit as usize + 1)
+                .await?;
+            let truncated = !result.complete || result.items.len() > limit as usize;
+            let mut pagination = json!({"hasMore": false});
+            if truncated {
+                pagination["truncated"] = json!(true);
+            }
+            return Ok(json!({
+                "items": result.items.into_iter().take(limit as usize).collect::<Vec<_>>(),
+                "pagination": pagination
+            }));
+        }
         let response = self
             .client
             .request(op, identifier.as_deref(), &query)
@@ -329,20 +346,7 @@ impl ExtraTools {
                 }
                 Ok(result)
             }
-            Shape::Array => {
-                let values = response.as_array().ok_or_else(|| {
-                    GatewayError::new(ErrorCode::Unavailable, "Beacon returned invalid list")
-                })?;
-                let truncated = values.len() > limit as usize;
-                let mut pagination = json!({"hasMore": false});
-                if truncated {
-                    pagination["truncated"] = json!(true);
-                }
-                Ok(json!({
-                    "items": values.iter().take(limit as usize).collect::<Vec<_>>(),
-                    "pagination": pagination
-                }))
-            }
+            Shape::Array => unreachable!("array responses are streamed above"),
             Shape::Object => {
                 if response.is_null() {
                     Ok(json!({"available": false}))
