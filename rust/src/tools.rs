@@ -30,6 +30,7 @@ struct Args {
     cursor: Option<u64>,
     page_cursor: Option<String>,
     iatas: Option<Vec<String>>,
+    iata: Option<String>,
     region: Option<String>,
     region_id: Option<u32>,
     scope: Option<String>,
@@ -63,6 +64,7 @@ fn fields(name: &str) -> Option<&'static [&'static str]> {
             "limit",
             "cursor",
             "pageCursor",
+            "iata",
             "iatas",
             "region",
             "regionId",
@@ -83,6 +85,7 @@ fn fields(name: &str) -> Option<&'static [&'static str]> {
             "limit",
             "cursor",
             "pageCursor",
+            "iata",
             "iatas",
             "region",
             "regionId",
@@ -142,6 +145,9 @@ impl CoreTools {
         }
         if args.region.is_some() && args.region_id.is_some() {
             return Err(invalid("region and regionId are mutually exclusive"));
+        }
+        if args.iata.is_some() && args.iatas.is_some() {
+            return Err(invalid("iata and iatas are mutually exclusive"));
         }
         if args
             .region_id
@@ -236,6 +242,15 @@ impl CoreTools {
                 query.push((key, value));
             }
         };
+        if let Some(iata) = args.iata {
+            let normalized = iata.trim().to_ascii_uppercase();
+            if normalized.len() != 3
+                || !normalized.bytes().all(|byte| byte.is_ascii_alphanumeric())
+            {
+                return Err(invalid("invalid IATA code"));
+            }
+            put("iata", Some(normalized));
+        }
         if let Some(iatas) = args.iatas {
             if iatas.is_empty() || iatas.len() > 20 {
                 return Err(invalid("iatas must contain 1-20 codes"));
