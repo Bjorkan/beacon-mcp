@@ -221,7 +221,11 @@ pub struct ArrayPage {
 }
 
 impl BeaconClient {
-    pub fn new(base: Url, timeout: Duration, stats_timeout: Duration) -> Result<Self, reqwest::Error> {
+    pub fn new(
+        base: Url,
+        timeout: Duration,
+        stats_timeout: Duration,
+    ) -> Result<Self, reqwest::Error> {
         Ok(Self {
             http: Client::builder()
                 .redirect(reqwest::redirect::Policy::none())

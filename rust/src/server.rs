@@ -217,9 +217,8 @@ impl ServerHandler for BeaconServer {
         // rmcp 3.8 no longer lists 2024-10-07 among its built-in revisions,
         // but the existing gateway still serves its stateless initialize.
         if request.protocol_version.as_str() == "2024-10-07" {
-            info.protocol_version =
-                serde_json::from_str("\"2024-10-07\"")
-                    .map_err(|_| McpError::internal_error("Legacy protocol unavailable", None))?;
+            info.protocol_version = serde_json::from_str("\"2024-10-07\"")
+                .map_err(|_| McpError::internal_error("Legacy protocol unavailable", None))?;
         }
         // subscribe in the legacy capability means resources/subscribe, not
         // the modern subscriptions/listen stream supported by this gateway.

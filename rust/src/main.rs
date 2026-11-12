@@ -1,5 +1,8 @@
 #![forbid(unsafe_code)]
-#![cfg_attr(not(test), deny(clippy::unwrap_used, clippy::expect_used, clippy::panic))]
+#![cfg_attr(
+    not(test),
+    deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
+)]
 
 use beacon_mcp_rust::{
     client::BeaconClient,
@@ -28,8 +31,12 @@ fn healthcheck() -> bool {
         };
         for address in addresses {
             if let Ok(mut stream) = TcpStream::connect_timeout(&address, Duration::from_secs(1)) {
-                if stream.set_read_timeout(Some(Duration::from_secs(1))).is_err()
-                    || stream.set_write_timeout(Some(Duration::from_secs(1))).is_err()
+                if stream
+                    .set_read_timeout(Some(Duration::from_secs(1)))
+                    .is_err()
+                    || stream
+                        .set_write_timeout(Some(Duration::from_secs(1)))
+                        .is_err()
                 {
                     continue;
                 }

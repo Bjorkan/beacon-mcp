@@ -42,7 +42,8 @@ async fn public_gateway_does_not_advertise_or_accept_unimplemented_events() {
         "http://127.0.0.1:9/".parse().unwrap(),
         Duration::from_secs(1),
         Duration::from_secs(1),
-    ).expect("HTTP client configuration");
+    )
+    .expect("HTTP client configuration");
     let app = server::router(shutdown.clone(), client);
     let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     let http = reqwest::Client::new();
