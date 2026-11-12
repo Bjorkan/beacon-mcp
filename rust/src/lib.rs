@@ -1,6 +1,7 @@
 pub mod analytics_tools;
 pub mod client;
 pub mod config;
+pub mod extra_tools;
 pub mod packet_tools;
 pub mod request_logging;
 pub mod resources;

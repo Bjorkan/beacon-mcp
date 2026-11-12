@@ -22,6 +22,10 @@ features, or send messages.
 - “Which nodes sent the most direct adverts in my region?”
 - “Compare the packets heard by these two observers.”
 - “Show the details for this packet or trace.”
+- “Show hourly originated packet activity for this node over the last 48 hours.”
+- “Show observations originating from this node, then continue with the next cursor.”
+- “Which nodes have excessive clock drift, and which radio presets are used?”
+- “Compare received signal distributions, path statistics and active talkers.”
 
 Available results depend on the public data provided by the connected Beacon.
 
@@ -60,6 +64,15 @@ Streamable HTTP. Access rules, if any, are set by the service operator.
 Want to run the service, contribute, or understand the implementation? See
 [AGENTS.md](AGENTS.md) for setup, deployment, architecture, security, and test
 details.
+
+The gateway currently exposes **49 read-only MCP tools** covering the published
+Beacon Server **2.2.0** public REST GET API, including node activity,
+node-originated observations, neighbors, observer telemetry and adverts,
+broker status, regional metadata, route evidence and additional statistics.
+The WebSocket ticket is fetched internally for resource subscriptions and
+is not exposed as a user tool. Admin and write operations remain unavailable.
+Large unpaged arrays may be truncated to 50 results; narrow the filters
+for more precise answers.
 
 The gateway is built in Rust. For a local build, use
 `cargo test --manifest-path rust/Cargo.toml --locked` and

@@ -10,7 +10,7 @@ FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d
 LABEL org.opencontainers.image.title="Beacon MCP Server" \
       org.opencontainers.image.description="Read-only MCP gateway for MeshCore Beacon" \
       org.opencontainers.image.source="https://github.com/Bjorkan/beacon-mcp" \
-      org.opencontainers.image.version="2.1.1"
+      org.opencontainers.image.version="2.2.0"
 RUN apt-get update && apt-get install --no-install-recommends -y ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --uid 1000 --user-group --no-create-home --shell /usr/sbin/nologin beacon
