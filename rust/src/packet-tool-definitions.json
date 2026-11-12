@@ -52,7 +52,9 @@
           "type": "string"
         }
       },
-      "required": ["channelId"],
+      "required": [
+        "channelId"
+      ],
       "type": "object"
     },
     "name": "beacon_get_channel_messages",
@@ -65,10 +67,16 @@
             "additionalProperties": {},
             "properties": {
               "channelHash": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "content": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "id": {
                 "anyOf": [
@@ -95,15 +103,26 @@
                 ]
               },
               "packetHash": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "scope": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "scopeStatus": {
                 "anyOf": [
                   {
-                    "enum": ["matched", "unscoped", "unknown", "unavailable"],
+                    "enum": [
+                      "matched",
+                      "unscoped",
+                      "unknown",
+                      "unavailable"
+                    ],
                     "type": "string"
                   },
                   {
@@ -112,7 +131,10 @@
                 ]
               },
               "senderName": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "sentAt": {
                 "anyOf": [
@@ -148,15 +170,22 @@
                   "type": "integer"
                 }
               },
-              "required": ["cursor"],
+              "required": [
+                "cursor"
+              ],
               "type": "object"
             }
           },
-          "required": ["hasMore"],
+          "required": [
+            "hasMore"
+          ],
           "type": "object"
         }
       },
-      "required": ["items", "pagination"],
+      "required": [
+        "items",
+        "pagination"
+      ],
       "type": "object"
     }
   },
@@ -178,7 +207,9 @@
           "type": "string"
         }
       },
-      "required": ["hash"],
+      "required": [
+        "hash"
+      ],
       "type": "object"
     },
     "name": "beacon_get_packet",
@@ -187,10 +218,16 @@
       "additionalProperties": {},
       "properties": {
         "channelHash": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "decrypted": {
-          "type": ["boolean", "null"]
+          "type": [
+            "boolean",
+            "null"
+          ]
         },
         "firstHeardAt": {
           "anyOf": [
@@ -207,7 +244,10 @@
         },
         "firstToLastMs": {
           "description": "Span between the earliest and latest observer-reported heardAt across the packet's observations, using observer device clocks. It is not the difference between the server-side firstHeardAt and lastHeardAt receive times; absent when the packet has fewer than two observations",
-          "type": ["number", "null"]
+          "type": [
+            "number",
+            "null"
+          ]
         },
         "header": {
           "anyOf": [
@@ -266,7 +306,10 @@
                   ]
                 },
                 "raw": {
-                  "type": ["string", "null"]
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 },
                 "routeType": {
                   "anyOf": [
@@ -281,7 +324,10 @@
                   ]
                 },
                 "routeTypeName": {
-                  "type": ["string", "null"]
+                  "type": [
+                    "string",
+                    "null"
+                  ]
                 }
               },
               "type": "object"
@@ -336,7 +382,10 @@
                     "description": "Unix epoch milliseconds (UTC)"
                   },
                   "iata": {
-                    "type": ["string", "null"]
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "id": {
                     "anyOf": [
@@ -351,13 +400,22 @@
                     ]
                   },
                   "observerId": {
-                    "type": ["string", "null"]
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "observerName": {
-                    "type": ["string", "null"]
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "pathBytes": {
-                    "type": ["string", "null"]
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "pathLength": {
                     "anyOf": [
@@ -389,7 +447,10 @@
                             ]
                           },
                           "raw": {
-                            "type": ["string", "null"]
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           }
                         },
                         "type": "object"
@@ -400,7 +461,10 @@
                     ]
                   },
                   "propagationTimeMs": {
-                    "type": ["number", "null"]
+                    "type": [
+                      "number",
+                      "null"
+                    ]
                   },
                   "radio": {
                     "anyOf": [
@@ -408,7 +472,10 @@
                         "additionalProperties": {},
                         "properties": {
                           "bandwidthKhz": {
-                            "type": ["number", "null"]
+                            "type": [
+                              "number",
+                              "null"
+                            ]
                           },
                           "codingRate": {
                             "anyOf": [
@@ -423,7 +490,10 @@
                             ]
                           },
                           "freqMhz": {
-                            "type": ["number", "null"]
+                            "type": [
+                              "number",
+                              "null"
+                            ]
                           },
                           "spreadFactor": {
                             "anyOf": [
@@ -451,7 +521,10 @@
                         "additionalProperties": {},
                         "properties": {
                           "confidence": {
-                            "type": ["string", "null"]
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "nodes": {
                             "anyOf": [
@@ -460,19 +533,34 @@
                                   "additionalProperties": {},
                                   "properties": {
                                     "id": {
-                                      "type": ["string", "null"]
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
                                     },
                                     "latitude": {
-                                      "type": ["number", "null"]
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ]
                                     },
                                     "longitude": {
-                                      "type": ["number", "null"]
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ]
                                     },
                                     "name": {
-                                      "type": ["string", "null"]
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
                                     },
                                     "publicKey": {
-                                      "type": ["string", "null"]
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
                                     }
                                   },
                                   "type": "object"
@@ -485,7 +573,10 @@
                             ]
                           },
                           "snr": {
-                            "type": ["number", "null"]
+                            "type": [
+                              "number",
+                              "null"
+                            ]
                           }
                         },
                         "type": "object"
@@ -502,7 +593,10 @@
                           "additionalProperties": {},
                           "properties": {
                             "confidence": {
-                              "type": ["string", "null"]
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             },
                             "nodes": {
                               "anyOf": [
@@ -511,19 +605,34 @@
                                     "additionalProperties": {},
                                     "properties": {
                                       "id": {
-                                        "type": ["string", "null"]
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "latitude": {
-                                        "type": ["number", "null"]
+                                        "type": [
+                                          "number",
+                                          "null"
+                                        ]
                                       },
                                       "longitude": {
-                                        "type": ["number", "null"]
+                                        "type": [
+                                          "number",
+                                          "null"
+                                        ]
                                       },
                                       "name": {
-                                        "type": ["string", "null"]
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       },
                                       "publicKey": {
-                                        "type": ["string", "null"]
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
                                       }
                                     },
                                     "type": "object"
@@ -536,7 +645,10 @@
                               ]
                             },
                             "snr": {
-                              "type": ["number", "null"]
+                              "type": [
+                                "number",
+                                "null"
+                              ]
                             }
                           },
                           "type": "object"
@@ -554,7 +666,10 @@
                         "additionalProperties": {},
                         "properties": {
                           "confidence": {
-                            "type": ["string", "null"]
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "nodes": {
                             "anyOf": [
@@ -563,19 +678,34 @@
                                   "additionalProperties": {},
                                   "properties": {
                                     "id": {
-                                      "type": ["string", "null"]
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
                                     },
                                     "latitude": {
-                                      "type": ["number", "null"]
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ]
                                     },
                                     "longitude": {
-                                      "type": ["number", "null"]
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ]
                                     },
                                     "name": {
-                                      "type": ["string", "null"]
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
                                     },
                                     "publicKey": {
-                                      "type": ["string", "null"]
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
                                     }
                                   },
                                   "type": "object"
@@ -588,7 +718,10 @@
                             ]
                           },
                           "snr": {
-                            "type": ["number", "null"]
+                            "type": [
+                              "number",
+                              "null"
+                            ]
                           }
                         },
                         "type": "object"
@@ -599,13 +732,22 @@
                     ]
                   },
                   "rssi": {
-                    "type": ["number", "null"]
+                    "type": [
+                      "number",
+                      "null"
+                    ]
                   },
                   "snr": {
-                    "type": ["number", "null"]
+                    "type": [
+                      "number",
+                      "null"
+                    ]
                   },
                   "sourceBroker": {
-                    "type": ["string", "null"]
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   }
                 },
                 "type": "object"
@@ -618,10 +760,16 @@
           ]
         },
         "originPubkey": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "packetHash": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "parsedPayload": {
           "anyOf": [
@@ -632,7 +780,10 @@
           ]
         },
         "rawPayload": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "resolvedRoute": {
           "anyOf": [
@@ -641,7 +792,10 @@
                 "additionalProperties": {},
                 "properties": {
                   "confidence": {
-                    "type": ["string", "null"]
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "nodes": {
                     "anyOf": [
@@ -650,19 +804,34 @@
                           "additionalProperties": {},
                           "properties": {
                             "id": {
-                              "type": ["string", "null"]
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             },
                             "latitude": {
-                              "type": ["number", "null"]
+                              "type": [
+                                "number",
+                                "null"
+                              ]
                             },
                             "longitude": {
-                              "type": ["number", "null"]
+                              "type": [
+                                "number",
+                                "null"
+                              ]
                             },
                             "name": {
-                              "type": ["string", "null"]
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             },
                             "publicKey": {
-                              "type": ["string", "null"]
+                              "type": [
+                                "string",
+                                "null"
+                              ]
                             }
                           },
                           "type": "object"
@@ -675,7 +844,10 @@
                     ]
                   },
                   "snr": {
-                    "type": ["number", "null"]
+                    "type": [
+                      "number",
+                      "null"
+                    ]
                   }
                 },
                 "type": "object"
@@ -688,7 +860,10 @@
           ]
         },
         "scope": {
-          "type": ["string", "null"]
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "transportCodes": {
           "anyOf": [
@@ -773,6 +948,17 @@
           "maxLength": 64,
           "minLength": 1,
           "type": "string"
+        },
+        "iata": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9]{3}$",
+          "description": "Single reception IATA code; normalized uppercase; cannot combine with iatas"
+        },
+        "cursor": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "Legacy numeric lastSeen cursor; use only when no exact pageCursor is available, and do not combine a positive cursor with pageCursor"
         }
       },
       "type": "object"
@@ -787,7 +973,10 @@
             "additionalProperties": {},
             "properties": {
               "channelHash": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "id": {
                 "anyOf": [
@@ -802,10 +991,16 @@
                 ]
               },
               "isHashtag": {
-                "type": ["boolean", "null"]
+                "type": [
+                  "boolean",
+                  "null"
+                ]
               },
               "keyKnown": {
-                "type": ["boolean", "null"]
+                "type": [
+                  "boolean",
+                  "null"
+                ]
               },
               "lastSeen": {
                 "anyOf": [
@@ -821,7 +1016,10 @@
                 "description": "Unix epoch milliseconds (UTC)"
               },
               "name": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "type": "object"
@@ -842,15 +1040,22 @@
                   "type": "string"
                 }
               },
-              "required": ["pageCursor"],
+              "required": [
+                "pageCursor"
+              ],
               "type": "object"
             }
           },
-          "required": ["hasMore"],
+          "required": [
+            "hasMore"
+          ],
           "type": "object"
         }
       },
-      "required": ["items", "pagination"],
+      "required": [
+        "items",
+        "pagination"
+      ],
       "type": "object"
     }
   },
@@ -923,10 +1128,16 @@
             "additionalProperties": {},
             "properties": {
               "channelHash": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "content": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "id": {
                 "anyOf": [
@@ -953,15 +1164,26 @@
                 ]
               },
               "packetHash": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "scope": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "scopeStatus": {
                 "anyOf": [
                   {
-                    "enum": ["matched", "unscoped", "unknown", "unavailable"],
+                    "enum": [
+                      "matched",
+                      "unscoped",
+                      "unknown",
+                      "unavailable"
+                    ],
                     "type": "string"
                   },
                   {
@@ -970,7 +1192,10 @@
                 ]
               },
               "senderName": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "sentAt": {
                 "anyOf": [
@@ -1006,15 +1231,22 @@
                   "type": "integer"
                 }
               },
-              "required": ["cursor"],
+              "required": [
+                "cursor"
+              ],
               "type": "object"
             }
           },
-          "required": ["hasMore"],
+          "required": [
+            "hasMore"
+          ],
           "type": "object"
         }
       },
-      "required": ["items", "pagination"],
+      "required": [
+        "items",
+        "pagination"
+      ],
       "type": "object"
     }
   },
@@ -1025,7 +1257,7 @@
       "openWorldHint": true,
       "readOnlyHint": true
     },
-    "description": "Search packet summaries; prefer the opaque pageCursor when returned for precise pagination across millisecond ties (region pages may lack it). hashPrefix matches the beginning of an 8-byte packet hash and uses only the numeric cursor in global lastHeardAt order, including with IATA filters. The window is half-open: a packet is included when firstHeardAt is at or after since and it was last heard before until \u2014 since is inclusive, until is exclusive (the exact until boundary is inconsistent upstream when iatas filters are used). Beacon MCP Server does not persist or log packet payloads; upstream Beacon may store and return them through beacon_get_packet. region and regionId are mutually exclusive, as are scope and scopes, payloadType and payloadTypes, and routeType and routeTypes; payloadTypeName cannot be combined with payloadType or payloadTypes.",
+    "description": "Search packet summaries; prefer the opaque pageCursor when returned for precise pagination across millisecond ties (region pages may lack it). hashPrefix matches the beginning of an 8-byte packet hash and uses only the numeric cursor in global lastHeardAt order, including with IATA filters. The window is half-open: a packet is included when firstHeardAt is at or after since and it was last heard before until — since is inclusive, until is exclusive (the exact until boundary is inconsistent upstream when iatas filters are used). Beacon MCP Server does not persist or log packet payloads; upstream Beacon may store and return them through beacon_get_packet. region and regionId are mutually exclusive, as are scope and scopes, payloadType and payloadTypes, and routeType and routeTypes; payloadTypeName cannot be combined with payloadType or payloadTypes.",
     "inputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "additionalProperties": false,
@@ -1156,6 +1388,11 @@
           "maxLength": 24,
           "pattern": "^\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{1,3})?Z$",
           "type": "string"
+        },
+        "iata": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9]{3}$",
+          "description": "Single reception IATA code; normalized uppercase; cannot combine with iatas"
         }
       },
       "type": "object"
@@ -1201,16 +1438,28 @@
                     "additionalProperties": {},
                     "properties": {
                       "displayName": {
-                        "type": ["string", "null"]
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "iata": {
-                        "type": ["string", "null"]
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "id": {
-                        "type": ["string", "null"]
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "pathBytes": {
-                        "type": ["string", "null"]
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "pathLength": {
                         "anyOf": [
@@ -1242,7 +1491,10 @@
                                 ]
                               },
                               "raw": {
-                                "type": ["string", "null"]
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
                               }
                             },
                             "type": "object"
@@ -1258,7 +1510,10 @@
                             "additionalProperties": {},
                             "properties": {
                               "confidence": {
-                                "type": ["string", "null"]
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
                               },
                               "nodes": {
                                 "anyOf": [
@@ -1267,19 +1522,34 @@
                                       "additionalProperties": {},
                                       "properties": {
                                         "id": {
-                                          "type": ["string", "null"]
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
                                         },
                                         "latitude": {
-                                          "type": ["number", "null"]
+                                          "type": [
+                                            "number",
+                                            "null"
+                                          ]
                                         },
                                         "longitude": {
-                                          "type": ["number", "null"]
+                                          "type": [
+                                            "number",
+                                            "null"
+                                          ]
                                         },
                                         "name": {
-                                          "type": ["string", "null"]
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
                                         },
                                         "publicKey": {
-                                          "type": ["string", "null"]
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
                                         }
                                       },
                                       "type": "object"
@@ -1292,7 +1562,10 @@
                                 ]
                               },
                               "snr": {
-                                "type": ["number", "null"]
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
                               }
                             },
                             "type": "object"
@@ -1309,7 +1582,10 @@
                               "additionalProperties": {},
                               "properties": {
                                 "confidence": {
-                                  "type": ["string", "null"]
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
                                 },
                                 "nodes": {
                                   "anyOf": [
@@ -1318,19 +1594,34 @@
                                         "additionalProperties": {},
                                         "properties": {
                                           "id": {
-                                            "type": ["string", "null"]
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
                                           },
                                           "latitude": {
-                                            "type": ["number", "null"]
+                                            "type": [
+                                              "number",
+                                              "null"
+                                            ]
                                           },
                                           "longitude": {
-                                            "type": ["number", "null"]
+                                            "type": [
+                                              "number",
+                                              "null"
+                                            ]
                                           },
                                           "name": {
-                                            "type": ["string", "null"]
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
                                           },
                                           "publicKey": {
-                                            "type": ["string", "null"]
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
                                           }
                                         },
                                         "type": "object"
@@ -1343,7 +1634,10 @@
                                   ]
                                 },
                                 "snr": {
-                                  "type": ["number", "null"]
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
                                 }
                               },
                               "type": "object"
@@ -1361,7 +1655,10 @@
                             "additionalProperties": {},
                             "properties": {
                               "confidence": {
-                                "type": ["string", "null"]
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
                               },
                               "nodes": {
                                 "anyOf": [
@@ -1370,19 +1667,34 @@
                                       "additionalProperties": {},
                                       "properties": {
                                         "id": {
-                                          "type": ["string", "null"]
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
                                         },
                                         "latitude": {
-                                          "type": ["number", "null"]
+                                          "type": [
+                                            "number",
+                                            "null"
+                                          ]
                                         },
                                         "longitude": {
-                                          "type": ["number", "null"]
+                                          "type": [
+                                            "number",
+                                            "null"
+                                          ]
                                         },
                                         "name": {
-                                          "type": ["string", "null"]
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
                                         },
                                         "publicKey": {
-                                          "type": ["string", "null"]
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
                                         }
                                       },
                                       "type": "object"
@@ -1395,7 +1707,10 @@
                                 ]
                               },
                               "snr": {
-                                "type": ["number", "null"]
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
                               }
                             },
                             "type": "object"
@@ -1426,7 +1741,10 @@
                 ]
               },
               "packetHash": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "payloadType": {
                 "anyOf": [
@@ -1480,13 +1798,22 @@
                 ]
               },
               "routeTypeName": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "scope": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               },
               "summary": {
-                "type": ["string", "null"]
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "type": "object"
@@ -1511,7 +1838,9 @@
                       "type": "integer"
                     }
                   },
-                  "required": ["cursor"],
+                  "required": [
+                    "cursor"
+                  ],
                   "type": "object"
                 },
                 {
@@ -1527,17 +1856,24 @@
                       "type": "string"
                     }
                   },
-                  "required": ["pageCursor"],
+                  "required": [
+                    "pageCursor"
+                  ],
                   "type": "object"
                 }
               ]
             }
           },
-          "required": ["hasMore"],
+          "required": [
+            "hasMore"
+          ],
           "type": "object"
         }
       },
-      "required": ["items", "pagination"],
+      "required": [
+        "items",
+        "pagination"
+      ],
       "type": "object"
     }
   }
