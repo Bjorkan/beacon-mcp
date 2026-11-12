@@ -95,10 +95,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config.stats_timeout,
     )?;
     let live = config.subscriptions.enabled.then(|| {
-        Live::new(
+        Live::configured(
             config.subscriptions.max_streams,
             config.subscriptions.debounce,
             shutdown.clone(),
+            config.subscriptions.traffic_enabled,
         )
     });
     let bridge_task = live.as_ref().map(|live| {
