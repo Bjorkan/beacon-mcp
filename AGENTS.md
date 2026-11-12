@@ -46,8 +46,10 @@ stats hours and observer comparison use `[since,until)`. Message filters use
 `sentAt >= since`. Unknown well-formed node/packet/trace IDs return 404.
 Upstream `/info` can return null minimum client versions, regardless of its
 Swagger nullability. Upstream 503 `deadline_exceeded` with `Retry-After` maps to
-`DEADLINE_EXCEEDED`. Messages' documented region filters are not exposed until
-their handlers have been reviewed separately.
+`DEADLINE_EXCEEDED`. Messages' documented `region` and `regionId` filters on the ordinary
+`/messages` and `/channels/{id}/messages` reads are deliberately not exposed:
+the pinned Go handlers only call `parseIATAs` and ignore both parameters.
+`/messages/backfill` does resolve region filters and exposes them.
 
 ## Development
 
@@ -96,6 +98,10 @@ globally monotonic across pages. Preserve and reuse the exact nextCursor.
 The additional public GET tools expose all 49 documented non-admin GET
 operations from the pinned Swagger specification (except the internal
 ws-ticket operation, which is used automatically by subscriptions).
+All filters the handlers actually support are included in the public tool
+schemas; upstream Swagger-documented but ignored ordinary-message region
+filters are intentionally excluded. A frozen Swagger parity test tracks these
+exceptions.
 Large server-side arrays without a cursor are truncated to the MCP limit
 with pagination.hasMore=false and an explicit truncated flag.
 
