@@ -287,33 +287,32 @@ async fn incremental_json_array_keeps_escapes_strings_scalars_and_nested_values(
 
 #[tokio::test]
 async fn single_iata_filters_are_forwarded_without_implicit_widening() {
-    let (client, seen, task) =
-        backend(|_| json!({"items":[],"hasMore":false}).to_string()).await;
+    let (client, seen, task) = backend(|_| json!({"items":[],"hasMore":false}).to_string()).await;
     let core = CoreTools::new(client.clone());
     let packet = PacketTools::new(client);
     for name in ["beacon_search_nodes", "beacon_search_observers"] {
-        core.execute(name, args(json!({"iata":"arn"}))).await.unwrap();
-        assert_eq!(
-            core.execute(
-                name,
-                args(json!({"iata":"arn","iatas":["mmx"]}))
-            )
+        core.execute(name, args(json!({"iata":"arn"})))
             .await
-            .unwrap_err()
-            .code,
+            .unwrap();
+        assert_eq!(
+            core.execute(name, args(json!({"iata":"arn","iatas":["mmx"]})))
+                .await
+                .unwrap_err()
+                .code,
             ErrorCode::InvalidArgument
         );
     }
     for name in ["beacon_search_packets", "beacon_list_channels"] {
-        packet.execute(name, args(json!({"iata":"mmx"}))).await.unwrap();
-        assert_eq!(
-            packet.execute(
-                name,
-                args(json!({"iata":"arn","iatas":["mmx"]}))
-            )
+        packet
+            .execute(name, args(json!({"iata":"mmx"})))
             .await
-            .unwrap_err()
-            .code,
+            .unwrap();
+        assert_eq!(
+            packet
+                .execute(name, args(json!({"iata":"arn","iatas":["mmx"]})))
+                .await
+                .unwrap_err()
+                .code,
             ErrorCode::InvalidArgument
         );
     }
@@ -328,19 +327,14 @@ async fn single_iata_filters_are_forwarded_without_implicit_widening() {
 
 #[tokio::test]
 async fn channel_numeric_cursor_is_usable_when_precise_token_is_absent() {
-    let (client, seen, task) = backend(|_| {
-        json!({"items":[{"id":1}],"hasMore":true,"nextCursor":55}).to_string()
-    })
-    .await;
+    let (client, seen, task) =
+        backend(|_| json!({"items":[{"id":1}],"hasMore":true,"nextCursor":55}).to_string()).await;
     let packet = PacketTools::new(client);
     let result = packet
         .execute("beacon_list_channels", args(json!({"cursor":25,"limit":1})))
         .await
         .unwrap();
-    assert_eq!(
-        result["pagination"]["nextCursor"],
-        json!({"cursor":55})
-    );
+    assert_eq!(result["pagination"]["nextCursor"], json!({"cursor":55}));
     assert!(seen.lock().unwrap()[0].contains("cursor=25"));
     assert_eq!(
         packet
