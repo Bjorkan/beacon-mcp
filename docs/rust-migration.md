@@ -1,7 +1,8 @@
 # Rust gateway: behavior and release gates
 
-The Rust implementation lives in `rust/` and exposes 23 public read-only MCP
-tools. `tests/fixtures/tool-names.json` freezes the name inventory. Complete
+The Rust implementation lives in `rust/` and exposes 49 public read-only MCP
+tools (23 original plus 26 additional public GET endpoints in Beacon 2.2.0).
+`tests/fixtures/tool-names.json` freezes the name inventory. Complete
 tool definitions (input/output schemas, descriptions, hints) are checked in as
 `rust/src/*-tool-definitions.json` and compared exactly in Rust tests. The
 server has no build-time schema download.
