@@ -78,9 +78,15 @@ fn fields(name: &str) -> Option<&'static [&'static str]> {
             "channelId",
             "channelHash",
         ],
-        "beacon_list_channels" => {
-            &["limit", "cursor", "pageCursor", "iata", "iatas", "hash", "keyKnown"]
-        },
+        "beacon_list_channels" => &[
+            "limit",
+            "cursor",
+            "pageCursor",
+            "iata",
+            "iatas",
+            "hash",
+            "keyKnown",
+        ],
         "beacon_get_channel_messages" => {
             &["channelId", "limit", "cursor", "iatas", "scope", "since"]
         }
@@ -217,8 +223,7 @@ impl PacketTools {
         };
         if let Some(iata) = args.iata {
             let normalized = iata.trim().to_ascii_uppercase();
-            if normalized.len() != 3
-                || !normalized.bytes().all(|byte| byte.is_ascii_alphanumeric())
+            if normalized.len() != 3 || !normalized.bytes().all(|byte| byte.is_ascii_alphanumeric())
             {
                 return Err(invalid("invalid IATA code"));
             }
