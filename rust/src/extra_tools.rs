@@ -149,10 +149,10 @@ impl ExtraTools {
             .into_iter()
             .flatten()
         {
-            if let Some(key) = required.as_str() {
-                if !raw.contains_key(key) {
-                    return Err(invalid(format!("missing {key}")));
-                }
+            if let Some(key) = required.as_str()
+                && !raw.contains_key(key)
+            {
+                return Err(invalid(format!("missing {key}")));
             }
         }
         if raw.contains_key("region") && raw.contains_key("regionId")
@@ -160,17 +160,16 @@ impl ExtraTools {
         {
             return Err(invalid("mutually exclusive location filters"));
         }
-        if name == "beacon_get_route_observations" {
-            if raw.contains_key("range")
+        if name == "beacon_get_route_observations"
+            && (raw.contains_key("range")
                 && (raw.contains_key("since")
                     || raw.contains_key("until")
                     || raw.contains_key("pageCursor"))
-                || raw.contains_key("since") != raw.contains_key("until")
-            {
-                return Err(invalid(
-                    "range is exclusive with the explicit window and cursor; since and until must be paired",
-                ));
-            }
+                || raw.contains_key("since") != raw.contains_key("until"))
+        {
+            return Err(invalid(
+                "range is exclusive with the explicit window and cursor; since and until must be paired",
+            ));
         }
         let limit = match raw.get("limit") {
             Some(value) => value.as_u64().ok_or_else(|| invalid("invalid limit"))?,
