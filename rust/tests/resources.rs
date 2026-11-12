@@ -127,7 +127,11 @@ async fn templates_read_both_resources_and_reject_injected_uris() {
         assert_eq!(data["id"], ID);
     }
     for (uri, upstream_field, expected) in [
-        ("beacon://packets/AABBCCDDEEFF0011", "packetHash", json!("aabbccddeeff0011")),
+        (
+            "beacon://packets/AABBCCDDEEFF0011",
+            "packetHash",
+            json!("aabbccddeeff0011"),
+        ),
         ("beacon://channels/25", "id", json!(25)),
         ("beacon://traces/ABCDEF01", "traceTag", json!("abcdef01")),
         ("beacon://iatas/arn", "iata", json!("ARN")),
@@ -135,9 +139,9 @@ async fn templates_read_both_resources_and_reject_injected_uris() {
     ] {
         let result = rpc(&client, &root, "resources/read", json!({"uri":uri})).await;
         assert!(result["error"].is_null(), "{result}");
-        let body: Value = serde_json::from_str(
-            result["result"]["contents"][0]["text"].as_str().unwrap(),
-        ).unwrap();
+        let body: Value =
+            serde_json::from_str(result["result"]["contents"][0]["text"].as_str().unwrap())
+                .unwrap();
         assert_eq!(body[upstream_field], expected, "{uri}");
     }
     for uri in [
