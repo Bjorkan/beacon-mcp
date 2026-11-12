@@ -28,13 +28,25 @@ fn additional_tool_queries_cover_every_pinned_upstream_parameter() {
         ("beacon_backfill_messages", "/messages/backfill"),
         ("beacon_get_node_activity", "/nodes/{nodeId}/activity"),
         ("beacon_get_node_neighbors", "/nodes/{nodeId}/neighbors"),
-        ("beacon_get_node_observations", "/nodes/{nodeId}/observations"),
-        ("beacon_get_observer_adverts", "/observers/{observerId}/adverts"),
-        ("beacon_get_observer_telemetry", "/observers/{observerId}/telemetry"),
+        (
+            "beacon_get_node_observations",
+            "/nodes/{nodeId}/observations",
+        ),
+        (
+            "beacon_get_observer_adverts",
+            "/observers/{observerId}/adverts",
+        ),
+        (
+            "beacon_get_observer_telemetry",
+            "/observers/{observerId}/telemetry",
+        ),
         ("beacon_list_observer_directory", "/observers/directory"),
         ("beacon_backfill_packets", "/packets/backfill"),
         ("beacon_get_region", "/regions/{regionId}"),
-        ("beacon_get_route_observations", "/routes/{iata}/{pathKey}/observations"),
+        (
+            "beacon_get_route_observations",
+            "/routes/{iata}/{pathKey}/observations",
+        ),
         ("beacon_get_scope", "/scopes/{name}"),
         ("beacon_get_clock_drift", "/stats/clock-drift"),
         ("beacon_get_node_types", "/stats/node-types"),
@@ -58,12 +70,18 @@ fn additional_tool_queries_cover_every_pinned_upstream_parameter() {
         ("beacon_get_node", "/nodes/{nodeId}"),
         ("beacon_search_observers", "/observers"),
         ("beacon_get_observer", "/observers/{observerId}"),
-        ("beacon_get_observer_activity", "/observers/{observerId}/activity"),
+        (
+            "beacon_get_observer_activity",
+            "/observers/{observerId}/activity",
+        ),
         ("beacon_search_packets", "/packets"),
         ("beacon_get_packet", "/packets/{packetHash}"),
         ("beacon_search_messages", "/messages"),
         ("beacon_list_channels", "/channels"),
-        ("beacon_get_channel_messages", "/channels/{channelID}/messages"),
+        (
+            "beacon_get_channel_messages",
+            "/channels/{channelID}/messages",
+        ),
         ("beacon_list_routes", "/routes"),
         ("beacon_search_routes", "/routes/search"),
         ("beacon_find_cross_iata_routes", "/routes/cross"),
@@ -77,11 +95,16 @@ fn additional_tool_queries_cover_every_pinned_upstream_parameter() {
     assert_eq!(legacy_routes.len(), 23);
     for (name, route) in routes.into_iter().chain(legacy_routes) {
         let needle = format!("\n  {route}:\n");
-        let index = swagger.find(&needle).expect("route must exist in pinned Swagger");
+        let index = swagger
+            .find(&needle)
+            .expect("route must exist in pinned Swagger");
         let remainder = &swagger[index + needle.len()..];
         let end = remainder.find("\n  /").unwrap_or(remainder.len());
         let section = &remainder[..end];
-        assert!(section.contains("\n    get:\n"), "{route} must be a GET route");
+        assert!(
+            section.contains("\n    get:\n"),
+            "{route} must be a GET route"
+        );
 
         let tool = extra
             .definition(name)
@@ -106,7 +129,11 @@ fn additional_tool_queries_cover_every_pinned_upstream_parameter() {
                     next_is_query_name = false;
                     continue;
                 }
-                let param = if param == "channelID" { "channelId" } else { param };
+                let param = if param == "channelID" {
+                    "channelId"
+                } else {
+                    param
+                };
                 assert!(
                     schema["inputSchema"]["properties"].get(param).is_some(),
                     "{name} missing upstream query filter {param} on {route}"
