@@ -275,21 +275,23 @@ impl ServerHandler for BeaconServer {
         _context: RequestContext<RoleServer>,
     ) -> Result<ListResourceTemplatesResult, McpError> {
         Ok(ListResourceTemplatesResult {
-            resource_templates: ["nodes", "observers", "packets", "channels", "traces", "iatas", "regions"]
-                .into_iter()
-                .map(|kind| {
-                    ResourceTemplate::new(
-                        format!("beacon://{kind}/{{id}}"),
-                        format!("beacon-{kind}"),
-                    )
-                    .with_title(format!(
-                        "Beacon {} details",
-                        kind.trim_end_matches('s')
-                    ))
+            resource_templates: [
+                "nodes",
+                "observers",
+                "packets",
+                "channels",
+                "traces",
+                "iatas",
+                "regions",
+            ]
+            .into_iter()
+            .map(|kind| {
+                ResourceTemplate::new(format!("beacon://{kind}/{{id}}"), format!("beacon-{kind}"))
+                    .with_title(format!("Beacon {} details", kind.trim_end_matches('s')))
                     .with_description("Read the latest public information from Beacon REST")
                     .with_mime_type("application/json")
-                })
-                .collect(),
+            })
+            .collect(),
             ..Default::default()
         })
     }
