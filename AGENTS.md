@@ -18,8 +18,8 @@ use one process-local WebSocket and broadcast bus per replica; listeners must
 stay on that replica, and updates may be lost. The gateway never advertises
 MCP Events; see [the gated plan](docs/mcp-events-migration.md) for issue #17.
 
-Pinned upstream API/release: `v2.1.1` at
-`d0a55dbf6d6f5ed4345bd72c039845f6c947fd16` (re-cut annotated tag).
+Pinned upstream API/release: `v2.2.0` at
+`265a835e36931a2c39b9b08e7a78837b9cf0e343` (re-cut annotated tag).
 Vendored contract: `vendor/beacon-openapi.yaml`; docs commit
 `008f988863014c32e673c5c0176ea86db2868ccf`.
 
@@ -77,7 +77,7 @@ only for transient network failures or HTTP 502/503/504 **without**
 from upstream 5xx must be redacted. Never log packet/message bodies, auth
 headers, upstream response bodies, stack traces or environment values.
 
-Each of the 23 tools publishes an input/output schema, description and
+Each of the 49 tools publishes an input/output schema, description and
 read-only/idempotent/open-world hints. The checked-in JSON documents in
 `rust/src/*-tool-definitions.json` freeze the MCP discovery contract; update
 them with a reviewed contract change, not with a build-time download.
@@ -85,6 +85,20 @@ Lists default to 20 and reject limits above 50; they never return more than
 requested. Numeric, opaque and compound cursors vary per endpoint. Four
 upstream-array tools return `hasMore:false` and only set `truncated:true` if
 the response was cut short; they have no fake continuation cursor.
+Beacon 2.2 adds node-originated hourly activity (`/nodes/{id}/activity`)
+over a 1m–720h range; results draw on rollups plus the raw tail, so a
+freshly migrated server may initially have sparse historical points while
+migrations 062/063 re-roll the last three days. Node-originated observation
+pages (`/nodes/{id}/observations`) use an observation-ID cursor but are
+ordered by packet first-heard time then observation ID: the IDs are not
+globally monotonic across pages. Preserve and reuse the exact nextCursor.
+
+The additional public GET tools expose all 49 documented non-admin GET
+operations from the pinned Swagger specification (except the internal
+ws-ticket operation, which is used automatically by subscriptions).
+Large server-side arrays without a cursor are truncated to the MCP limit
+with pagination.hasMore=false and an explicit truncated flag.
+
 Tool errors use the canonical codes `INVALID_ARGUMENT`, `NOT_FOUND`,
 `DEADLINE_EXCEEDED`, `RESPONSE_TOO_LARGE`, `RESOURCE_EXHAUSTED`, `UNAVAILABLE`,
 and `INTERNAL`. Success text is a brief confirmation; structured data is
