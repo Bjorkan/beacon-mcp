@@ -295,7 +295,11 @@ impl BeaconClient {
                 "scope"
                     if !id.trim().is_empty()
                         && id.len() <= 128
-                        && !id.chars().any(char::is_control) =>
+                        && !id.chars().any(char::is_control)
+                        && !matches!(id, "." | "..")
+                        && !id.contains('/')
+                        && !id.contains('\\')
+                        && !id.contains('%') =>
                 {
                     (id.to_owned(), None)
                 }
@@ -443,6 +447,18 @@ impl BeaconClient {
         query: &[(&str, String)],
         max_items: usize,
     ) -> Result<ArrayPage, GatewayError> {
+        self.array_page_with_id(operation, None, query, max_items).await
+    }
+
+    /// Stream allowlisted public GET arrays, including fixed identifier paths.
+    /// Callers stop parsing after one extra item confirms truncation.
+    pub async fn array_page_with_id(
+        &self,
+        operation: Operation,
+        id: Option<&str>,
+        query: &[(&str, String)],
+        max_items: usize,
+    ) -> Result<ArrayPage, GatewayError> {
         if max_items == 0
             || max_items > 51
             || !matches!(
@@ -452,6 +468,19 @@ impl BeaconClient {
                     | Operation::RouteSearch
                     | Operation::CrossRoutes
                     | Operation::TopAdvertisers
+                    | Operation::Brokers
+                    | Operation::MessagesBackfill
+                    | Operation::NodeNeighbors
+                    | Operation::PacketsBackfill
+                    | Operation::ClockDrift
+                    | Operation::NodeTypes
+                    | Operation::ObservationStats
+                    | Operation::PayloadBreakdown
+                    | Operation::RadioPresets
+                    | Operation::ScopeStats
+                    | Operation::TopNodes
+                    | Operation::TopObservers
+                    | Operation::TopTalkers
             )
         {
             return Err(GatewayError::new(
@@ -459,7 +488,7 @@ impl BeaconClient {
                 "invalid array page request",
             ));
         }
-        let url = self.url(operation, None, query)?;
+        let url = self.url(operation, id, query)?;
         for attempt in 0..2 {
             let response = self
                 .http
