@@ -146,7 +146,12 @@ async fn prompts_are_discoverable_and_render_without_upstream_calls() {
         async move { axum::serve(listener, app).await.unwrap() }
     });
     let http = reqwest::Client::new();
-    let call = |method: &str, params: Value| {
+    let call = |method: &str, mut params: Value| {
+        params["_meta"] = json!({
+            "io.modelcontextprotocol/protocolVersion":"2026-07-28",
+            "io.modelcontextprotocol/clientInfo":{"name":"composite-test","version":"1"},
+            "io.modelcontextprotocol/clientCapabilities":{}
+        });
         http.post(&root)
             .header("Accept", "application/json, text/event-stream")
             .header("MCP-Protocol-Version", "2026-07-28")
@@ -160,7 +165,7 @@ async fn prompts_are_discoverable_and_render_without_upstream_calls() {
         .json()
         .await
         .unwrap();
-    assert_eq!(list["result"]["prompts"].as_array().unwrap().len(), 3);
+    assert_eq!(list["result"]["prompts"].as_array().unwrap().len(), 3, "{list}");
     for (name, arguments) in [
         ("beacon_node_diagnostics", json!({"id":NODE})),
         (
