@@ -396,13 +396,13 @@ impl PacketTools {
                 .as_object_mut()
                 .map(|cursor| cursor.remove("pageCursor"));
         }
-        if result["pagination"]["nextCursor"]
-            .as_object()
-            .is_some_and(serde_json::Map::is_empty)
+        if let Some(pagination) = result["pagination"].as_object_mut()
+            && pagination
+                .get("nextCursor")
+                .and_then(Value::as_object)
+                .is_some_and(serde_json::Map::is_empty)
         {
-            if let Some(pagination) = result["pagination"].as_object_mut() {
-                pagination.remove("nextCursor");
-            }
+            pagination.remove("nextCursor");
         }
         Ok(result)
     }
