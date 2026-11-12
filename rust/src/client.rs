@@ -279,12 +279,18 @@ impl BeaconClient {
                         .parse::<u32>()
                         .is_ok_and(|n| n > 0 && n <= i32::MAX as u32) =>
                 {
-                    (id.to_owned(), kind.split_once('/').map(|(_, suffix)| suffix))
+                    (
+                        id.to_owned(),
+                        kind.split_once('/').map(|(_, suffix)| suffix),
+                    )
                 }
                 "iata" | "iata/border"
                     if id.len() == 3 && id.bytes().all(|b| b.is_ascii_alphanumeric()) =>
                 {
-                    (id.to_ascii_uppercase(), kind.split_once('/').map(|(_, suffix)| suffix))
+                    (
+                        id.to_ascii_uppercase(),
+                        kind.split_once('/').map(|(_, suffix)| suffix),
+                    )
                 }
                 "scope"
                     if !id.trim().is_empty()
@@ -303,7 +309,8 @@ impl BeaconClient {
                         || !path_key.bytes().all(|b| b.is_ascii_hexdigit())
                     {
                         return Err(GatewayError::new(
-                            ErrorCode::InvalidArgument, "invalid route identifier",
+                            ErrorCode::InvalidArgument,
+                            "invalid route identifier",
                         ));
                     }
                     let mut segments = url.path_segments_mut().map_err(|_| {
@@ -314,12 +321,14 @@ impl BeaconClient {
                     segments.push("observations");
                     drop(segments);
                     if !query.is_empty() {
-                        url.query_pairs_mut().extend_pairs(
-                            query.iter().map(|(key, value)| (*key, value.as_str()))
-                        );
+                        url.query_pairs_mut()
+                            .extend_pairs(query.iter().map(|(key, value)| (*key, value.as_str())));
                     }
                     if url.as_str().len() > MAX_URL {
-                        return Err(GatewayError::new(ErrorCode::InvalidArgument, "Beacon request filters are too large"));
+                        return Err(GatewayError::new(
+                            ErrorCode::InvalidArgument,
+                            "Beacon request filters are too large",
+                        ));
                     }
                     return Ok(url);
                 }
