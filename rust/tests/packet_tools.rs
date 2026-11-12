@@ -52,7 +52,7 @@ async fn setup() -> (
             url.parse().unwrap(),
             Duration::from_secs(1),
             Duration::from_secs(1),
-        ),
+        ).expect("HTTP client configuration"),
     );
     let gateway_task =
         tokio::spawn(async move { axum::serve(gateway_listener, app).await.unwrap() });
