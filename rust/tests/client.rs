@@ -48,7 +48,7 @@ async fn fixed_public_get_routes_and_encoded_queries() {
         assert_eq!(req.method(), "GET");
         assert_eq!(req.uri().path(), "/api/v1/nodes");
         assert_eq!(req.uri().query(), Some("iatas=ARN%2CMMX&scope=%23se13"));
-        assert_eq!(req.headers()["user-agent"], "beacon-mcp/2.1.1");
+        assert_eq!(req.headers()["user-agent"], "beacon-mcp/2.2.0");
         response(
             StatusCode::OK,
             r#"{"items":[{"id":"first"}],"hasMore":false}"#,
