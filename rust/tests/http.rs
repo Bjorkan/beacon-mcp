@@ -27,7 +27,7 @@ async fn invalid_tool_inputs_are_plain_errors_but_upstream_400_is_structured() {
         backend.parse().unwrap(),
         std::time::Duration::from_secs(2),
         std::time::Duration::from_secs(2),
-    );
+    ).expect("HTTP client configuration");
     let app = server::router(shutdown.clone(), client);
     let task = tokio::spawn(async move { axum::serve(listener, app).await.unwrap() });
     let http = reqwest::Client::new();
@@ -163,7 +163,7 @@ async fn health_readiness_and_mcp_discovery() {
             "http://127.0.0.1:9/".parse().unwrap(),
             std::time::Duration::from_secs(1),
             std::time::Duration::from_secs(1),
-        );
+        ).expect("HTTP client configuration");
         axum::serve(listener, server::router(server_token, client))
             .await
             .unwrap();
