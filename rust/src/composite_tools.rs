@@ -88,12 +88,10 @@ impl CompositeTools {
                 if !(1..=20).contains(&limit) {
                     return Err(invalid("neighborLimit must be 1-20"));
                 }
+                let range_query = [("range", range.clone())];
                 let get_node = self.client.request(Operation::Node, Some(&id), &[]);
-                let get_activity = self.client.request(
-                    Operation::NodeActivity,
-                    Some(&id),
-                    &[("range", range.clone())],
-                );
+                let get_activity =
+                    self.client.request(Operation::NodeActivity, Some(&id), &range_query);
                 let get_neighbors = self.client.array_page_with_id(
                     Operation::NodeNeighbors,
                     Some(&id),
@@ -121,8 +119,10 @@ impl CompositeTools {
                 if a == b {
                     return Err(invalid("iataA and iataB must be different"));
                 }
-                let left = self.client.request(Operation::Overview, None, &[("iatas", a.clone())]);
-                let right = self.client.request(Operation::Overview, None, &[("iatas", b.clone())]);
+                let left_query = [("iatas", a.clone())];
+                let right_query = [("iatas", b.clone())];
+                let left = self.client.request(Operation::Overview, None, &left_query);
+                let right = self.client.request(Operation::Overview, None, &right_query);
                 let (overview_a, overview_b) = tokio::try_join!(left, right)?;
                 Ok(json!({
                     "regionA": {"iata": a, "overview": overview_a},
