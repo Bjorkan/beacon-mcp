@@ -180,7 +180,7 @@ impl AnalyticsTools {
                     json!({"items":page.items.into_iter().take(limit as usize).collect::<Vec<_>>(),"pagination":pagination}),
                 );
             }
-            _ => unreachable!("checked by fields"),
+            _ => return Err(invalid("unknown Beacon analytics tool")),
         };
         self.client.request(operation, None, &query).await
     }
