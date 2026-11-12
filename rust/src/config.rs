@@ -99,8 +99,14 @@ impl Config {
             Some("false") => false,
             _ => return Err("BEACON_SUBSCRIPTIONS_ENABLED must be true or false".into()),
         };
-        let max_streams =
-            parse_u64(&mut get, "BEACON_SUBSCRIPTIONS_MAX_STREAMS", 64, 1, 1024)? as usize;
+        let max_streams = usize::try_from(parse_u64(
+            &mut get,
+            "BEACON_SUBSCRIPTIONS_MAX_STREAMS",
+            64,
+            1,
+            1024,
+        )?)
+        .map_err(|_| "invalid BEACON_SUBSCRIPTIONS_MAX_STREAMS".to_owned())?;
         let debounce = Duration::from_millis(parse_u64(
             &mut get,
             "BEACON_SUBSCRIPTIONS_DEBOUNCE_MS",

@@ -8,19 +8,20 @@ use url::Url;
 const MAX_BYTES: usize = 5_242_880;
 const MAX_URL: usize = 8_192;
 
-fn retry_delay() -> Duration {
-    // One jittered retry; use independent OS entropy instead of a fixed delay
-    // so many replicas do not retry a transient upstream outage together.
+fn retry_delay() -> Result<Duration, GatewayError> {
+    // Preserve jitter; propagate OS entropy failures instead of panicking.
     let mut byte = [0_u8; 1];
-    getrandom::fill(&mut byte).expect("OS entropy for retry jitter");
-    Duration::from_millis(25 + u64::from(byte[0] % 50))
+    getrandom::fill(&mut byte).map_err(|_| {
+        GatewayError::new(ErrorCode::Unavailable, "Unable to generate retry jitter")
+    })?;
+    Ok(Duration::from_millis(25 + u64::from(byte[0] % 50)))
 }
 
 #[cfg(test)]
 #[test]
 fn retry_jitter_stays_within_legacy_window() {
     for _ in 0..128 {
-        assert!((25..=74).contains(&retry_delay().as_millis()));
+        assert!((25..=74).contains(&retry_delay().unwrap().as_millis()));
     }
 }
 
@@ -220,16 +221,15 @@ pub struct ArrayPage {
 }
 
 impl BeaconClient {
-    pub fn new(base: Url, timeout: Duration, stats_timeout: Duration) -> Self {
-        Self {
+    pub fn new(base: Url, timeout: Duration, stats_timeout: Duration) -> Result<Self, reqwest::Error> {
+        Ok(Self {
             http: Client::builder()
                 .redirect(reqwest::redirect::Policy::none())
-                .build()
-                .expect("HTTP client"),
+                .build()?,
             base,
             timeout,
             stats_timeout,
-        }
+        })
     }
 
     fn url(
@@ -398,7 +398,7 @@ impl BeaconClient {
                     ));
                 }
                 Err(_) if attempt == 0 => {
-                    tokio::time::sleep(retry_delay()).await;
+                    tokio::time::sleep(retry_delay()?).await;
                     continue;
                 }
                 Err(_) => {
@@ -431,12 +431,15 @@ impl BeaconClient {
                 return Ok(body);
             }
             if attempt == 0 && [502, 503, 504].contains(&status.as_u16()) && retry_after.is_none() {
-                tokio::time::sleep(retry_delay()).await;
+                tokio::time::sleep(retry_delay()?).await;
                 continue;
             }
             return Err(classify(status, &body, retry_after));
         }
-        unreachable!("two attempts always return")
+        Err(GatewayError::new(
+            ErrorCode::Unavailable,
+            "Beacon retry attempts exhausted",
+        ))
     }
 
     /// Incrementally read a top-level array. The item budget bounds transfer and
@@ -511,7 +514,7 @@ impl BeaconClient {
                     ));
                 }
                 Err(_) if attempt == 0 => {
-                    tokio::time::sleep(retry_delay()).await;
+                    tokio::time::sleep(retry_delay()?).await;
                     continue;
                 }
                 Err(_) => {
@@ -533,12 +536,15 @@ impl BeaconClient {
             let body = serde_json::from_slice::<Value>(&read_bounded(response).await?)
                 .unwrap_or(Value::Null);
             if attempt == 0 && [502, 503, 504].contains(&status.as_u16()) && retry_after.is_none() {
-                tokio::time::sleep(retry_delay()).await;
+                tokio::time::sleep(retry_delay()?).await;
                 continue;
             }
             return Err(classify(status, &body, retry_after));
         }
-        unreachable!("two attempts always return")
+        Err(GatewayError::new(
+            ErrorCode::Unavailable,
+            "Beacon retry attempts exhausted",
+        ))
     }
 }
 
@@ -589,8 +595,7 @@ async fn read_array_page(
         .await
         .map_err(|_| GatewayError::new(ErrorCode::Unavailable, "Beacon response was interrupted"))?
     {
-        consumed += chunk.len();
-        if consumed > MAX_BYTES {
+        if chunk.len() > MAX_BYTES - consumed {
             if !items.is_empty() {
                 return Ok(ArrayPage {
                     items,
@@ -602,6 +607,7 @@ async fn read_array_page(
                 "Beacon response exceeded 5 MiB",
             ));
         }
+        consumed += chunk.len();
         buffer.extend_from_slice(&chunk);
         while scanned < buffer.len() {
             let byte = buffer[scanned];
@@ -643,10 +649,10 @@ async fn read_array_page(
                 quoted = true;
             } else if byte == b'{' || byte == b'[' {
                 depth += 1;
-            } else if byte == b'}' || (byte == b']' && depth > 0) {
+            } else if (byte == b'}' || byte == b']') && depth > 0 {
                 depth -= 1;
                 if depth == 0 {
-                    let from = start.take().expect("element start");
+                    let from = start.take().ok_or_else(invalid_array)?;
                     items.push(
                         serde_json::from_slice(&buffer[from..=scanned])
                             .map_err(|_| invalid_array())?,
@@ -659,7 +665,7 @@ async fn read_array_page(
                     }
                 }
             } else if depth == 0 && (byte == b',' || byte == b']') {
-                let from = start.take().expect("element start");
+                let from = start.take().ok_or_else(invalid_array)?;
                 items.push(
                     serde_json::from_slice(&buffer[from..scanned]).map_err(|_| invalid_array())?,
                 );
