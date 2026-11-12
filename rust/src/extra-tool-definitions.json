@@ -24,7 +24,62 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "connected": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_channel": {
@@ -53,7 +108,63 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "channelHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "hashtag": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "id": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "isHashtag": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "keyFingerprint": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "keyKnown": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "lastSeen": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "messageCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     }
   },
   "beacon_get_iata": {
@@ -82,7 +193,33 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "displayName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "iata": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lat": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "lon": {
+          "type": [
+            "number",
+            "null"
+          ]
+        }
+      }
     }
   },
   "beacon_get_iata_border": {
@@ -111,7 +248,13 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "available": {
+          "type": "boolean",
+          "description": "False if upstream returned 204"
+        }
+      }
     }
   },
   "beacon_backfill_messages": {
@@ -171,7 +314,104 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "channelHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "content": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "observationCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "packetHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scope": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scopeStatus": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "senderName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sentAt": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_node_activity": {
@@ -207,7 +447,99 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "generatedAt": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "latest": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "points": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "hopAvg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "observations": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "rssiAvg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "snrAvg": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "t": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "range": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rawFrom": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "rolledUntil": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "summary": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "windowEnd": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "windowStart": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
     }
   },
   "beacon_get_node_neighbors": {
@@ -243,7 +575,122 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "firstSeen": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "iata": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "lastSeen": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "lat": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "lng": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "nodeType": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "nodeTypeName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "observationCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "publicKey": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "snr": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_node_observations": {
@@ -284,7 +731,48 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_observer_adverts": {
@@ -325,7 +813,48 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_observer_telemetry": {
@@ -374,7 +903,81 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "interval": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "points": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "airtimeRxSecs": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "airtimeTxSecs": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "batteryMv": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "noiseFloorDb": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "queueLength": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "receiveErrors": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "t": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "uptimeSeconds": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "range": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
     }
   },
   "beacon_list_observer_directory": {
@@ -474,7 +1077,152 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "displayName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "iata": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "observationCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "observerType": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "radio": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scopes": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "string"
+                }
+              },
+              "status": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        },
+        "windowStart": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "windowEnd": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "coverage": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "sort": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "effectiveSort": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "generatedAt": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "maxObservationCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "observerTypes": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_backfill_packets": {
@@ -549,7 +1297,116 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "firstHeardAt": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "lastHeardAt": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "latestObserver": {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              },
+              "observationCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "packetHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "payloadType": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "payloadTypeName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "routeType": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "routeTypeName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scope": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "summary": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_region": {
@@ -578,7 +1435,60 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "centerLat": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "centerLng": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "iatas": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "id": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "slug": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "zoomLevel": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
     }
   },
   "beacon_get_route_observations": {
@@ -639,7 +1549,135 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "generatedAt": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "hasMore": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "hashSize": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "items": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "heardAt": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "id": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "observerId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "observerName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "packetHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "payloadType": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "payloadTypeName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "rssi": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "snr": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "matchAvailable": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "matchType": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nextPageCursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pathBytes": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "route": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "windowEnd": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "windowStart": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
     }
   },
   "beacon_get_scope": {
@@ -669,7 +1707,48 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "iataCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "iatas": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "nodeCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "observerCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "packetCount": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
     }
   },
   "beacon_get_clock_drift": {
@@ -701,13 +1780,126 @@
           "minimum": 1,
           "maximum": 50,
           "default": 20
+        },
+        "iatas": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{3}$"
+          },
+          "description": "IATA codes; normalized to uppercase"
         }
       }
     },
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "clockCheckedAt": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "clockDriftSeconds": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "iatas": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "iata": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "lastHeard": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              },
+              "nodeId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "nodeName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "nodeType": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "nodeTypeName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_node_types": {
@@ -739,13 +1931,84 @@
           "minimum": 1,
           "maximum": 50,
           "default": 20
+        },
+        "iatas": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{3}$"
+          },
+          "description": "IATA codes; normalized to uppercase"
         }
       }
     },
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "count": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "nodeType": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "nodeTypeName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_observation_stats": {
@@ -782,13 +2045,84 @@
           "minimum": 1,
           "maximum": 50,
           "default": 20
+        },
+        "iatas": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{3}$"
+          },
+          "description": "IATA codes; normalized to uppercase"
         }
       }
     },
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "hour": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "iata": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "observationCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_path_stats": {
@@ -843,7 +2177,165 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "empty": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "hashWidths": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "bytes": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "receptions": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "hashed": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "hourly": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "empty": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "hour": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "maxEntries": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "oneByte": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "receptions": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "threeByte": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "trace": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "twoByte": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "unclassified": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pathLengths": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "entries": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "receptions": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "receptions": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "since": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "trace": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "unclassified": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "until": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
     }
   },
   "beacon_get_payload_breakdown": {
@@ -880,13 +2372,84 @@
           "minimum": 1,
           "maximum": 50,
           "default": 20
+        },
+        "iatas": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{3}$"
+          },
+          "description": "IATA codes; normalized to uppercase"
         }
       }
     },
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "count": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "payloadType": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "payloadTypeName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_radio_presets": {
@@ -927,13 +2490,86 @@
           "minimum": 1,
           "maximum": 50,
           "default": 20
+        },
+        "preset": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Exact radio preset, e.g. 910.525,62.5,7"
         }
       }
     },
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "count": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "iata": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "preset": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sourceType": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_scope_stats": {
@@ -974,13 +2610,126 @@
           "minimum": 1,
           "maximum": 50,
           "default": 20
+        },
+        "iatas": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{3}$"
+          },
+          "description": "IATA codes; normalized to uppercase"
         }
       }
     },
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "hourly": {
+                "type": [
+                  "array",
+                  "null"
+                ],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "hour": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "nodes": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "observers": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "packets": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    }
+                  }
+                }
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "nodeCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "observerCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "packetCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_signal_stats": {
@@ -1035,7 +2784,87 @@
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": true,
+      "properties": {
+        "hourly": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "hour": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "receptions": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "rssiAverage": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "rssiSamples": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "snrAverage": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "snrSamples": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "receptions": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "rssi": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "since": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "snr": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "until": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      }
     }
   },
   "beacon_get_top_nodes": {
@@ -1072,13 +2901,114 @@
           "minimum": 1,
           "maximum": 50,
           "default": 20
+        },
+        "iatas": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{3}$"
+          },
+          "description": "IATA codes; normalized to uppercase"
         }
       }
     },
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "iata": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "lastHeard": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "nodeId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "nodeName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "nodeType": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "nodeTypeName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "observationCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "publicKey": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_top_observers": {
@@ -1115,13 +3045,96 @@
           "minimum": 1,
           "maximum": 50,
           "default": 20
+        },
+        "iatas": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{3}$"
+          },
+          "description": "IATA codes; normalized to uppercase"
         }
       }
     },
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "displayName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "iata": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "observationCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "observerId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "observerType": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   },
   "beacon_get_top_talkers": {
@@ -1158,13 +3171,84 @@
           "minimum": 1,
           "maximum": 50,
           "default": 20
+        },
+        "iatas": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 20,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9]{3}$"
+          },
+          "description": "IATA codes; normalized to uppercase"
         }
       }
     },
     "outputSchema": {
       "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
-      "additionalProperties": true
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "lastSent": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "messageCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "senderName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "cursor": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pageCursor": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "required": [
+            "hasMore"
+          ]
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ]
     }
   }
 }
