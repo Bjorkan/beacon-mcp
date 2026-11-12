@@ -16,7 +16,10 @@ volume, replay queue, admin operation, writable endpoint or arbitrary HTTP
 proxy exists. Every request gets a fresh MCP handler. Resource notifications
 use one process-local WebSocket and broadcast bus per replica; listeners must
 stay on that replica, and updates may be lost. The gateway never advertises
-MCP Events; see [the gated plan](docs/mcp-events-migration.md) for issue #17.
+MCP Events. The project permanently forbids client authentication and
+persistent disk, database or external event storage; Events webhooks and
+replay/outbox are therefore out of scope. See the
+[non-implementation policy](docs/mcp-events-migration.md).
 
 Pinned upstream API/release: `v2.2.0` at
 `265a835e36931a2c39b9b08e7a78837b9cf0e343` (re-cut annotated tag).
