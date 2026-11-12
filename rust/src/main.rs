@@ -1,3 +1,9 @@
+#![forbid(unsafe_code)]
+#![cfg_attr(
+    not(test),
+    deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
+)]
+
 use beacon_mcp_rust::{
     client::BeaconClient,
     config::Config,
@@ -25,8 +31,15 @@ fn healthcheck() -> bool {
         };
         for address in addresses {
             if let Ok(mut stream) = TcpStream::connect_timeout(&address, Duration::from_secs(1)) {
-                let _ = stream.set_read_timeout(Some(Duration::from_secs(1)));
-                let _ = stream.set_write_timeout(Some(Duration::from_secs(1)));
+                if stream
+                    .set_read_timeout(Some(Duration::from_secs(1)))
+                    .is_err()
+                    || stream
+                        .set_write_timeout(Some(Duration::from_secs(1)))
+                        .is_err()
+                {
+                    continue;
+                }
                 if stream
                     .write_all(
                         b"GET /healthz HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n",
@@ -80,7 +93,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         config.beacon_base_url.clone(),
         config.beacon_timeout,
         config.stats_timeout,
-    );
+    )?;
     let live = config.subscriptions.enabled.then(|| {
         Live::new(
             config.subscriptions.max_streams,
@@ -127,8 +140,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     shutdown.cancel();
-    if let Some(task) = bridge_task {
-        let _ = tokio::time::timeout(std::time::Duration::from_secs(2), task).await;
+    if let Some(mut task) = bridge_task {
+        match tokio::time::timeout(Duration::from_secs(2), &mut task).await {
+            Ok(Ok(())) => {}
+            Ok(Err(error)) => tracing::warn!(%error, "WebSocket bridge exited with an error"),
+            Err(_) => {
+                task.abort();
+                tracing::warn!("WebSocket bridge aborted after shutdown deadline");
+            }
+        }
     }
     Ok(())
 }

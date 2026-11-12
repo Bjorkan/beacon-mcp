@@ -346,7 +346,10 @@ impl ExtraTools {
                 }
                 Ok(result)
             }
-            Shape::Array => unreachable!("array responses are streamed above"),
+            Shape::Array => Err(GatewayError::new(
+                ErrorCode::Unavailable,
+                "Unexpected array response path",
+            )),
             Shape::Object => {
                 if response.is_null() {
                     Ok(json!({"available": false}))

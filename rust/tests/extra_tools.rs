@@ -67,7 +67,8 @@ async fn mock() -> (
         url.parse().unwrap(),
         Duration::from_secs(2),
         Duration::from_secs(2),
-    );
+    )
+    .expect("HTTP client configuration");
     (ExtraTools::new(client), seen, task)
 }
 
@@ -81,7 +82,8 @@ fn frozen_discovery_has_all_additional_tools_and_read_only_hints() {
         "http://127.0.0.1:9/".parse().unwrap(),
         Duration::from_secs(1),
         Duration::from_secs(1),
-    );
+    )
+    .expect("HTTP client configuration");
     let tools = ExtraTools::new(client);
     let listed = tools.list();
     assert_eq!(listed.len(), 26);

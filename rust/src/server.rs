@@ -73,7 +73,7 @@ fn validate_field(value: &Value, schema: &Value, path: &str) -> Result<(), Strin
         }
         if let Some(pattern) = schema["pattern"].as_str()
             && !regex::Regex::new(pattern)
-                .expect("valid frozen input pattern")
+                .map_err(|_| format!("{path}: Invalid validation pattern"))?
                 .is_match(text)
         {
             if schema["format"] == "uuid" {
@@ -103,7 +103,9 @@ fn validate_field(value: &Value, schema: &Value, path: &str) -> Result<(), Strin
             ),
         ] {
             if condition {
-                let bound = schema[key].as_f64().expect("frozen numeric bound");
+                let bound = schema[key]
+                    .as_f64()
+                    .ok_or_else(|| format!("{path}: Invalid numeric schema bound"))?;
                 let bound = if bound.fract() == 0.0 {
                     format!("{bound:.0}")
                 } else {
@@ -138,7 +140,7 @@ fn validate_tool_input(tool: &Tool, args: &rmcp::model::JsonObject) -> Result<()
     let schema = &tool.input_schema;
     let properties = schema["properties"]
         .as_object()
-        .expect("tool schema properties");
+        .ok_or_else(|| "Invalid tool schema properties".to_owned())?;
     let mut errors = Vec::new();
     for field in schema
         .get("required")
@@ -146,7 +148,9 @@ fn validate_tool_input(tool: &Tool, args: &rmcp::model::JsonObject) -> Result<()
         .into_iter()
         .flatten()
     {
-        let field = field.as_str().expect("required field name");
+        let field = field
+            .as_str()
+            .ok_or_else(|| "Invalid required field name".to_owned())?;
         if !args.contains_key(field) {
             let rule = &properties[field];
             let reason = if let Some(options) = rule["enum"].as_array() {
@@ -213,8 +217,8 @@ impl ServerHandler for BeaconServer {
         // rmcp 3.8 no longer lists 2024-10-07 among its built-in revisions,
         // but the existing gateway still serves its stateless initialize.
         if request.protocol_version.as_str() == "2024-10-07" {
-            info.protocol_version =
-                serde_json::from_str("\"2024-10-07\"").expect("valid legacy protocol revision");
+            info.protocol_version = serde_json::from_str("\"2024-10-07\"")
+                .map_err(|_| McpError::internal_error("Legacy protocol unavailable", None))?;
         }
         // subscribe in the legacy capability means resources/subscribe, not
         // the modern subscriptions/listen stream supported by this gateway.

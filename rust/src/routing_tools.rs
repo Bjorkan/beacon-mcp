@@ -278,15 +278,16 @@ impl RoutingTools {
             .cloned()
             .collect::<Vec<_>>();
         let mut pagination = json!({"hasMore":false});
-        if items.len() == limit as usize {
-            let last = &items[items.len() - 1];
+        if let Some(last) = items.last().filter(|_| items.len() == limit as usize) {
             let cursor = if name == "beacon_list_routes" {
                 json!({"cursor":last["lastSeen"],"cursorId":last["id"]})
             } else {
                 json!({"cursor":last["lastHeardAt"],"cursorTag":last["traceTag"]})
             };
             if cursor["cursor"].is_number()
-                && !cursor.as_object().unwrap().values().any(Value::is_null)
+                && cursor
+                    .as_object()
+                    .is_some_and(|fields| !fields.values().any(Value::is_null))
             {
                 pagination = json!({"hasMore":true,"nextCursor":cursor});
             }

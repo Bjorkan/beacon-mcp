@@ -49,7 +49,8 @@ async fn backend(
             base.parse().unwrap(),
             Duration::from_secs(2),
             Duration::from_secs(2),
-        ),
+        )
+        .expect("HTTP client configuration"),
         seen,
         task,
     )
@@ -272,7 +273,8 @@ async fn incremental_json_array_keeps_escapes_strings_scalars_and_nested_values(
         base.parse().unwrap(),
         Duration::from_secs(2),
         Duration::from_secs(2),
-    );
+    )
+    .expect("HTTP client configuration");
     let page = client.array_page(Operation::Iatas, &[], 10).await.unwrap();
     assert!(page.complete);
     assert_eq!(

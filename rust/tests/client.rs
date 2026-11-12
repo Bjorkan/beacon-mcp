@@ -30,7 +30,8 @@ async fn mock(
             url.parse().unwrap(),
             Duration::from_millis(100),
             Duration::from_millis(250),
-        ),
+        )
+        .expect("HTTP client configuration"),
         task,
     )
 }
@@ -230,7 +231,8 @@ async fn bounds_timeouts_and_supports_caller_cancellation() {
         url.parse().unwrap(),
         Duration::from_millis(40),
         Duration::from_secs(1),
-    );
+    )
+    .expect("HTTP client configuration");
     assert_eq!(
         client
             .request(Operation::ServerInfo, None, &[])
@@ -243,7 +245,8 @@ async fn bounds_timeouts_and_supports_caller_cancellation() {
         url.parse().unwrap(),
         Duration::from_secs(1),
         Duration::from_secs(1),
-    );
+    )
+    .expect("HTTP client configuration");
     let pending =
         tokio::spawn(async move { client.request(Operation::ServerInfo, None, &[]).await });
     tokio::time::sleep(Duration::from_millis(20)).await;
@@ -367,5 +370,16 @@ async fn additional_unpaged_api_arrays_stop_without_buffering_full_body() {
         .unwrap();
     assert_eq!(result.items.len(), 2);
     assert!(!result.complete);
+    server.abort();
+}
+
+#[tokio::test]
+async fn malformed_scalar_array_cannot_underflow_nesting_depth() {
+    let (client, server) = mock(|_: Request<Body>| response(StatusCode::OK, "[null}]")).await;
+    let error = client
+        .array_page(Operation::Iatas, &[], 2)
+        .await
+        .unwrap_err();
+    assert_eq!(error.code, ErrorCode::Unavailable);
     server.abort();
 }

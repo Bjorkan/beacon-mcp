@@ -14,7 +14,8 @@ fn additional_tool_queries_cover_every_pinned_upstream_parameter() {
         "http://127.0.0.1:9/".parse().unwrap(),
         Duration::from_secs(1),
         Duration::from_secs(1),
-    );
+    )
+    .expect("HTTP client configuration");
     let extra = ExtraTools::new(client.clone());
     let core = CoreTools::new(client.clone());
     let packets = PacketTools::new(client.clone());

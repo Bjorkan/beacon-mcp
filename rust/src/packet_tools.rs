@@ -365,7 +365,7 @@ impl PacketTools {
             "beacon_search_messages" => Operation::Messages,
             "beacon_list_channels" => Operation::Channels,
             "beacon_get_channel_messages" => Operation::ChannelMessages,
-            _ => unreachable!("checked by fields"),
+            _ => return Err(invalid("unknown Beacon packet tool")),
         };
         if name == "beacon_get_packet" {
             return self.client.request(op, args.hash.as_deref(), &query).await;
@@ -396,14 +396,13 @@ impl PacketTools {
                 .as_object_mut()
                 .map(|cursor| cursor.remove("pageCursor"));
         }
-        if result["pagination"]["nextCursor"]
-            .as_object()
-            .is_some_and(serde_json::Map::is_empty)
+        if let Some(pagination) = result["pagination"].as_object_mut()
+            && pagination
+                .get("nextCursor")
+                .and_then(Value::as_object)
+                .is_some_and(serde_json::Map::is_empty)
         {
-            result["pagination"]
-                .as_object_mut()
-                .unwrap()
-                .remove("nextCursor");
+            pagination.remove("nextCursor");
         }
         Ok(result)
     }

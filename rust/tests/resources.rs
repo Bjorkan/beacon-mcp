@@ -85,7 +85,8 @@ async fn templates_read_both_resources_and_reject_injected_uris() {
             upstream.parse().unwrap(),
             Duration::from_secs(1),
             Duration::from_secs(1),
-        ),
+        )
+        .expect("HTTP client configuration"),
     );
     let app_task = tokio::spawn(async move { axum::serve(gateway_listener, app).await.unwrap() });
     let client = reqwest::Client::new();

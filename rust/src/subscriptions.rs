@@ -1,6 +1,7 @@
 use crate::client::{BeaconClient, ErrorCode, Operation};
 use crate::resources::parse_uri;
 use futures_util::{SinkExt, StreamExt};
+use serde::Deserialize;
 use serde_json::Value;
 use std::{
     collections::HashSet,
@@ -14,6 +15,28 @@ use tokio_tungstenite::{
 };
 use tokio_util::sync::CancellationToken;
 use url::Url;
+
+#[derive(Deserialize)]
+struct WsMessage {
+    v: u8,
+    #[serde(rename = "type")]
+    kind: WsMessageKind,
+    id: Option<String>,
+    event: Option<String>,
+    data: Option<Value>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "lowercase")]
+enum WsMessageKind {
+    Hello,
+    Subscribed,
+    Pong,
+    Lagged,
+    Event,
+    #[serde(other)]
+    Unknown,
+}
 
 /// Bounded, process-local bus. There is no replay; clients re-read a resource after updates.
 pub struct Live {
@@ -52,7 +75,10 @@ impl Live {
             return;
         };
         let uri = format!("beacon://{kind}/{id}");
-        let mut pending = self.pending.lock().expect("notification queue");
+        let Ok(mut pending) = self.pending.lock() else {
+            tracing::error!("WebSocket notification queue lock poisoned");
+            return;
+        };
         if pending.len() >= 1024 || !pending.insert(uri.clone()) {
             return;
         }
@@ -66,7 +92,12 @@ impl Live {
                 _=shutdown.cancelled()=>{},
                 _=tokio::time::sleep(delay)=>{let _=sender.send(uri.clone());},
             }
-            pending.lock().expect("notification queue").remove(&uri);
+            match pending.lock() {
+                Ok(mut notifications) => {
+                    notifications.remove(&uri);
+                }
+                Err(_) => tracing::error!("WebSocket notification queue lock poisoned"),
+            }
         });
     }
 }
@@ -150,7 +181,7 @@ async fn connect_once(
             _=&mut handshake,if !ready => return Err("WebSocket subscription handshake timed out"),
             _=ping.tick(),if ready => {
                 if awaiting_pong {return Err("WebSocket application pong timed out");}
-                ping_id+=1;
+                ping_id=ping_id.checked_add(1).ok_or("WebSocket ping sequence exhausted")?;
                 socket.send(Message::Text(serde_json::json!({"v":1,"type":"ping","id":format!("mcp-ping-{ping_id}")}).to_string().into())).await.map_err(|_|"WebSocket ping failed")?;
                 awaiting_pong=true;
             }
@@ -158,22 +189,24 @@ async fn connect_once(
                 let message=next.ok_or("WebSocket closed")?.map_err(|_|"WebSocket receive failed")?;
                 let Message::Text(text)=message else {continue};
                 if text.len()>131_072 {continue;}
-                let Ok(value)=serde_json::from_str::<Value>(&text) else {continue};
-                if value["v"]!=1 {continue;}
-                match value["type"].as_str() {
-                    Some("hello") if !ready => {
+                let Ok(value)=serde_json::from_str::<WsMessage>(&text) else {continue};
+                if value.v!=1 {continue;}
+                match value.kind {
+                    WsMessageKind::Hello if !ready => {
                         seen_hello=true;
                         socket.send(Message::Text(serde_json::json!({"v":1,"type":"subscribe","id":"mcp-changes","scope":{"events":["nodeUpdate","observerStatus"]}}).to_string().into())).await.map_err(|_|"WebSocket subscribe failed")?;
                     }
-                    Some("subscribed") if seen_hello && value["id"]=="mcp-changes"=>{
+                    WsMessageKind::Subscribed if seen_hello && value.id.as_deref()==Some("mcp-changes")=>{
                         ready=true;
                         *retry=Duration::from_secs(1);
                         tracing::info!("Beacon WebSocket subscribed to resource updates");
                     },
-                    Some("pong") if value["id"]==format!("mcp-ping-{ping_id}")=>{awaiting_pong=false;},
-                    Some("lagged")=>{tracing::warn!("Beacon WebSocket dropped events; no replay available");},
-                    Some("event") if ready=>{
-                        if let Some(event)=value["event"].as_str() {live.received(event,&value["data"]);}
+                    WsMessageKind::Pong if value.id.as_deref()==Some(format!("mcp-ping-{ping_id}").as_str())=>{awaiting_pong=false;},
+                    WsMessageKind::Lagged=>{tracing::warn!("Beacon WebSocket dropped events; no replay available");},
+                    WsMessageKind::Event if ready=>{
+                        if let (Some(event),Some(data))=(value.event.as_deref(),value.data.as_ref()) {
+                            live.received(event,data);
+                        }
                     }
                     _=>{},
                 }
