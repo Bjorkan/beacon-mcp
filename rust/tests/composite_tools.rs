@@ -152,11 +152,15 @@ async fn prompts_are_discoverable_and_render_without_upstream_calls() {
             "io.modelcontextprotocol/clientInfo":{"name":"composite-test","version":"1"},
             "io.modelcontextprotocol/clientCapabilities":{}
         });
-        http.post(&root)
+        let mut request = http
+            .post(&root)
             .header("Accept", "application/json, text/event-stream")
             .header("MCP-Protocol-Version", "2026-07-28")
-            .header("Mcp-Method", method)
-            .json(&json!({"jsonrpc":"2.0","id":1,"method":method,"params":params}))
+            .header("Mcp-Method", method);
+        if let Some(name) = params.get("name").and_then(Value::as_str) {
+            request = request.header("Mcp-Name", name);
+        }
+        request.json(&json!({"jsonrpc":"2.0","id":1,"method":method,"params":params}))
     };
     let list: Value = call("prompts/list", json!({}))
         .send()
