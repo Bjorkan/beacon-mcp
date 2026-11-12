@@ -98,17 +98,15 @@ fn frozen_discovery_has_all_additional_tools_and_read_only_hints() {
     assert!(names.contains("beacon_get_node_observations"));
     assert!(names.contains("beacon_get_signal_stats"));
     assert!(names.contains("beacon_get_route_observations"));
-    let activity = serde_json::to_value(tools.definition("beacon_get_node_activity").unwrap())
-        .unwrap();
+    let activity =
+        serde_json::to_value(tools.definition("beacon_get_node_activity").unwrap()).unwrap();
     assert!(activity["outputSchema"]["properties"]["points"]["items"].is_object());
     assert_eq!(
         activity["outputSchema"]["properties"]["windowStart"]["type"][0],
         "integer"
     );
     let ranked = serde_json::to_value(tools.definition("beacon_get_top_nodes").unwrap()).unwrap();
-    assert!(
-        ranked["outputSchema"]["properties"]["items"]["items"]["properties"].is_object()
-    );
+    assert!(ranked["outputSchema"]["properties"]["items"]["items"]["properties"].is_object());
 }
 
 #[tokio::test]
