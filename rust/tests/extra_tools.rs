@@ -48,6 +48,8 @@ async fn mock() -> (
                     json!([{"type":"repeater","count":5},{"type":"sensor","count":3}])
                 } else if uri.contains("/packets/backfill") {
                     json!([{"packetHash":"0011223344556677"}])
+                } else if uri.contains("/stats/") {
+                    json!([{"iata":"ARN","count":1}])
                 } else {
                     json!({"result":"ok"})
                 };
@@ -96,6 +98,17 @@ fn frozen_discovery_has_all_additional_tools_and_read_only_hints() {
     assert!(names.contains("beacon_get_node_observations"));
     assert!(names.contains("beacon_get_signal_stats"));
     assert!(names.contains("beacon_get_route_observations"));
+    let activity = serde_json::to_value(tools.definition("beacon_get_node_activity").unwrap())
+        .unwrap();
+    assert!(activity["outputSchema"]["properties"]["points"]["items"].is_object());
+    assert_eq!(
+        activity["outputSchema"]["properties"]["windowStart"]["type"][0],
+        "integer"
+    );
+    let ranked = serde_json::to_value(tools.definition("beacon_get_top_nodes").unwrap()).unwrap();
+    assert!(
+        ranked["outputSchema"]["properties"]["items"]["items"]["properties"].is_object()
+    );
 }
 
 #[tokio::test]
@@ -213,5 +226,42 @@ async fn directory_preserves_window_and_coverage_on_continuation() {
     let paths = seen.lock().unwrap();
     assert!(paths[0].contains("since=1793491200000"));
     assert!(paths[0].contains("until=1793577600000"));
+    task.abort();
+}
+
+#[tokio::test]
+async fn public_statistic_filters_normalize_iatas_and_preserve_preset() {
+    let (tools, seen, task) = mock().await;
+    for name in [
+        "beacon_get_clock_drift",
+        "beacon_get_node_types",
+        "beacon_get_observation_stats",
+        "beacon_get_payload_breakdown",
+        "beacon_get_scope_stats",
+        "beacon_get_top_nodes",
+        "beacon_get_top_observers",
+        "beacon_get_top_talkers",
+    ] {
+        let reply = tools
+            .execute(name, args(json!({"iatas":["arn","mmx"],"limit":1})))
+            .await
+            .unwrap();
+        assert_eq!(reply["items"].as_array().unwrap().len(), 1, "{name}");
+    }
+    let reply = tools
+        .execute(
+            "beacon_get_radio_presets",
+            args(json!({"preset":"910.525,62.5,7","iatas":["arn"],"limit":1})),
+        )
+        .await
+        .unwrap();
+    assert_eq!(reply["items"].as_array().unwrap().len(), 1);
+    let paths = seen.lock().unwrap();
+    assert_eq!(paths.len(), 9);
+    for path in paths.iter().take(8) {
+        assert!(path.contains("iatas=ARN%2CMMX"), "{path}");
+    }
+    assert!(paths[8].contains("iatas=ARN"));
+    assert!(paths[8].contains("preset=910.525%2C62.5%2C7"));
     task.abort();
 }
