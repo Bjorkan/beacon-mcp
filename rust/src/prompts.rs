@@ -3,8 +3,7 @@ use rmcp::{
     ErrorData as McpError,
     model::{
         GetPromptRequestParams, GetPromptResponse, GetPromptResult, ListPromptsResult, Prompt,
-        PromptArgument,
-        PromptMessage, Role,
+        PromptArgument, PromptMessage, Role,
     },
 };
 use uuid::{Uuid, Variant};
