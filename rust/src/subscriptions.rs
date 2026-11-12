@@ -288,4 +288,45 @@ mod tests {
                 .is_err()
         );
     }
+
+    #[tokio::test]
+    async fn packet_and_channel_hints_are_disabled_by_default_and_keep_only_uris() {
+        let shutdown = CancellationToken::new();
+        let disabled = Live::new(1, Duration::ZERO, shutdown.clone());
+        let mut quiet = disabled.subscribe();
+        disabled.received(
+            "packetObservation",
+            &json!({"packetHash":"AABBCCDDEEFF0011", "content":"do-not-store"}),
+        );
+        disabled.received(
+            "channelMessage",
+            &json!({"channelId":25,"content":"do-not-store"}),
+        );
+        assert!(tokio::time::timeout(Duration::from_millis(30), quiet.recv())
+            .await
+            .is_err());
+
+        let live = Live::configured(1, Duration::ZERO, shutdown, true);
+        let mut events = live.subscribe();
+        live.received("packetObservation", &json!({"packetHash":"AABBCCDDEEFF0011"}));
+        live.received("channelMessage", &json!({"channelId":25,"content":"secret"}));
+        live.received("packetObservation", &json!({"packetHash":"../../admin"}));
+        live.received("channelMessage", &json!({"channelId":0}));
+        let a = tokio::time::timeout(Duration::from_millis(300), events.recv())
+            .await.unwrap().unwrap();
+        let b = tokio::time::timeout(Duration::from_millis(300), events.recv())
+            .await.unwrap().unwrap();
+        let mut uris = [a, b];
+        uris.sort();
+        assert_eq!(
+            uris,
+            [
+                "beacon://channels/25".to_owned(),
+                "beacon://packets/aabbccddeeff0011".to_owned()
+            ]
+        );
+        assert!(tokio::time::timeout(Duration::from_millis(30), events.recv())
+            .await.is_err());
+    }
+
 }
