@@ -104,7 +104,9 @@ impl Config {
             None | Some("false") => false,
             Some("true") if enabled => true,
             Some("true") => {
-                return Err("Traffic subscriptions require BEACON_SUBSCRIPTIONS_ENABLED=true".into());
+                return Err(
+                    "Traffic subscriptions require BEACON_SUBSCRIPTIONS_ENABLED=true".into(),
+                );
             }
             _ => {
                 return Err("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED must be true or false".into());
