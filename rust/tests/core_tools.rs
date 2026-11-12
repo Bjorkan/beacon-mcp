@@ -125,7 +125,7 @@ async fn lists_only_implemented_tools_and_calls_all_nine() {
         .iter()
         .map(|v| v["name"].as_str().unwrap())
         .collect::<Vec<_>>();
-    assert_eq!(names.len(), 49);
+    assert_eq!(names.len(), 51);
     for (name, args, field) in [
         ("beacon_get_server_info", json!({}), "serverVersion"),
         ("beacon_list_iatas", json!({"limit":1}), "items"),
