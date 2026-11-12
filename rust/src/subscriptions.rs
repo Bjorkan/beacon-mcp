@@ -45,10 +45,21 @@ pub struct Live {
     pub permits: Arc<Semaphore>,
     pub shutdown: CancellationToken,
     debounce: Duration,
+    traffic_enabled: bool,
 }
 
 impl Live {
     pub fn new(max_streams: usize, debounce: Duration, shutdown: CancellationToken) -> Arc<Self> {
+        Self::configured(max_streams, debounce, shutdown, false)
+    }
+
+    /// Public packet/channel notifications are opt-in: they can be high volume.
+    pub fn configured(
+        max_streams: usize,
+        debounce: Duration,
+        shutdown: CancellationToken,
+        traffic_enabled: bool,
+    ) -> Arc<Self> {
         let (sender, _) = broadcast::channel(1024);
         Arc::new(Self {
             sender,
@@ -56,21 +67,47 @@ impl Live {
             permits: Arc::new(Semaphore::new(max_streams)),
             shutdown,
             debounce,
+            traffic_enabled,
         })
     }
+
+    pub fn traffic_enabled(&self) -> bool {
+        self.traffic_enabled
+    }
+
     pub fn subscribe(&self) -> broadcast::Receiver<String> {
         self.sender.subscribe()
     }
     pub fn received(&self, event: &str, data: &Value) {
-        let (kind, field) = match event {
-            "nodeUpdate" => ("nodes", "nodeId"),
-            "observerStatus" => ("observers", "observerId"),
+        // Emit only canonical resource identifiers. Never retain WebSocket
+        // message contents or packet payloads in the process-local bus.
+        let uri = match event {
+            "nodeUpdate" => {
+                let Some(id) = data.get("nodeId").and_then(Value::as_str) else {
+                    return;
+                };
+                format!("beacon://nodes/{id}")
+            }
+            "observerStatus" => {
+                let Some(id) = data.get("observerId").and_then(Value::as_str) else {
+                    return;
+                };
+                format!("beacon://observers/{id}")
+            }
+            "packetObservation" if self.traffic_enabled => {
+                let Some(hash) = data.get("packetHash").and_then(Value::as_str) else {
+                    return;
+                };
+                format!("beacon://packets/{hash}")
+            }
+            "channelMessage" if self.traffic_enabled => {
+                let Some(id) = data.get("channelId").and_then(Value::as_i64) else {
+                    return;
+                };
+                format!("beacon://channels/{id}")
+            }
             _ => return,
         };
-        let Some(id) = data.get(field).and_then(Value::as_str) else {
-            return;
-        };
-        let uri = format!("beacon://{kind}/{id}");
         let Some((kind, id)) = parse_uri(&uri) else {
             return;
         };
@@ -194,7 +231,11 @@ async fn connect_once(
                 match value.kind {
                     WsMessageKind::Hello if !ready => {
                         seen_hello=true;
-                        socket.send(Message::Text(serde_json::json!({"v":1,"type":"subscribe","id":"mcp-changes","scope":{"events":["nodeUpdate","observerStatus"]}}).to_string().into())).await.map_err(|_|"WebSocket subscribe failed")?;
+                        let mut events = vec!["nodeUpdate", "observerStatus"];
+                        if live.traffic_enabled {
+                            events.extend(["packetObservation", "channelMessage"]);
+                        }
+                        socket.send(Message::Text(serde_json::json!({"v":1,"type":"subscribe","id":"mcp-changes","scope":{"events":events}}).to_string().into())).await.map_err(|_|"WebSocket subscribe failed")?;
                     }
                     WsMessageKind::Subscribed if seen_hello && value.id.as_deref()==Some("mcp-changes")=>{
                         ready=true;
