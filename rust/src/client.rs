@@ -447,7 +447,8 @@ impl BeaconClient {
         query: &[(&str, String)],
         max_items: usize,
     ) -> Result<ArrayPage, GatewayError> {
-        self.array_page_with_id(operation, None, query, max_items).await
+        self.array_page_with_id(operation, None, query, max_items)
+            .await
     }
 
     /// Stream allowlisted public GET arrays, including fixed identifier paths.
