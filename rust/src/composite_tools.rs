@@ -32,7 +32,9 @@ fn invalid(reason: &str) -> GatewayError {
 fn iata(raw: &str) -> Result<String, GatewayError> {
     let text = raw.trim();
     if text.len() != 3 || !text.bytes().all(|byte| byte.is_ascii_alphanumeric()) {
-        return Err(invalid("IATA must be exactly three ASCII letters or digits"));
+        return Err(invalid(
+            "IATA must be exactly three ASCII letters or digits",
+        ));
     }
     Ok(text.to_ascii_uppercase())
 }
@@ -54,7 +56,10 @@ impl CompositeTools {
     }
 
     pub fn list(&self) -> Vec<Tool> {
-        NAMES.iter().filter_map(|name| self.definition(name)).collect()
+        NAMES
+            .iter()
+            .filter_map(|name| self.definition(name))
+            .collect()
     }
 
     pub fn definition(&self, name: &str) -> Option<Tool> {
@@ -79,7 +84,11 @@ impl CompositeTools {
                 if args.iata_a.is_some() || args.iata_b.is_some() {
                     return Err(invalid("unsupported node diagnostic filter"));
                 }
-                let id = node_id(args.id.as_deref().ok_or_else(|| invalid("id is required"))?)?;
+                let id = node_id(
+                    args.id
+                        .as_deref()
+                        .ok_or_else(|| invalid("id is required"))?,
+                )?;
                 let range = args.range.unwrap_or_else(|| "24h".to_owned());
                 if !["24h", "48h", "168h"].contains(&range.as_str()) {
                     return Err(invalid("unsupported diagnostic range"));
@@ -91,7 +100,8 @@ impl CompositeTools {
                 let range_query = [("range", range.clone())];
                 let get_node = self.client.request(Operation::Node, Some(&id), &[]);
                 let get_activity =
-                    self.client.request(Operation::NodeActivity, Some(&id), &range_query);
+                    self.client
+                        .request(Operation::NodeActivity, Some(&id), &range_query);
                 let get_neighbors = self.client.array_page_with_id(
                     Operation::NodeNeighbors,
                     Some(&id),
@@ -114,8 +124,16 @@ impl CompositeTools {
                 if args.id.is_some() || args.range.is_some() || args.neighbor_limit.is_some() {
                     return Err(invalid("unsupported regional comparison filter"));
                 }
-                let a = iata(args.iata_a.as_deref().ok_or_else(|| invalid("iataA is required"))?)?;
-                let b = iata(args.iata_b.as_deref().ok_or_else(|| invalid("iataB is required"))?)?;
+                let a = iata(
+                    args.iata_a
+                        .as_deref()
+                        .ok_or_else(|| invalid("iataA is required"))?,
+                )?;
+                let b = iata(
+                    args.iata_b
+                        .as_deref()
+                        .ok_or_else(|| invalid("iataB is required"))?,
+                )?;
                 if a == b {
                     return Err(invalid("iataA and iataB must be different"));
                 }
