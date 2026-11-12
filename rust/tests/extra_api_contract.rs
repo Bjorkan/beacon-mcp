@@ -1,4 +1,7 @@
-use beacon_mcp_rust::{client::BeaconClient, extra_tools::ExtraTools};
+use beacon_mcp_rust::{
+    analytics_tools::AnalyticsTools, client::BeaconClient, extra_tools::ExtraTools,
+    packet_tools::PacketTools, routing_tools::RoutingTools, tools::CoreTools,
+};
 use serde_json::Value;
 use std::time::Duration;
 
@@ -12,7 +15,11 @@ fn additional_tool_queries_cover_every_pinned_upstream_parameter() {
         Duration::from_secs(1),
         Duration::from_secs(1),
     );
-    let tools = ExtraTools::new(client);
+    let extra = ExtraTools::new(client.clone());
+    let core = CoreTools::new(client.clone());
+    let packets = PacketTools::new(client.clone());
+    let routing = RoutingTools::new(client.clone());
+    let analytics = AnalyticsTools::new(client);
     let routes = [
         ("beacon_list_brokers", "/brokers"),
         ("beacon_get_channel", "/channels/{channelID}"),
@@ -42,7 +49,33 @@ fn additional_tool_queries_cover_every_pinned_upstream_parameter() {
         ("beacon_get_top_talkers", "/stats/top-talkers"),
     ];
     assert_eq!(routes.len(), 26);
-    for (name, route) in routes {
+    let legacy_routes = [
+        ("beacon_get_server_info", "/info"),
+        ("beacon_list_iatas", "/iatas"),
+        ("beacon_list_regions", "/regions"),
+        ("beacon_list_scopes", "/scopes"),
+        ("beacon_search_nodes", "/nodes"),
+        ("beacon_get_node", "/nodes/{nodeId}"),
+        ("beacon_search_observers", "/observers"),
+        ("beacon_get_observer", "/observers/{observerId}"),
+        ("beacon_get_observer_activity", "/observers/{observerId}/activity"),
+        ("beacon_search_packets", "/packets"),
+        ("beacon_get_packet", "/packets/{packetHash}"),
+        ("beacon_search_messages", "/messages"),
+        ("beacon_list_channels", "/channels"),
+        ("beacon_get_channel_messages", "/channels/{channelID}/messages"),
+        ("beacon_list_routes", "/routes"),
+        ("beacon_search_routes", "/routes/search"),
+        ("beacon_find_cross_iata_routes", "/routes/cross"),
+        ("beacon_search_traces", "/traces"),
+        ("beacon_get_trace", "/traces/{tag}"),
+        ("beacon_get_top_advertisers", "/stats/top-advertisers"),
+        ("beacon_get_network_overview", "/stats/overview"),
+        ("beacon_get_network_series", "/stats/series"),
+        ("beacon_compare_observers", "/stats/observer-comparison"),
+    ];
+    assert_eq!(legacy_routes.len(), 23);
+    for (name, route) in routes.into_iter().chain(legacy_routes) {
         let needle = format!("\n  {route}:\n");
         let index = swagger.find(&needle).expect("route must exist in pinned Swagger");
         let remainder = &swagger[index + needle.len()..];
@@ -50,7 +83,13 @@ fn additional_tool_queries_cover_every_pinned_upstream_parameter() {
         let section = &remainder[..end];
         assert!(section.contains("\n    get:\n"), "{route} must be a GET route");
 
-        let tool = tools.definition(name).expect("MCP tool must be registered");
+        let tool = extra
+            .definition(name)
+            .or_else(|| core.definition(name))
+            .or_else(|| packets.definition(name))
+            .or_else(|| routing.definition(name))
+            .or_else(|| analytics.definition(name))
+            .expect("MCP tool must be registered");
         let schema: Value = serde_json::to_value(tool).unwrap();
         let mut next_is_query_name = false;
         for line in section.lines() {
@@ -59,6 +98,15 @@ fn additional_tool_queries_cover_every_pinned_upstream_parameter() {
                 next_is_query_name = true;
             } else if next_is_query_name && line.starts_with("name: ") {
                 let param = line.trim_start_matches("name: ");
+                // Upstream advertises region filters for message reads but its
+                // handlers never apply them (they only call parseIATAs).
+                if ["beacon_search_messages", "beacon_get_channel_messages"].contains(&name)
+                    && ["region", "regionId"].contains(&param)
+                {
+                    next_is_query_name = false;
+                    continue;
+                }
+                let param = if param == "channelID" { "channelId" } else { param };
                 assert!(
                     schema["inputSchema"]["properties"].get(param).is_some(),
                     "{name} missing upstream query filter {param} on {route}"
