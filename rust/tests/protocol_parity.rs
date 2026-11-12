@@ -56,7 +56,7 @@ async fn legacy_protocol_negotiates_without_session_and_does_not_filter_public_h
         };
         assert_eq!(payload["result"]["protocolVersion"], expected, "{revision}");
         assert_eq!(payload["result"]["serverInfo"]["name"], "beacon-mcp");
-        assert_eq!(payload["result"]["serverInfo"]["version"], "2.1.1");
+        assert_eq!(payload["result"]["serverInfo"]["version"], "2.2.0");
     }
     for method in [reqwest::Method::GET, reqwest::Method::DELETE] {
         assert_eq!(
