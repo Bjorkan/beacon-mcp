@@ -244,8 +244,7 @@ impl CoreTools {
         };
         if let Some(iata) = args.iata {
             let normalized = iata.trim().to_ascii_uppercase();
-            if normalized.len() != 3
-                || !normalized.bytes().all(|byte| byte.is_ascii_alphanumeric())
+            if normalized.len() != 3 || !normalized.bytes().all(|byte| byte.is_ascii_alphanumeric())
             {
                 return Err(invalid("invalid IATA code"));
             }
