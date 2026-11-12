@@ -275,7 +275,7 @@ impl ServerHandler for BeaconServer {
         _context: RequestContext<RoleServer>,
     ) -> Result<ListResourceTemplatesResult, McpError> {
         Ok(ListResourceTemplatesResult {
-            resource_templates: ["nodes", "observers"]
+            resource_templates: ["nodes", "observers", "packets", "channels", "traces", "iatas", "regions"]
                 .into_iter()
                 .map(|kind| {
                     ResourceTemplate::new(
@@ -284,7 +284,7 @@ impl ServerHandler for BeaconServer {
                     )
                     .with_title(format!(
                         "Beacon {} details",
-                        if kind == "nodes" { "node" } else { "observer" }
+                        kind.trim_end_matches('s')
                     ))
                     .with_description("Read the latest public information from Beacon REST")
                     .with_mime_type("application/json")
@@ -301,10 +301,15 @@ impl ServerHandler for BeaconServer {
     ) -> Result<ReadResourceResponse, McpError> {
         let (kind, id) = crate::resources::parse_uri(&request.uri)
             .ok_or_else(|| McpError::invalid_params("Invalid Beacon resource URI", None))?;
-        let op = if kind == "nodes" {
-            crate::client::Operation::Node
-        } else {
-            crate::client::Operation::Observer
+        let op = match kind {
+            "nodes" => crate::client::Operation::Node,
+            "observers" => crate::client::Operation::Observer,
+            "packets" => crate::client::Operation::Packet,
+            "channels" => crate::client::Operation::ChannelDetail,
+            "traces" => crate::client::Operation::Trace,
+            "iatas" => crate::client::Operation::IataDetail,
+            "regions" => crate::client::Operation::RegionDetail,
+            _ => return Err(McpError::invalid_params("Unknown resource kind", None)),
         };
         let data = self
             .tools
@@ -329,13 +334,17 @@ impl ServerHandler for BeaconServer {
         &self,
         requested: &SubscriptionFilter,
     ) -> Option<SubscriptionFilter> {
-        self.live.as_ref()?;
+        let live = self.live.as_ref()?;
         let accepted = requested
             .resource_subscriptions
             .as_ref()
             .map(|uris| {
                 uris.iter()
-                    .filter(|uri| crate::resources::parse_uri(uri).is_some())
+                    .filter(|uri| match crate::resources::parse_uri(uri) {
+                        Some(("nodes" | "observers", _)) => true,
+                        Some(("packets" | "channels", _)) => live.traffic_enabled(),
+                        _ => false,
+                    })
                     .take(20)
                     .cloned()
                     .collect::<Vec<_>>()
