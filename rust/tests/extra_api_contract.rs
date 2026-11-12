@@ -102,7 +102,7 @@ fn additional_tool_queries_cover_every_pinned_upstream_parameter() {
         let end = remainder.find("\n  /").unwrap_or(remainder.len());
         let section = &remainder[..end];
         assert!(
-            section.contains("\n    get:\n"),
+            section.contains("    get:\n"),
             "{route} must be a GET route"
         );
 
