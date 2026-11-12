@@ -167,7 +167,7 @@ async fn directory_preserves_window_and_coverage_on_continuation() {
     assert_eq!(data["coverage"]["complete"], true);
     assert_eq!(data["observerTypes"][0], "mqtt");
     let paths = seen.lock().unwrap();
-    assert!(paths[0].contains("since=1761955200000"));
-    assert!(paths[0].contains("until=1762041600000"));
+    assert!(paths[0].contains("since=1793491200000"));
+    assert!(paths[0].contains("until=1793577600000"));
     task.abort();
 }
