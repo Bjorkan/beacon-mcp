@@ -1,17 +1,17 @@
 use crate::{
     analytics_tools::AnalyticsTools, client::BeaconClient, composite_tools::CompositeTools,
-    extra_tools::ExtraTools,
-    packet_tools::PacketTools, routing_tools::RoutingTools, subscriptions::Live, tools::CoreTools,
+    extra_tools::ExtraTools, packet_tools::PacketTools, routing_tools::RoutingTools,
+    subscriptions::Live, tools::CoreTools,
 };
 use axum::{Router, middleware, routing::get};
 use rmcp::{
     ErrorData as McpError, ServerHandler,
     model::{
         CallToolRequestParams, CallToolResponse, GetPromptRequestParams, GetPromptResponse,
-        InitializeRequestParams, InitializeResult, ListPromptsResult,
-        ListResourceTemplatesResult, ListToolsResult, PaginatedRequestParams,
-        ReadResourceRequestParams, ReadResourceResponse, ReadResourceResult, ResourceContents,
-        ResourceTemplate, ServerCapabilities, ServerConfig, SubscriptionFilter, Tool,
+        InitializeRequestParams, InitializeResult, ListPromptsResult, ListResourceTemplatesResult,
+        ListToolsResult, PaginatedRequestParams, ReadResourceRequestParams, ReadResourceResponse,
+        ReadResourceResult, ResourceContents, ResourceTemplate, ServerCapabilities, ServerConfig,
+        SubscriptionFilter, Tool,
     },
     service::{RequestContext, RoleServer, SubscriptionContext},
     transport::streamable_http_server::{
@@ -421,7 +421,11 @@ impl ServerHandler for BeaconServer {
                 .and_then(Value::as_str)
                 .is_some_and(|text| crate::packet_tools::timestamp(text).is_err())
         });
-        let result = match if self.composite_tools.definition(request.name.as_ref()).is_some() {
+        let result = match if self
+            .composite_tools
+            .definition(request.name.as_ref())
+            .is_some()
+        {
             self.composite_tools
                 .execute(request.name.as_ref(), request.arguments)
                 .await
