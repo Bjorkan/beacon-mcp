@@ -29,6 +29,7 @@ struct Args {
     cursor: Option<u64>,
     page_cursor: Option<String>,
     iatas: Option<Vec<String>>,
+    iata: Option<String>,
     region: Option<String>,
     region_id: Option<u32>,
     scope: Option<String>,
@@ -52,6 +53,7 @@ fn fields(name: &str) -> Option<&'static [&'static str]> {
             "limit",
             "cursor",
             "pageCursor",
+            "iata",
             "iatas",
             "region",
             "regionId",
@@ -76,7 +78,9 @@ fn fields(name: &str) -> Option<&'static [&'static str]> {
             "channelId",
             "channelHash",
         ],
-        "beacon_list_channels" => &["limit", "iatas", "hash", "keyKnown", "pageCursor"],
+        "beacon_list_channels" => {
+            &["limit", "cursor", "pageCursor", "iata", "iatas", "hash", "keyKnown"]
+        },
         "beacon_get_channel_messages" => {
             &["channelId", "limit", "cursor", "iatas", "scope", "since"]
         }
@@ -162,6 +166,15 @@ impl PacketTools {
         {
             return Err(invalid("invalid region filter"));
         }
+        if args.iata.is_some() && args.iatas.is_some() {
+            return Err(invalid("iata and iatas are mutually exclusive"));
+        }
+        if name == "beacon_list_channels"
+            && args.cursor.is_some_and(|cursor| cursor > 0)
+            && args.page_cursor.is_some()
+        {
+            return Err(invalid("positive cursor and pageCursor cannot be combined"));
+        }
         if args.hash_prefix.is_some() && args.page_cursor.is_some() {
             return Err(invalid("hashPrefix pages with cursor, not pageCursor"));
         }
@@ -202,6 +215,15 @@ impl PacketTools {
                 query.push((key, value));
             }
         };
+        if let Some(iata) = args.iata {
+            let normalized = iata.trim().to_ascii_uppercase();
+            if normalized.len() != 3
+                || !normalized.bytes().all(|byte| byte.is_ascii_alphanumeric())
+            {
+                return Err(invalid("invalid IATA code"));
+            }
+            put("iata", Some(normalized));
+        }
         if let Some(iatas) = args.iatas {
             if iatas.is_empty()
                 || iatas.len() > 20
@@ -357,7 +379,9 @@ impl PacketTools {
         put("limit", Some(limit.to_string()));
         let response = self.client.request(op, None, &query).await?;
         let mut result = page(response, limit as usize, false)?;
-        if name == "beacon_list_channels" {
+        if name == "beacon_list_channels"
+            && result["pagination"]["nextCursor"]["pageCursor"].is_string()
+        {
             result["pagination"]["nextCursor"]
                 .as_object_mut()
                 .map(|cursor| cursor.remove("cursor"));
