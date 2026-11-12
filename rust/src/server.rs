@@ -1,12 +1,14 @@
 use crate::{
-    analytics_tools::AnalyticsTools, client::BeaconClient, extra_tools::ExtraTools,
+    analytics_tools::AnalyticsTools, client::BeaconClient, composite_tools::CompositeTools,
+    extra_tools::ExtraTools,
     packet_tools::PacketTools, routing_tools::RoutingTools, subscriptions::Live, tools::CoreTools,
 };
 use axum::{Router, middleware, routing::get};
 use rmcp::{
     ErrorData as McpError, ServerHandler,
     model::{
-        CallToolRequestParams, CallToolResponse, InitializeRequestParams, InitializeResult,
+        CallToolRequestParams, CallToolResponse, GetPromptRequestParams, GetPromptResponse,
+        InitializeRequestParams, InitializeResult, ListPromptsResult,
         ListResourceTemplatesResult, ListToolsResult, PaginatedRequestParams,
         ReadResourceRequestParams, ReadResourceResponse, ReadResourceResult, ResourceContents,
         ResourceTemplate, ServerCapabilities, ServerConfig, SubscriptionFilter, Tool,
@@ -203,6 +205,7 @@ pub struct BeaconServer {
     pub routing_tools: RoutingTools,
     pub analytics_tools: AnalyticsTools,
     pub extra_tools: ExtraTools,
+    pub composite_tools: CompositeTools,
     pub live: Option<Arc<Live>>,
 }
 
@@ -231,7 +234,8 @@ impl ServerHandler for BeaconServer {
     fn get_info(&self) -> ServerConfig {
         let mut capabilities = ServerCapabilities::builder()
             .enable_tools()
-            .enable_resources();
+            .enable_resources()
+            .enable_prompts();
         if self.live.is_some() {
             capabilities = capabilities.enable_resources_subscribe();
         }
@@ -255,6 +259,7 @@ impl ServerHandler for BeaconServer {
                 .chain(self.routing_tools.list())
                 .chain(self.analytics_tools.list())
                 .chain(self.extra_tools.list())
+                .chain(self.composite_tools.list())
                 .collect(),
             ..Default::default()
         })
@@ -267,6 +272,23 @@ impl ServerHandler for BeaconServer {
             .or_else(|| self.routing_tools.definition(name))
             .or_else(|| self.analytics_tools.definition(name))
             .or_else(|| self.extra_tools.definition(name))
+            .or_else(|| self.composite_tools.definition(name))
+    }
+
+    async fn list_prompts(
+        &self,
+        _request: Option<PaginatedRequestParams>,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<ListPromptsResult, McpError> {
+        Ok(crate::prompts::list())
+    }
+
+    async fn get_prompt(
+        &self,
+        request: GetPromptRequestParams,
+        _context: RequestContext<RoleServer>,
+    ) -> Result<GetPromptResponse, McpError> {
+        crate::prompts::get(&request)
     }
 
     async fn list_resource_templates(
@@ -399,7 +421,11 @@ impl ServerHandler for BeaconServer {
                 .and_then(Value::as_str)
                 .is_some_and(|text| crate::packet_tools::timestamp(text).is_err())
         });
-        let result = match if self.extra_tools.definition(request.name.as_ref()).is_some() {
+        let result = match if self.composite_tools.definition(request.name.as_ref()).is_some() {
+            self.composite_tools
+                .execute(request.name.as_ref(), request.arguments)
+                .await
+        } else if self.extra_tools.definition(request.name.as_ref()).is_some() {
             self.extra_tools
                 .execute(request.name.as_ref(), request.arguments)
                 .await
@@ -478,6 +504,7 @@ pub fn router_with_live(
                 routing_tools: RoutingTools::new(client.clone()),
                 analytics_tools: AnalyticsTools::new(client.clone()),
                 extra_tools: ExtraTools::new(client.clone()),
+                composite_tools: CompositeTools::new(client.clone()),
                 live: live.clone(),
             })
         },
