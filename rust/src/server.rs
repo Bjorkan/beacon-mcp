@@ -367,8 +367,7 @@ impl ServerHandler for BeaconServer {
                     .filter_map(|uri| {
                         let (kind, id) = crate::resources::parse_uri(uri)?;
                         let allowed = matches!(kind, "nodes" | "observers")
-                            || (live.traffic_enabled()
-                                && matches!(kind, "packets" | "channels"));
+                            || (live.traffic_enabled() && matches!(kind, "packets" | "channels"));
                         allowed.then(|| format!("beacon://{kind}/{id}"))
                     })
                     .take(20)
