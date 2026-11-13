@@ -1,0 +1,1880 @@
+{
+  "beacon_get_channel_messages": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true,
+      "readOnlyHint": true
+    },
+    "description": "List messages for a channel ID. since is an inclusive lower bound on sentAt and there is no upper bound.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "channelId": {
+          "exclusiveMinimum": 0,
+          "maximum": 2147483647,
+          "type": "integer"
+        },
+        "cursor": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "iatas": {
+          "description": "IATA identifiers; normalized to uppercase",
+          "items": {
+            "description": "Three-character IATA identifier; normalized to uppercase",
+            "pattern": "^[A-Za-z0-9]{3}$",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array"
+        },
+        "limit": {
+          "default": 20,
+          "description": "Maximum results, from 1 through 50",
+          "maximum": 50,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "scope": {
+          "description": "Transport scope name such as \"#se13\"; matching is case-sensitive, so the exact casing used by the network matters, unlike IATA inputs which are normalized to uppercase",
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        "since": {
+          "description": "RFC3339 UTC timestamp with a valid calendar date, for example 2026-10-04T15:30:00Z",
+          "maxLength": 24,
+          "pattern": "^\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{1,3})?Z$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "channelId"
+      ],
+      "type": "object"
+    },
+    "name": "beacon_get_channel_messages",
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "additionalProperties": {},
+            "properties": {
+              "channelHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "content": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "observationCount": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "packetHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scope": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scopeStatus": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "matched",
+                      "unscoped",
+                      "unknown",
+                      "unavailable"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "senderName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sentAt": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Unix epoch milliseconds (UTC)"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "pagination": {
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "additionalProperties": false,
+              "description": "Continuation page cursor; pass the value to the next call as-is",
+              "properties": {
+                "cursor": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "cursor"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "hasMore"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ],
+      "type": "object"
+    }
+  },
+  "beacon_get_packet": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true,
+      "readOnlyHint": true
+    },
+    "description": "Get full public packet detail by hex packet hash. Packet firstHeardAt/lastHeardAt are Beacon server receive times; observations[].heardAt is observer-reported time and may differ. firstToLastMs is the span between the earliest and latest observer-reported heardAt values (observer clock span), not the difference between firstHeardAt and lastHeardAt.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "hash": {
+          "description": "Exact 8-byte Beacon packet hash as 16 hexadecimal characters",
+          "pattern": "^[0-9a-fA-F]{16}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "hash"
+      ],
+      "type": "object"
+    },
+    "name": "beacon_get_packet",
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": {},
+      "properties": {
+        "channelHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "decrypted": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
+        "firstHeardAt": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Unix epoch milliseconds (UTC)"
+        },
+        "firstToLastMs": {
+          "description": "Span between the earliest and latest observer-reported heardAt across the packet's observations, using observer device clocks. It is not the difference between the server-side firstHeardAt and lastHeardAt receive times; absent when the packet has fewer than two observations",
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "header": {
+          "anyOf": [
+            {
+              "additionalProperties": {},
+              "properties": {
+                "payloadType": {
+                  "anyOf": [
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "payloadTypeName": {
+                  "anyOf": [
+                    {
+                      "enum": [
+                        "request",
+                        "response",
+                        "text_message",
+                        "acknowledgement",
+                        "advert",
+                        "group_text",
+                        "group_data",
+                        "anonymous_request",
+                        "path",
+                        "trace",
+                        "multipart",
+                        "control",
+                        "reserved",
+                        "raw_custom",
+                        "unknown"
+                      ],
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "payloadVersion": {
+                  "anyOf": [
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "raw": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "routeType": {
+                  "anyOf": [
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "routeTypeName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "lastHeardAt": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Unix epoch milliseconds (UTC)"
+        },
+        "observationCount": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": -9007199254740991,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observations": {
+          "anyOf": [
+            {
+              "items": {
+                "additionalProperties": {},
+                "properties": {
+                  "heardAt": {
+                    "anyOf": [
+                      {
+                        "maximum": 9007199254740991,
+                        "minimum": -9007199254740991,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Unix epoch milliseconds (UTC)"
+                  },
+                  "iata": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "id": {
+                    "anyOf": [
+                      {
+                        "maximum": 9007199254740991,
+                        "minimum": -9007199254740991,
+                        "type": "integer"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "observerId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "observerName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "pathBytes": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "pathLength": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": {},
+                        "properties": {
+                          "hashSize": {
+                            "anyOf": [
+                              {
+                                "maximum": 9007199254740991,
+                                "minimum": -9007199254740991,
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "hopCount": {
+                            "anyOf": [
+                              {
+                                "maximum": 9007199254740991,
+                                "minimum": -9007199254740991,
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "raw": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "propagationTimeMs": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "radio": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": {},
+                        "properties": {
+                          "bandwidthKhz": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "codingRate": {
+                            "anyOf": [
+                              {
+                                "maximum": 9007199254740991,
+                                "minimum": -9007199254740991,
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "freqMhz": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          },
+                          "spreadFactor": {
+                            "anyOf": [
+                              {
+                                "maximum": 9007199254740991,
+                                "minimum": -9007199254740991,
+                                "type": "integer"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "resolvedDestination": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": {},
+                        "properties": {
+                          "confidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "nodes": {
+                            "anyOf": [
+                              {
+                                "items": {
+                                  "additionalProperties": {},
+                                  "properties": {
+                                    "id": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "latitude": {
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ]
+                                    },
+                                    "longitude": {
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ]
+                                    },
+                                    "name": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "publicKey": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "type": "object"
+                                },
+                                "type": "array"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "snr": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          }
+                        },
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "resolvedPath": {
+                    "anyOf": [
+                      {
+                        "items": {
+                          "additionalProperties": {},
+                          "properties": {
+                            "confidence": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "nodes": {
+                              "anyOf": [
+                                {
+                                  "items": {
+                                    "additionalProperties": {},
+                                    "properties": {
+                                      "id": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      },
+                                      "latitude": {
+                                        "type": [
+                                          "number",
+                                          "null"
+                                        ]
+                                      },
+                                      "longitude": {
+                                        "type": [
+                                          "number",
+                                          "null"
+                                        ]
+                                      },
+                                      "name": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      },
+                                      "publicKey": {
+                                        "type": [
+                                          "string",
+                                          "null"
+                                        ]
+                                      }
+                                    },
+                                    "type": "object"
+                                  },
+                                  "type": "array"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "snr": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "resolvedSource": {
+                    "anyOf": [
+                      {
+                        "additionalProperties": {},
+                        "properties": {
+                          "confidence": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "nodes": {
+                            "anyOf": [
+                              {
+                                "items": {
+                                  "additionalProperties": {},
+                                  "properties": {
+                                    "id": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "latitude": {
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ]
+                                    },
+                                    "longitude": {
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ]
+                                    },
+                                    "name": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    },
+                                    "publicKey": {
+                                      "type": [
+                                        "string",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "type": "object"
+                                },
+                                "type": "array"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "snr": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          }
+                        },
+                        "type": "object"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "rssi": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "snr": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "sourceBroker": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "originPubkey": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "packetHash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "parsedPayload": {
+          "anyOf": [
+            {},
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rawPayload": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolvedRoute": {
+          "anyOf": [
+            {
+              "items": {
+                "additionalProperties": {},
+                "properties": {
+                  "confidence": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "nodes": {
+                    "anyOf": [
+                      {
+                        "items": {
+                          "additionalProperties": {},
+                          "properties": {
+                            "id": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "latitude": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "longitude": {
+                              "type": [
+                                "number",
+                                "null"
+                              ]
+                            },
+                            "name": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "publicKey": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            }
+                          },
+                          "type": "object"
+                        },
+                        "type": "array"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "snr": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  }
+                },
+                "type": "object"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "scope": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "transportCodes": {
+          "anyOf": [
+            {
+              "additionalProperties": {},
+              "properties": {
+                "regionCode": {
+                  "anyOf": [
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "subRegionCode": {
+                  "anyOf": [
+                    {
+                      "maximum": 9007199254740991,
+                      "minimum": -9007199254740991,
+                      "type": "integer"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    }
+  },
+  "beacon_list_channels": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true,
+      "readOnlyHint": true
+    },
+    "description": "List public channels. Continue with the opaque pageCursor returned as pagination.nextCursor.pageCursor.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "hash": {
+          "pattern": "^[0-9a-fA-F]{2}$",
+          "type": "string"
+        },
+        "iatas": {
+          "description": "IATA identifiers; normalized to uppercase",
+          "items": {
+            "description": "Three-character IATA identifier; normalized to uppercase",
+            "pattern": "^[A-Za-z0-9]{3}$",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array"
+        },
+        "keyKnown": {
+          "type": "boolean"
+        },
+        "limit": {
+          "default": 20,
+          "description": "Maximum results, from 1 through 50",
+          "maximum": 50,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "pageCursor": {
+          "description": "Opaque continuation token returned as pagination.nextCursor.pageCursor",
+          "maxLength": 64,
+          "minLength": 1,
+          "type": "string"
+        },
+        "iata": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9]{3}$",
+          "description": "Single reception IATA code; normalized uppercase; cannot combine with iatas"
+        },
+        "cursor": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991,
+          "description": "Legacy numeric lastSeen cursor; use only when no exact pageCursor is available, and do not combine a positive cursor with pageCursor"
+        }
+      },
+      "type": "object"
+    },
+    "name": "beacon_list_channels",
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "additionalProperties": {},
+            "properties": {
+              "channelHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "isHashtag": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "keyKnown": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "lastSeen": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Unix epoch milliseconds (UTC)"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "pagination": {
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "additionalProperties": false,
+              "description": "Continuation opaque page cursor; pass the value to the next call as-is",
+              "properties": {
+                "pageCursor": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "pageCursor"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "hasMore"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ],
+      "type": "object"
+    }
+  },
+  "beacon_search_messages": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true,
+      "readOnlyHint": true
+    },
+    "description": "Search decrypted public channel messages. Messages carry only a channelHash, not a channelId; hash collisions exist (the same hash may map to multiple channel IDs). since is an inclusive lower bound on sentAt and there is no upper bound. channelId and channelHash are mutually exclusive.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "channelHash": {
+          "pattern": "^[0-9a-fA-F]{2}$",
+          "type": "string"
+        },
+        "channelId": {
+          "exclusiveMinimum": 0,
+          "maximum": 2147483647,
+          "type": "integer"
+        },
+        "cursor": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "iatas": {
+          "description": "IATA identifiers; normalized to uppercase",
+          "items": {
+            "description": "Three-character IATA identifier; normalized to uppercase",
+            "pattern": "^[A-Za-z0-9]{3}$",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array"
+        },
+        "limit": {
+          "default": 20,
+          "description": "Maximum results, from 1 through 50",
+          "maximum": 50,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "scope": {
+          "description": "Transport scope name such as \"#se13\"; matching is case-sensitive, so the exact casing used by the network matters, unlike IATA inputs which are normalized to uppercase",
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        "since": {
+          "description": "RFC3339 UTC timestamp with a valid calendar date, for example 2026-10-04T15:30:00Z",
+          "maxLength": 24,
+          "pattern": "^\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{1,3})?Z$",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "name": "beacon_search_messages",
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "additionalProperties": {},
+            "properties": {
+              "channelHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "content": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "id": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "observationCount": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "packetHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scope": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scopeStatus": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "matched",
+                      "unscoped",
+                      "unknown",
+                      "unavailable"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "senderName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sentAt": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Unix epoch milliseconds (UTC)"
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "pagination": {
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "additionalProperties": false,
+              "description": "Continuation page cursor; pass the value to the next call as-is",
+              "properties": {
+                "cursor": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "cursor"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "hasMore"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ],
+      "type": "object"
+    }
+  },
+  "beacon_search_packets": {
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true,
+      "readOnlyHint": true
+    },
+    "description": "Search packet summaries; prefer the opaque pageCursor when returned for precise pagination across millisecond ties (region pages may lack it). hashPrefix matches the beginning of an 8-byte packet hash and uses only the numeric cursor in global lastHeardAt order, including with IATA filters. The window is half-open: a packet is included when firstHeardAt is at or after since and it was last heard before until — since is inclusive, until is exclusive (the exact until boundary is inconsistent upstream when iatas filters are used). Beacon MCP Server does not persist or log packet payloads; upstream Beacon may store and return them through beacon_get_packet. region and regionId are mutually exclusive, as are scope and scopes, payloadType and payloadTypes, and routeType and routeTypes; payloadTypeName cannot be combined with payloadType or payloadTypes.",
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "cursor": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "hashPrefix": {
+          "description": "Case-insensitive packet hash prefix (4-16 hexadecimal characters); odd-length prefixes are accepted. With this filter, cursor uses global lastHeardAt even when iatas are set",
+          "pattern": "^[0-9a-fA-F]{4,16}$",
+          "type": "string"
+        },
+        "iatas": {
+          "description": "IATA identifiers; normalized to uppercase",
+          "items": {
+            "description": "Three-character IATA identifier; normalized to uppercase",
+            "pattern": "^[A-Za-z0-9]{3}$",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array"
+        },
+        "limit": {
+          "default": 20,
+          "description": "Maximum results, from 1 through 50",
+          "maximum": 50,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "pageCursor": {
+          "description": "Opaque nextPageCursor returned as pagination.nextCursor.pageCursor; pass unchanged with the same filters and sort",
+          "maxLength": 512,
+          "minLength": 1,
+          "type": "string"
+        },
+        "payloadType": {
+          "maximum": 32767,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "payloadTypeName": {
+          "description": "Canonical payload type name; txt_msg, grp_txt, and anon_req remain supported as legacy aliases",
+          "enum": [
+            "request",
+            "response",
+            "text_message",
+            "acknowledgement",
+            "advert",
+            "group_text",
+            "group_data",
+            "anonymous_request",
+            "path",
+            "trace",
+            "multipart",
+            "control",
+            "reserved",
+            "raw_custom",
+            "txt_msg",
+            "grp_txt",
+            "anon_req"
+          ],
+          "type": "string"
+        },
+        "payloadTypes": {
+          "items": {
+            "maximum": 32767,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array"
+        },
+        "region": {
+          "description": "Exact case-sensitive region slug as returned by beacon_list_regions.slug; the display name (e.g. Sverige) will not match",
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        "regionId": {
+          "exclusiveMinimum": 0,
+          "maximum": 2147483647,
+          "type": "integer"
+        },
+        "routeType": {
+          "maximum": 3,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "routeTypes": {
+          "items": {
+            "maximum": 3,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array"
+        },
+        "scope": {
+          "description": "Transport scope name such as \"#se13\"; matching is case-sensitive, so the exact casing used by the network matters, unlike IATA inputs which are normalized to uppercase",
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        "scopes": {
+          "description": "Transport scope names; matching is case-sensitive and matches any of the listed scopes",
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array"
+        },
+        "since": {
+          "description": "RFC3339 UTC timestamp with a valid calendar date, for example 2026-10-04T15:30:00Z",
+          "maxLength": 24,
+          "pattern": "^\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{1,3})?Z$",
+          "type": "string"
+        },
+        "until": {
+          "description": "RFC3339 UTC timestamp with a valid calendar date, for example 2026-10-04T15:30:00Z",
+          "maxLength": 24,
+          "pattern": "^\\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12]\\d|3[01])T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d{1,3})?Z$",
+          "type": "string"
+        },
+        "iata": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9]{3}$",
+          "description": "Single reception IATA code; normalized uppercase; cannot combine with iatas"
+        }
+      },
+      "type": "object"
+    },
+    "name": "beacon_search_packets",
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "items": {
+          "items": {
+            "additionalProperties": {},
+            "properties": {
+              "firstHeardAt": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Unix epoch milliseconds (UTC)"
+              },
+              "lastHeardAt": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Unix epoch milliseconds (UTC)"
+              },
+              "latestObserver": {
+                "anyOf": [
+                  {
+                    "additionalProperties": {},
+                    "properties": {
+                      "displayName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "iata": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "id": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "pathBytes": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "pathLength": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": {},
+                            "properties": {
+                              "hashSize": {
+                                "anyOf": [
+                                  {
+                                    "maximum": 9007199254740991,
+                                    "minimum": -9007199254740991,
+                                    "type": "integer"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "hopCount": {
+                                "anyOf": [
+                                  {
+                                    "maximum": 9007199254740991,
+                                    "minimum": -9007199254740991,
+                                    "type": "integer"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "raw": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "resolvedDestination": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": {},
+                            "properties": {
+                              "confidence": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "nodes": {
+                                "anyOf": [
+                                  {
+                                    "items": {
+                                      "additionalProperties": {},
+                                      "properties": {
+                                        "id": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "latitude": {
+                                          "type": [
+                                            "number",
+                                            "null"
+                                          ]
+                                        },
+                                        "longitude": {
+                                          "type": [
+                                            "number",
+                                            "null"
+                                          ]
+                                        },
+                                        "name": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "publicKey": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        }
+                                      },
+                                      "type": "object"
+                                    },
+                                    "type": "array"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "snr": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "resolvedPath": {
+                        "anyOf": [
+                          {
+                            "items": {
+                              "additionalProperties": {},
+                              "properties": {
+                                "confidence": {
+                                  "type": [
+                                    "string",
+                                    "null"
+                                  ]
+                                },
+                                "nodes": {
+                                  "anyOf": [
+                                    {
+                                      "items": {
+                                        "additionalProperties": {},
+                                        "properties": {
+                                          "id": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          },
+                                          "latitude": {
+                                            "type": [
+                                              "number",
+                                              "null"
+                                            ]
+                                          },
+                                          "longitude": {
+                                            "type": [
+                                              "number",
+                                              "null"
+                                            ]
+                                          },
+                                          "name": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          },
+                                          "publicKey": {
+                                            "type": [
+                                              "string",
+                                              "null"
+                                            ]
+                                          }
+                                        },
+                                        "type": "object"
+                                      },
+                                      "type": "array"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "snr": {
+                                  "type": [
+                                    "number",
+                                    "null"
+                                  ]
+                                }
+                              },
+                              "type": "object"
+                            },
+                            "type": "array"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "resolvedSource": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": {},
+                            "properties": {
+                              "confidence": {
+                                "type": [
+                                  "string",
+                                  "null"
+                                ]
+                              },
+                              "nodes": {
+                                "anyOf": [
+                                  {
+                                    "items": {
+                                      "additionalProperties": {},
+                                      "properties": {
+                                        "id": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "latitude": {
+                                          "type": [
+                                            "number",
+                                            "null"
+                                          ]
+                                        },
+                                        "longitude": {
+                                          "type": [
+                                            "number",
+                                            "null"
+                                          ]
+                                        },
+                                        "name": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        },
+                                        "publicKey": {
+                                          "type": [
+                                            "string",
+                                            "null"
+                                          ]
+                                        }
+                                      },
+                                      "type": "object"
+                                    },
+                                    "type": "array"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "snr": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              }
+                            },
+                            "type": "object"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "type": "object"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "observationCount": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "packetHash": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "payloadType": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "payloadTypeName": {
+                "anyOf": [
+                  {
+                    "enum": [
+                      "request",
+                      "response",
+                      "text_message",
+                      "acknowledgement",
+                      "advert",
+                      "group_text",
+                      "group_data",
+                      "anonymous_request",
+                      "path",
+                      "trace",
+                      "multipart",
+                      "control",
+                      "reserved",
+                      "raw_custom",
+                      "unknown"
+                    ],
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "routeType": {
+                "anyOf": [
+                  {
+                    "maximum": 9007199254740991,
+                    "minimum": -9007199254740991,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "routeTypeName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "scope": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "summary": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "pagination": {
+          "additionalProperties": false,
+          "properties": {
+            "hasMore": {
+              "type": "boolean"
+            },
+            "nextCursor": {
+              "anyOf": [
+                {
+                  "additionalProperties": false,
+                  "description": "Continuation page cursor; pass the value to the next call as-is",
+                  "properties": {
+                    "cursor": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "cursor"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "description": "Pass pageCursor and, when present, cursor unchanged with the same filters and sort; older servers ignore pageCursor",
+                  "properties": {
+                    "cursor": {
+                      "maximum": 9007199254740991,
+                      "minimum": 0,
+                      "type": "integer"
+                    },
+                    "pageCursor": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "pageCursor"
+                  ],
+                  "type": "object"
+                }
+              ]
+            }
+          },
+          "required": [
+            "hasMore"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "items",
+        "pagination"
+      ],
+      "type": "object"
+    }
+  }
+}
