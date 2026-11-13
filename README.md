@@ -127,3 +127,12 @@ should not carry the extra WebSocket. Reverse proxies must
 **not buffer** SSE responses, must allow long-lived streaming POST responses,
 and must allow idle connections beyond the SDK's keepalive interval (15 s).
 Always use `wss://` for public Beacon WebSocket connections.
+
+## Stateless analysis workflows
+
+Two optional composite MCP tools use only bounded public Beacon GET requests:
+`beacon_diagnose_node` gathers node details, originated activity and up to 20
+neighbors; `beacon_compare_regions` compares independently sampled IATA network
+overviews. Native MCP Prompts guide node diagnostics, IATA comparison and saved
+route review. These are read-only functions with no authentication, persistent
+storage, accounts, webhooks or MCP Events. Only in-flight data is held in RAM.
