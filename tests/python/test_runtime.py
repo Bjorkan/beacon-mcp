@@ -32,9 +32,6 @@ def test_contract_copies_and_unique_inventory():
     frozen = json.loads(Path("tests/fixtures/tool-names.json").read_text())
     assert len(CONTRACTS) == len(frozen) == 51
     assert set(CONTRACTS) == set(frozen)
-    # Remains useful after retiring the old implementation: independently frozen inventory.
-    for path in Path("rust/src").glob("*-tool-definitions.json"):
-        assert Path("src/beacon_mcp/contracts", path.name).read_bytes() == path.read_bytes()
 
 
 @pytest.mark.parametrize(

@@ -9,7 +9,6 @@ AGENTS.md
 compose.yaml
 renovate.json
 README.md
-rust
 __pycache__
 *.log
 .DS_Store

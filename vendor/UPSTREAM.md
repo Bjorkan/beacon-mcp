@@ -15,9 +15,9 @@ documentation contracts, then pin the release's full commit and run:
 
 ```sh
 python3 scripts/sync-openapi.py <full-beacon-server-commit>
-cargo test --manifest-path rust/Cargo.toml --locked
+uv run --locked pytest
 ```
 
 The synchronization command refuses branches and moving tags; it requires a
 full 40-character commit SHA. Review the upstream handlers and update the
-checked-in Rust tool discovery contract deliberately if the API changes.
+checked-in JSON tool discovery contract deliberately if the API changes.
