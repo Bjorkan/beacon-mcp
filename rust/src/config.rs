@@ -238,6 +238,34 @@ mod tests {
     }
 
     #[test]
+    fn traffic_events_require_explicit_opt_in_and_enabled_subscriptions() {
+        let base = ("BEACON_BASE_URL", "https://beacon.example");
+        let enabled = parse(&[
+            base,
+            ("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", "true"),
+        ])
+        .unwrap();
+        assert!(enabled.subscriptions.enabled);
+        assert!(enabled.subscriptions.traffic_enabled);
+        let disabled = parse(&[
+            base,
+            ("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", "false"),
+        ])
+        .unwrap();
+        assert!(!disabled.subscriptions.traffic_enabled);
+        for inputs in [
+            vec![
+                base,
+                ("BEACON_SUBSCRIPTIONS_ENABLED", "false"),
+                ("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", "true"),
+            ],
+            vec![base, ("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", "yes")],
+        ] {
+            assert!(parse(&inputs).is_err());
+        }
+    }
+
+    #[test]
     fn subscription_defaults_and_strict_bounds() {
         let config = parse(&[("BEACON_BASE_URL", "https://beacon.example/prefix")]).unwrap();
         assert_eq!(
