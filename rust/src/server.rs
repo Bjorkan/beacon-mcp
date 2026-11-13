@@ -412,10 +412,14 @@ impl ServerHandler for BeaconServer {
                 _=live.shutdown.cancelled()=>break,
                 update=receiver.recv()=>match update {
                     Ok(uri) => {
-                        if let Some(requested) = accepted.get(&uri) {
-                            if context.sink().notify_resource_updated(requested.clone()).await.is_err() {
-                                break;
-                            }
+                        if let Some(requested) = accepted.get(&uri)
+                            && context
+                                .sink()
+                                .notify_resource_updated(requested.clone())
+                                .await
+                                .is_err()
+                        {
+                            break;
                         }
                     }
                     Err(tokio::sync::broadcast::error::RecvError::Lagged(_))=>{},
