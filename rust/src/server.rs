@@ -364,13 +364,13 @@ impl ServerHandler for BeaconServer {
             .as_ref()
             .map(|uris| {
                 uris.iter()
-                    .filter_map(|uri| {
-                        let (kind, id) = crate::resources::parse_uri(uri)?;
-                        let allowed = matches!(kind, "nodes" | "observers")
-                            || (live.traffic_enabled() && matches!(kind, "packets" | "channels"));
-                        allowed.then(|| format!("beacon://{kind}/{id}"))
+                    .filter(|uri| match crate::resources::parse_uri(uri) {
+                        Some(("nodes" | "observers", _)) => true,
+                        Some(("packets" | "channels", _)) => live.traffic_enabled(),
+                        _ => false,
                     })
                     .take(20)
+                    .cloned()
                     .collect::<Vec<_>>()
             })
             .unwrap_or_default();
@@ -392,20 +392,33 @@ impl ServerHandler for BeaconServer {
             .try_acquire_owned()
             .map_err(|_| McpError::internal_error("Subscription stream limit reached", None))?;
         let mut receiver = live.subscribe();
+        // Keep the requested URI verbatim: the MCP SDK checks that accepted
+        // subscriptions are a subset of the client's exact request. Match
+        // against canonical URI keys only inside this short-lived RAM map.
         let accepted = context
             .accepted()
             .resource_subscriptions
             .clone()
-            .unwrap_or_default();
+            .unwrap_or_default()
+            .into_iter()
+            .filter_map(|requested| {
+                let (kind, id) = crate::resources::parse_uri(&requested)?;
+                Some((format!("beacon://{kind}/{id}"), requested))
+            })
+            .collect::<std::collections::HashMap<_, _>>();
         loop {
             tokio::select! {
                 _=context.cancelled()=>break,
                 _=live.shutdown.cancelled()=>break,
                 update=receiver.recv()=>match update {
-                    Ok(uri) if accepted.contains(&uri)=> {
-                        if context.sink().notify_resource_updated(uri).await.is_err() {break;}
+                    Ok(uri) => {
+                        if let Some(requested) = accepted.get(&uri) {
+                            if context.sink().notify_resource_updated(requested.clone()).await.is_err() {
+                                break;
+                            }
+                        }
                     }
-                    Ok(_)|Err(tokio::sync::broadcast::error::RecvError::Lagged(_))=>{},
+                    Err(tokio::sync::broadcast::error::RecvError::Lagged(_))=>{},
                     Err(tokio::sync::broadcast::error::RecvError::Closed)=>break,
                 }
             }
