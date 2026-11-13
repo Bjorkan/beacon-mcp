@@ -1,0 +1,23 @@
+name: Python
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  python:
+    name: Python quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install uv
+        run: pipx install uv==0.11.29
+      - run: uv sync --locked
+      - run: uv run --locked ruff check src tests/python
+      - run: uv run --locked ruff format --check src tests/python
+      - run: uv run --locked pyright
+      - run: uv run --locked pytest
