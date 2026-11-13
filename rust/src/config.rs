@@ -18,6 +18,7 @@ pub struct SubscriptionConfig {
     pub ws_url: Url,
     pub max_streams: usize,
     pub debounce: Duration,
+    pub traffic_enabled: bool,
 }
 
 impl Config {
@@ -99,6 +100,18 @@ impl Config {
             Some("false") => false,
             _ => return Err("BEACON_SUBSCRIPTIONS_ENABLED must be true or false".into()),
         };
+        let traffic_enabled = match get("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED").as_deref() {
+            None | Some("false") => false,
+            Some("true") if enabled => true,
+            Some("true") => {
+                return Err(
+                    "Traffic subscriptions require BEACON_SUBSCRIPTIONS_ENABLED=true".into(),
+                );
+            }
+            _ => {
+                return Err("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED must be true or false".into());
+            }
+        };
         let max_streams = usize::try_from(parse_u64(
             &mut get,
             "BEACON_SUBSCRIPTIONS_MAX_STREAMS",
@@ -144,6 +157,7 @@ impl Config {
                 ws_url,
                 max_streams,
                 debounce,
+                traffic_enabled,
             },
         })
     }
@@ -224,6 +238,26 @@ mod tests {
     }
 
     #[test]
+    fn traffic_events_require_explicit_opt_in_and_enabled_subscriptions() {
+        let base = ("BEACON_BASE_URL", "https://beacon.example");
+        let enabled = parse(&[base, ("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", "true")]).unwrap();
+        assert!(enabled.subscriptions.enabled);
+        assert!(enabled.subscriptions.traffic_enabled);
+        let disabled = parse(&[base, ("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", "false")]).unwrap();
+        assert!(!disabled.subscriptions.traffic_enabled);
+        for inputs in [
+            vec![
+                base,
+                ("BEACON_SUBSCRIPTIONS_ENABLED", "false"),
+                ("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", "true"),
+            ],
+            vec![base, ("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", "yes")],
+        ] {
+            assert!(parse(&inputs).is_err());
+        }
+    }
+
+    #[test]
     fn subscription_defaults_and_strict_bounds() {
         let config = parse(&[("BEACON_BASE_URL", "https://beacon.example/prefix")]).unwrap();
         assert_eq!(
@@ -231,6 +265,7 @@ mod tests {
             "wss://beacon.example/ws"
         );
         assert!(config.subscriptions.enabled);
+        assert!(!config.subscriptions.traffic_enabled);
         assert_eq!(config.subscriptions.max_streams, 64);
         assert!(
             parse(&[

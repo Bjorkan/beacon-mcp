@@ -92,14 +92,29 @@ Set `LOG_LEVEL=debug` or `trace` for verbose troubleshooting.
 
 The gateway enables MCP `subscriptions/listen` (revision `2026-07-28`) by
 default; set `BEACON_SUBSCRIPTIONS_ENABLED=false` to turn it off. The gateway
-exposes the resource templates `beacon://nodes/{id}` and
-`beacon://observers/{id}`; `{id}` is a Beacon UUID. Clients can read them with
+exposes seven public read-only resource templates: `beacon://nodes/{id}` and
+`beacon://observers/{id}` (UUID), plus `beacon://packets/{hash}`,
+`beacon://channels/{id}`, `beacon://traces/{tag}`, `beacon://iatas/{iata}`
+and `beacon://regions/{id}`. Every resource read fetches fresh Beacon data
+with no local cache. Clients can read them with
 `resources/read`, and open a long-lived `subscriptions/listen` POST with
 `notifications.resourceSubscriptions` containing those URIs. Every matching
 upstream `nodeUpdate` / `observerStatus` causes a
 `notifications/resources/updated` on the corresponding listening stream. The
 client should re-read the resource after a notification. For legacy clients
 resource reads still work but legacy `resources/subscribe` is **not** available.
+
+Packet and channel change hints are **opt-in** because public Beacon instances
+may carry high observation volumes. Set `BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED=true`
+(along with subscriptions enabled) to also request Beacon's existing
+`packetObservation` and `channelMessage` WebSocket events. These emit only
+canonical packet/channel resource-URI updates; message contents and packet
+payloads are not retained by the process-local bus. By default the gateway
+subscribes only to node and observer changes. Traces, regions and IATAs are
+readable resources without live subscriptions. No authentication, persistent
+storage, callbacks, webhooks, MCP Events or replay are added. Enabling full
+traffic may increase upstream bandwidth and load; leave it off on busy
+public Beacon instances unless the operator has reviewed capacity.
 
 A single process-wide WebSocket connection connects to Beacon's existing `/ws`
 endpoint (derived from `BEACON_BASE_URL`, or specified using `BEACON_WS_URL`).

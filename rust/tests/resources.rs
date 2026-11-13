@@ -59,6 +59,11 @@ async fn templates_read_both_resources_and_reject_injected_uris() {
                     path if path == format!("/api/v1/observers/{ID}") => {
                         json!({"id":ID,"status":"online"})
                     }
+                    "/api/v1/packets/aabbccddeeff0011" => json!({"packetHash":"aabbccddeeff0011"}),
+                    "/api/v1/channels/25" => json!({"id":25,"name":"public"}),
+                    "/api/v1/traces/abcdef01" => json!({"traceTag":"abcdef01"}),
+                    "/api/v1/iatas/ARN" => json!({"iata":"ARN"}),
+                    "/api/v1/regions/3" => json!({"id":3,"slug":"sverige"}),
                     _ => {
                         return Response::builder()
                             .status(StatusCode::NOT_FOUND)
@@ -96,7 +101,7 @@ async fn templates_read_both_resources_and_reject_injected_uris() {
             .as_array()
             .unwrap()
             .len(),
-        2,
+        7,
         "{templates}"
     );
     for kind in ["nodes", "observers"] {
@@ -121,6 +126,24 @@ async fn templates_read_both_resources_and_reject_injected_uris() {
                 .unwrap();
         assert_eq!(data["id"], ID);
     }
+    for (uri, upstream_field, expected) in [
+        (
+            "beacon://packets/AABBCCDDEEFF0011",
+            "packetHash",
+            json!("aabbccddeeff0011"),
+        ),
+        ("beacon://channels/25", "id", json!(25)),
+        ("beacon://traces/ABCDEF01", "traceTag", json!("abcdef01")),
+        ("beacon://iatas/arn", "iata", json!("ARN")),
+        ("beacon://regions/3", "id", json!(3)),
+    ] {
+        let result = rpc(&client, &root, "resources/read", json!({"uri":uri})).await;
+        assert!(result["error"].is_null(), "{result}");
+        let body: Value =
+            serde_json::from_str(result["result"]["contents"][0]["text"].as_str().unwrap())
+                .unwrap();
+        assert_eq!(body[upstream_field], expected, "{uri}");
+    }
     for uri in [
         "beacon://nodes/../admin/config",
         "beacon://observers/%2e%2e",
@@ -129,7 +152,7 @@ async fn templates_read_both_resources_and_reject_injected_uris() {
         let result = rpc(&client, &root, "resources/read", json!({"uri":uri})).await;
         assert!(!result["error"].is_null(), "{result}");
     }
-    assert_eq!(seen.lock().unwrap().len(), 2);
+    assert_eq!(seen.lock().unwrap().len(), 7);
     let unknown = rpc(
         &client,
         &root,
