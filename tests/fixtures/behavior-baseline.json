@@ -1,0 +1,4576 @@
+{
+  "sourceCommit": "d12b0ba94868e03ad049e14596172d765c056274",
+  "sourceImplementation": "Rust 2.2.0",
+  "contractHashes": {
+    "analytics-tool-definitions.json": "63be288e79fc5cbe9c92d395602ff309733d162e42e10c9f0eb54351eb7ffff0",
+    "composite-tool-definitions.json": "46f8344b7b9e74bea8da7ccffe3ae15c3af2ab9db50290fab6f33e0fd6f4f85a",
+    "core-tool-definitions.json": "4023b98b93afde8d94e4f37c3403b9670afa21aa8a03236da7a169ba59ff7674",
+    "extra-tool-definitions.json": "0df9adfe32a680d84d61ad21ee5a5b96b897ef01a1504eec983432c09f9f6a1c",
+    "packet-tool-definitions.json": "db507b52df9064d66621455bfa6afa7c02d0d6a6e29eb6f77dd0a91053ae47b6",
+    "routing-tool-definitions.json": "b19fb606917731026eb0d7d8d892009b4a70cb7598dc4751a1133c2ebf58d791"
+  },
+  "upstream": {
+    "/api/v1/info": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/iatas": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/regions": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/scopes": [
+      "#a",
+      "#b",
+      "#c"
+    ],
+    "/api/v1/nodes": {
+      "items": [
+        {
+          "id": 9,
+          "lastSeen": 9000,
+          "lastHeardAt": 18000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 8,
+          "lastSeen": 8000,
+          "lastHeardAt": 16000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 7,
+          "lastSeen": 7000,
+          "lastHeardAt": 14000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        }
+      ],
+      "hasMore": true,
+      "nextCursor": 8,
+      "nextPageCursor": "v1:exact:opaque",
+      "sort": "name",
+      "order": "asc",
+      "coverage": {
+        "complete": true
+      },
+      "windowStart": 1000,
+      "windowEnd": 2000,
+      "maxObservationCount": 100,
+      "observerTypes": [
+        "mqtt"
+      ],
+      "effectiveSort": "traffic"
+    },
+    "/api/v1/nodes/123e4567-e89b-42d3-a456-426614174000": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/observers": {
+      "items": [
+        {
+          "id": 9,
+          "lastSeen": 9000,
+          "lastHeardAt": 18000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 8,
+          "lastSeen": 8000,
+          "lastHeardAt": 16000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 7,
+          "lastSeen": 7000,
+          "lastHeardAt": 14000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        }
+      ],
+      "hasMore": true,
+      "nextCursor": 8,
+      "nextPageCursor": "v1:exact:opaque",
+      "sort": "name",
+      "order": "asc",
+      "coverage": {
+        "complete": true
+      },
+      "windowStart": 1000,
+      "windowEnd": 2000,
+      "maxObservationCount": 100,
+      "observerTypes": [
+        "mqtt"
+      ],
+      "effectiveSort": "traffic"
+    },
+    "/api/v1/observers/123e4567-e89b-42d3-a456-426614174000": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/observers/123e4567-e89b-42d3-a456-426614174000/activity": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/packets": {
+      "items": [
+        {
+          "id": 9,
+          "lastSeen": 9000,
+          "lastHeardAt": 18000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 8,
+          "lastSeen": 8000,
+          "lastHeardAt": 16000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 7,
+          "lastSeen": 7000,
+          "lastHeardAt": 14000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        }
+      ],
+      "hasMore": true,
+      "nextCursor": 8,
+      "nextPageCursor": "v1:exact:opaque",
+      "sort": "name",
+      "order": "asc",
+      "coverage": {
+        "complete": true
+      },
+      "windowStart": 1000,
+      "windowEnd": 2000,
+      "maxObservationCount": 100,
+      "observerTypes": [
+        "mqtt"
+      ],
+      "effectiveSort": "traffic"
+    },
+    "/api/v1/packets/aabbccddeeff0011": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/messages": {
+      "items": [
+        {
+          "id": 9,
+          "lastSeen": 9000,
+          "lastHeardAt": 18000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 8,
+          "lastSeen": 8000,
+          "lastHeardAt": 16000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 7,
+          "lastSeen": 7000,
+          "lastHeardAt": 14000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        }
+      ],
+      "hasMore": true,
+      "nextCursor": 8,
+      "nextPageCursor": "v1:exact:opaque",
+      "sort": "name",
+      "order": "asc",
+      "coverage": {
+        "complete": true
+      },
+      "windowStart": 1000,
+      "windowEnd": 2000,
+      "maxObservationCount": 100,
+      "observerTypes": [
+        "mqtt"
+      ],
+      "effectiveSort": "traffic"
+    },
+    "/api/v1/channels": {
+      "items": [
+        {
+          "id": 9,
+          "lastSeen": 9000,
+          "lastHeardAt": 18000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 8,
+          "lastSeen": 8000,
+          "lastHeardAt": 16000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 7,
+          "lastSeen": 7000,
+          "lastHeardAt": 14000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        }
+      ],
+      "hasMore": true,
+      "nextCursor": 8,
+      "nextPageCursor": "v1:exact:opaque",
+      "sort": "name",
+      "order": "asc",
+      "coverage": {
+        "complete": true
+      },
+      "windowStart": 1000,
+      "windowEnd": 2000,
+      "maxObservationCount": 100,
+      "observerTypes": [
+        "mqtt"
+      ],
+      "effectiveSort": "traffic"
+    },
+    "/api/v1/channels/7/messages": {
+      "items": [
+        {
+          "id": 9,
+          "lastSeen": 9000,
+          "lastHeardAt": 18000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 8,
+          "lastSeen": 8000,
+          "lastHeardAt": 16000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 7,
+          "lastSeen": 7000,
+          "lastHeardAt": 14000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        }
+      ],
+      "hasMore": true,
+      "nextCursor": 8,
+      "nextPageCursor": "v1:exact:opaque",
+      "sort": "name",
+      "order": "asc",
+      "coverage": {
+        "complete": true
+      },
+      "windowStart": 1000,
+      "windowEnd": 2000,
+      "maxObservationCount": 100,
+      "observerTypes": [
+        "mqtt"
+      ],
+      "effectiveSort": "traffic"
+    },
+    "/api/v1/routes": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/routes/search": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/routes/cross": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/traces": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/traces/aabbccdd": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/stats/top-advertisers": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/stats/overview": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/stats/series": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/stats/observer-comparison": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/brokers": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/channels/7": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/iatas/ARN": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/iatas/ARN/border": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/messages/backfill": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/nodes/123e4567-e89b-42d3-a456-426614174000/activity": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/nodes/123e4567-e89b-42d3-a456-426614174000/neighbors": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/nodes/123e4567-e89b-42d3-a456-426614174000/observations": {
+      "items": [
+        {
+          "id": 9,
+          "lastSeen": 9000,
+          "lastHeardAt": 18000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 8,
+          "lastSeen": 8000,
+          "lastHeardAt": 16000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 7,
+          "lastSeen": 7000,
+          "lastHeardAt": 14000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        }
+      ],
+      "hasMore": true,
+      "nextCursor": 8,
+      "nextPageCursor": "v1:exact:opaque",
+      "sort": "name",
+      "order": "asc",
+      "coverage": {
+        "complete": true
+      },
+      "windowStart": 1000,
+      "windowEnd": 2000,
+      "maxObservationCount": 100,
+      "observerTypes": [
+        "mqtt"
+      ],
+      "effectiveSort": "traffic"
+    },
+    "/api/v1/observers/123e4567-e89b-42d3-a456-426614174000/adverts": {
+      "items": [
+        {
+          "id": 9,
+          "lastSeen": 9000,
+          "lastHeardAt": 18000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 8,
+          "lastSeen": 8000,
+          "lastHeardAt": 16000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 7,
+          "lastSeen": 7000,
+          "lastHeardAt": 14000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        }
+      ],
+      "hasMore": true,
+      "nextCursor": 8,
+      "nextPageCursor": "v1:exact:opaque",
+      "sort": "name",
+      "order": "asc",
+      "coverage": {
+        "complete": true
+      },
+      "windowStart": 1000,
+      "windowEnd": 2000,
+      "maxObservationCount": 100,
+      "observerTypes": [
+        "mqtt"
+      ],
+      "effectiveSort": "traffic"
+    },
+    "/api/v1/observers/123e4567-e89b-42d3-a456-426614174000/telemetry": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/observers/directory": {
+      "items": [
+        {
+          "id": 9,
+          "lastSeen": 9000,
+          "lastHeardAt": 18000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 8,
+          "lastSeen": 8000,
+          "lastHeardAt": 16000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        },
+        {
+          "id": 7,
+          "lastSeen": 7000,
+          "lastHeardAt": 14000,
+          "traceTag": "aabbccdd",
+          "name": "synthetic",
+          "hops": [
+            "ab",
+            "abcdef"
+          ]
+        }
+      ],
+      "hasMore": true,
+      "nextCursor": 8,
+      "nextPageCursor": "v1:exact:opaque",
+      "sort": "name",
+      "order": "asc",
+      "coverage": {
+        "complete": true
+      },
+      "windowStart": 1000,
+      "windowEnd": 2000,
+      "maxObservationCount": 100,
+      "observerTypes": [
+        "mqtt"
+      ],
+      "effectiveSort": "traffic"
+    },
+    "/api/v1/packets/backfill": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/regions/3": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/routes/ARN/0123456789abcdef0123456789abcdef/observations": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/scopes/#Sweden": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/stats/clock-drift": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/stats/node-types": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/stats/observations": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/stats/paths": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/stats/payload-breakdown": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/stats/radio-presets": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/stats/scopes": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/stats/signal": {
+      "id": "123e4567-e89b-42d3-a456-426614174000",
+      "points": [],
+      "totalPackets": 12,
+      "matchAvailable": true,
+      "serverVersion": "2.2.0",
+      "minAppVersion": null,
+      "minWebVersion": null
+    },
+    "/api/v1/stats/top-nodes": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/stats/top-observers": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ],
+    "/api/v1/stats/top-talkers": [
+      {
+        "id": 9,
+        "lastSeen": 9000,
+        "lastHeardAt": 18000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 8,
+        "lastSeen": 8000,
+        "lastHeardAt": 16000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      },
+      {
+        "id": 7,
+        "lastSeen": 7000,
+        "lastHeardAt": 14000,
+        "traceTag": "aabbccdd",
+        "name": "synthetic",
+        "hops": [
+          "ab",
+          "abcdef"
+        ]
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "beacon_get_server_info",
+      "arguments": {},
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/info",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_list_iatas",
+      "arguments": {
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/iatas",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_list_regions",
+      "arguments": {
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/regions",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_list_scopes",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            "#a",
+            "#b"
+          ],
+          "pagination": {
+            "hasMore": true,
+            "nextCursor": {
+              "cursor": 2
+            }
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/scopes",
+          "query": {
+            "iatas": "ARN,MMX"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_search_nodes",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "order": "asc",
+          "pagination": {
+            "hasMore": true,
+            "nextCursor": {
+              "cursor": 8,
+              "pageCursor": "v1:exact:opaque"
+            }
+          },
+          "sort": "name"
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/nodes",
+          "query": {
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_node",
+      "arguments": {
+        "id": "123e4567-e89b-42d3-a456-426614174000"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/nodes/123e4567-e89b-42d3-a456-426614174000",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_search_observers",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": true,
+            "nextCursor": {
+              "cursor": 8,
+              "pageCursor": "v1:exact:opaque"
+            }
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/observers",
+          "query": {
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_observer",
+      "arguments": {
+        "id": "123e4567-e89b-42d3-a456-426614174000"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/observers/123e4567-e89b-42d3-a456-426614174000",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_observer_activity",
+      "arguments": {
+        "id": "123e4567-e89b-42d3-a456-426614174000",
+        "range": "48h"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/observers/123e4567-e89b-42d3-a456-426614174000/activity",
+          "query": {
+            "range": "48h"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_search_packets",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": true,
+            "nextCursor": {
+              "cursor": 8,
+              "pageCursor": "v1:exact:opaque"
+            }
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/packets",
+          "query": {
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_packet",
+      "arguments": {
+        "hash": "AABBCCDDEEFF0011"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/packets/aabbccddeeff0011",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_search_messages",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": true,
+            "nextCursor": {
+              "cursor": 8,
+              "pageCursor": "v1:exact:opaque"
+            }
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/messages",
+          "query": {
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_list_channels",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": true,
+            "nextCursor": {
+              "pageCursor": "v1:exact:opaque"
+            }
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/channels",
+          "query": {
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_channel_messages",
+      "arguments": {
+        "channelId": 7,
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": true,
+            "nextCursor": {
+              "cursor": 8,
+              "pageCursor": "v1:exact:opaque"
+            }
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/channels/7/messages",
+          "query": {
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_list_routes",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": true,
+            "nextCursor": {
+              "cursor": 8000,
+              "cursorId": 8
+            }
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/routes",
+          "query": {
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_search_routes",
+      "arguments": {
+        "from": "AB",
+        "to": "abcdef",
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/routes/search",
+          "query": {
+            "iatas": "ARN,MMX",
+            "from": "ab",
+            "to": "abcdef"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_find_cross_iata_routes",
+      "arguments": {
+        "fromHash": "AB",
+        "toHash": "cd",
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/routes/cross",
+          "query": {
+            "iatas": "ARN,MMX",
+            "fromHash": "ab",
+            "toHash": "cd"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_search_traces",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": true,
+            "nextCursor": {
+              "cursor": 16000,
+              "cursorTag": "aabbccdd"
+            }
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/traces",
+          "query": {
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_trace",
+      "arguments": {
+        "tag": "AABBCCDD"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/traces/aabbccdd",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_top_advertisers",
+      "arguments": {
+        "sort": "direct",
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/top-advertisers",
+          "query": {
+            "iatas": "ARN,MMX",
+            "sort": "direct",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_network_overview",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ]
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/overview",
+          "query": {
+            "iatas": "ARN,MMX"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_network_series",
+      "arguments": {
+        "since": "2026-11-01T00:00:00Z",
+        "until": "2026-11-02T00:00:00Z",
+        "iatas": [
+          "arn",
+          "mmx"
+        ]
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/series",
+          "query": {
+            "iatas": "ARN,MMX",
+            "since": "1793491200000",
+            "until": "1793577600000"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_compare_observers",
+      "arguments": {
+        "observerA": "123e4567-e89b-42d3-a456-426614174000",
+        "observerB": "123e4567-e89b-42d3-a456-426614174001",
+        "since": "2026-11-01T00:00:00Z",
+        "until": "2026-11-02T00:00:00Z",
+        "iatas": [
+          "arn",
+          "mmx"
+        ]
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/observer-comparison",
+          "query": {
+            "iatas": "ARN,MMX",
+            "since": "1793491200000",
+            "until": "1793577600000",
+            "observerA": "123e4567-e89b-42d3-a456-426614174000",
+            "observerB": "123e4567-e89b-42d3-a456-426614174001"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_list_brokers",
+      "arguments": {
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/brokers",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_channel",
+      "arguments": {
+        "id": "7"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/channels/7",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_iata",
+      "arguments": {
+        "id": "arn"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/iatas/ARN",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_iata_border",
+      "arguments": {
+        "id": "arn"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/iatas/ARN/border",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_backfill_messages",
+      "arguments": {
+        "afterId": 2147483649,
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/messages/backfill",
+          "query": {
+            "afterId": "2147483649",
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_node_activity",
+      "arguments": {
+        "id": "123e4567-e89b-42d3-a456-426614174000",
+        "range": "48h"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/nodes/123e4567-e89b-42d3-a456-426614174000/activity",
+          "query": {
+            "range": "48h"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_node_neighbors",
+      "arguments": {
+        "id": "123e4567-e89b-42d3-a456-426614174000",
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/nodes/123e4567-e89b-42d3-a456-426614174000/neighbors",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_node_observations",
+      "arguments": {
+        "id": "123e4567-e89b-42d3-a456-426614174000",
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": true,
+            "nextCursor": {
+              "cursor": 8,
+              "pageCursor": "v1:exact:opaque"
+            }
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/nodes/123e4567-e89b-42d3-a456-426614174000/observations",
+          "query": {
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_observer_adverts",
+      "arguments": {
+        "id": "123e4567-e89b-42d3-a456-426614174000",
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": true,
+            "nextCursor": {
+              "cursor": 8,
+              "pageCursor": "v1:exact:opaque"
+            }
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/observers/123e4567-e89b-42d3-a456-426614174000/adverts",
+          "query": {
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_observer_telemetry",
+      "arguments": {
+        "id": "123e4567-e89b-42d3-a456-426614174000",
+        "range": "48h"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/observers/123e4567-e89b-42d3-a456-426614174000/telemetry",
+          "query": {
+            "range": "48h"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_list_observer_directory",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "coverage": {
+            "complete": true
+          },
+          "effectiveSort": "traffic",
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "maxObservationCount": 100,
+          "observerTypes": [
+            "mqtt"
+          ],
+          "pagination": {
+            "hasMore": true,
+            "nextCursor": {
+              "cursor": 8,
+              "pageCursor": "v1:exact:opaque"
+            }
+          },
+          "sort": "name",
+          "windowEnd": 2000,
+          "windowStart": 1000
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/observers/directory",
+          "query": {
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_backfill_packets",
+      "arguments": {
+        "afterObservationId": 2147483649,
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/packets/backfill",
+          "query": {
+            "afterObservationId": "2147483649",
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_region",
+      "arguments": {
+        "id": "3"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/regions/3",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_route_observations",
+      "arguments": {
+        "iata": "arn",
+        "pathKey": "0123456789abcdef0123456789abcdef",
+        "limit": 2,
+        "range": "48h"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/routes/ARN/0123456789abcdef0123456789abcdef/observations",
+          "query": {
+            "range": "48h",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_scope",
+      "arguments": {
+        "id": "#Sweden"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/scopes/#Sweden",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_clock_drift",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/clock-drift",
+          "query": {
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_node_types",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/node-types",
+          "query": {
+            "iatas": "ARN,MMX"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_observation_stats",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/observations",
+          "query": {
+            "iatas": "ARN,MMX"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_path_stats",
+      "arguments": {
+        "since": "2026-11-01T00:00:00Z",
+        "until": "2026-11-02T00:00:00Z",
+        "iatas": [
+          "arn",
+          "mmx"
+        ]
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/paths",
+          "query": {
+            "iatas": "ARN,MMX",
+            "since": "1793491200000",
+            "until": "1793577600000"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_payload_breakdown",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/payload-breakdown",
+          "query": {
+            "iatas": "ARN,MMX"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_radio_presets",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/radio-presets",
+          "query": {
+            "iatas": "ARN,MMX"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_scope_stats",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/scopes",
+          "query": {
+            "iatas": "ARN,MMX"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_signal_stats",
+      "arguments": {
+        "since": "2026-11-01T00:00:00Z",
+        "until": "2026-11-02T00:00:00Z",
+        "iatas": [
+          "arn",
+          "mmx"
+        ]
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "id": "123e4567-e89b-42d3-a456-426614174000",
+          "matchAvailable": true,
+          "minAppVersion": null,
+          "minWebVersion": null,
+          "points": [],
+          "serverVersion": "2.2.0",
+          "totalPackets": 12
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/signal",
+          "query": {
+            "iatas": "ARN,MMX",
+            "since": "1793491200000",
+            "until": "1793577600000"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_top_nodes",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/top-nodes",
+          "query": {
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_top_observers",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/top-observers",
+          "query": {
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_get_top_talkers",
+      "arguments": {
+        "iatas": [
+          "arn",
+          "mmx"
+        ],
+        "limit": 2
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon returned 2 item(s)."
+          }
+        ],
+        "structuredContent": {
+          "items": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "pagination": {
+            "hasMore": false,
+            "truncated": true
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/top-talkers",
+          "query": {
+            "iatas": "ARN,MMX",
+            "limit": "2"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_diagnose_node",
+      "arguments": {
+        "id": "123e4567-e89b-42d3-a456-426614174000",
+        "range": "48h"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "activity": {
+            "id": "123e4567-e89b-42d3-a456-426614174000",
+            "matchAvailable": true,
+            "minAppVersion": null,
+            "minWebVersion": null,
+            "points": [],
+            "serverVersion": "2.2.0",
+            "totalPackets": 12
+          },
+          "neighbors": [
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 9,
+              "lastHeardAt": 18000,
+              "lastSeen": 9000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 8,
+              "lastHeardAt": 16000,
+              "lastSeen": 8000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            },
+            {
+              "hops": [
+                "ab",
+                "abcdef"
+              ],
+              "id": 7,
+              "lastHeardAt": 14000,
+              "lastSeen": 7000,
+              "name": "synthetic",
+              "traceTag": "aabbccdd"
+            }
+          ],
+          "neighborsTruncated": false,
+          "node": {
+            "id": "123e4567-e89b-42d3-a456-426614174000",
+            "matchAvailable": true,
+            "minAppVersion": null,
+            "minWebVersion": null,
+            "points": [],
+            "serverVersion": "2.2.0",
+            "totalPackets": 12
+          },
+          "note": "Read-only snapshot; Beacon may have incomplete geographic coverage.",
+          "requestedRange": "48h"
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/nodes/123e4567-e89b-42d3-a456-426614174000",
+          "query": {}
+        },
+        {
+          "path": "/api/v1/nodes/123e4567-e89b-42d3-a456-426614174000/activity",
+          "query": {
+            "range": "48h"
+          }
+        },
+        {
+          "path": "/api/v1/nodes/123e4567-e89b-42d3-a456-426614174000/neighbors",
+          "query": {}
+        }
+      ]
+    },
+    {
+      "name": "beacon_compare_regions",
+      "arguments": {
+        "iataA": "arn",
+        "iataB": "mmx"
+      },
+      "expected": {
+        "isError": false,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request succeeded."
+          }
+        ],
+        "structuredContent": {
+          "note": "Independent snapshots, not synchronized measurements.",
+          "regionA": {
+            "iata": "ARN",
+            "overview": {
+              "id": "123e4567-e89b-42d3-a456-426614174000",
+              "matchAvailable": true,
+              "minAppVersion": null,
+              "minWebVersion": null,
+              "points": [],
+              "serverVersion": "2.2.0",
+              "totalPackets": 12
+            }
+          },
+          "regionB": {
+            "iata": "MMX",
+            "overview": {
+              "id": "123e4567-e89b-42d3-a456-426614174000",
+              "matchAvailable": true,
+              "minAppVersion": null,
+              "minWebVersion": null,
+              "points": [],
+              "serverVersion": "2.2.0",
+              "totalPackets": 12
+            }
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/stats/overview",
+          "query": {
+            "iatas": "ARN"
+          }
+        },
+        {
+          "path": "/api/v1/stats/overview",
+          "query": {
+            "iatas": "MMX"
+          }
+        }
+      ]
+    },
+    {
+      "name": "beacon_search_nodes",
+      "arguments": {
+        "iatas": [
+          "bad value"
+        ]
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: iatas.0: Invalid string: must match pattern /^[A-Za-z0-9]{3}$/"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_nodes",
+      "arguments": {
+        "iatas": [
+          " arn "
+        ],
+        "region": "se"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: iatas.0: Invalid string: must match pattern /^[A-Za-z0-9]{3}$/"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_nodes",
+      "arguments": {
+        "sort": "name",
+        "cursor": 1
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: numeric cursor works only with default lastSeen descending order"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_nodes",
+      "arguments": {
+        "pageCursor": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: pageCursor: Too big: expected string to have <=512 characters"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_nodes",
+      "arguments": {
+        "region": "se",
+        "regionId": 1
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: region and regionId are mutually exclusive"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_nodes",
+      "arguments": {
+        "type": "foo"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: type: Invalid input: expected number, received string"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_nodes",
+      "arguments": {
+        "type": 9
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: type: Too big: expected number to be <=4"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_nodes",
+      "arguments": {
+        "typeName": "oops"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: typeName: Invalid option: expected one of \"companion\"|\"repeater\"|\"room_server\"|\"sensor\""
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_nodes",
+      "arguments": {
+        "pubkey": "aa"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: pubkey: Invalid string: must match pattern /^[0-9a-fA-F]{64}$/"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_nodes",
+      "arguments": {
+        "limit": 51
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: limit: Too big: expected number to be <=50"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_nodes",
+      "arguments": {
+        "since": "foo"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: Unrecognized key: \"since\""
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_observers",
+      "arguments": {
+        "type": 1
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_observers: type: Invalid input: expected string, received number"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_observers",
+      "arguments": {
+        "status": "offline",
+        "regionId": 0
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_observers: regionId: Too small: expected number to be >0"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_packets",
+      "arguments": {
+        "hashPrefix": "aab"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_packets: hashPrefix: Invalid string: must match pattern /^[0-9a-fA-F]{4,16}$/"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_packets",
+      "arguments": {
+        "hashPrefix": "aabb",
+        "pageCursor": "opaque"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_packets: hashPrefix pages with cursor, not pageCursor"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_packets",
+      "arguments": {
+        "payloadTypeName": "reserved",
+        "payloadTypes": [
+          12
+        ]
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_packets: payloadTypeName cannot be combined with payloadType or payloadTypes"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_packets",
+      "arguments": {
+        "routeTypes": [
+          5
+        ]
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_packets: routeTypes.0: Too big: expected number to be <=3"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_packets",
+      "arguments": {
+        "since": "2026-02-30T15:30:00Z"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "since must be a valid calendar timestamp"
+          }
+        ],
+        "structuredContent": {
+          "error": {
+            "code": "INVALID_ARGUMENT",
+            "type": "ValidationError"
+          }
+        }
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_messages",
+      "arguments": {
+        "since": "2026-02-30T15:30:00Z"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "since must be a valid calendar timestamp"
+          }
+        ],
+        "structuredContent": {
+          "error": {
+            "code": "INVALID_ARGUMENT",
+            "type": "ValidationError"
+          }
+        }
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_get_packet",
+      "arguments": {
+        "hash": "a"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_get_packet: hash: Invalid string: must match pattern /^[0-9a-fA-F]{16}$/"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_get_trace",
+      "arguments": {
+        "tag": "xyz"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_get_trace: tag: Invalid string: must match pattern /^[0-9a-fA-F]{8}$/"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_get_node",
+      "arguments": {
+        "id": "../admin/config"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_get_node: id: Invalid UUID"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_list_routes",
+      "arguments": {
+        "iatas": [
+          "ARN"
+        ],
+        "iata": "MMX"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_list_routes: iata and iatas are mutually exclusive"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_routes",
+      "arguments": {
+        "from": "a",
+        "to": "b"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_routes: from: Invalid string: must match pattern /^(?:[0-9a-fA-F]{2}){1,4}$/, to: Invalid string: must match pattern /^(?:[0-9a-fA-F]{2}){1,4}$/"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_find_cross_iata_routes",
+      "arguments": {
+        "fromHash": "aa",
+        "toHash": "bb",
+        "fromIata": "ARN"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_find_cross_iata_routes: fromIata and toIata must be given together"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_get_network_series",
+      "arguments": {
+        "since": "2026-10-05T00:00:00Z",
+        "until": "2026-10-04T00:00:00Z"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "since must be earlier than until"
+          }
+        ],
+        "structuredContent": {
+          "error": {
+            "code": "INVALID_ARGUMENT",
+            "type": "ValidationError"
+          }
+        }
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_compare_observers",
+      "arguments": {},
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_compare_observers: observerA: Invalid input: expected string, received undefined, observerB: Invalid input: expected string, received undefined, since: Invalid input: expected string, received undefined, until: Invalid input: expected string, received undefined"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_get_top_advertisers",
+      "arguments": {},
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_get_top_advertisers: sort: Invalid option: expected one of \"flood\"|\"direct\""
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_get_observer_activity",
+      "arguments": {
+        "id": "123e4567-e89b-42d3-a456-426614174000",
+        "range": "72h",
+        "interval": "5m"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_get_observer_activity: range must be 48h or less for intervals under 1h"
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_search_nodes",
+      "arguments": {
+        "arbitraryPath": "/admin"
+      },
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool beacon_search_nodes: Unrecognized key: \"arbitraryPath\""
+          }
+        ]
+      },
+      "requests": []
+    },
+    {
+      "name": "beacon_get_server_info",
+      "arguments": {},
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "synthetic error detail"
+          }
+        ],
+        "structuredContent": {
+          "error": {
+            "code": "INVALID_ARGUMENT",
+            "retryAfter": "10",
+            "status": 400,
+            "type": "BeaconValidationError",
+            "upstreamCode": "bad_request"
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/info",
+          "query": {}
+        }
+      ],
+      "scenario": {
+        "status": 400,
+        "body": {
+          "error": {
+            "code": "bad_request",
+            "message": "synthetic error detail"
+          }
+        }
+      }
+    },
+    {
+      "name": "beacon_get_server_info",
+      "arguments": {},
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "synthetic error detail"
+          }
+        ],
+        "structuredContent": {
+          "error": {
+            "code": "NOT_FOUND",
+            "retryAfter": "10",
+            "status": 404,
+            "type": "BeaconNotFoundError",
+            "upstreamCode": "not_found"
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/info",
+          "query": {}
+        }
+      ],
+      "scenario": {
+        "status": 404,
+        "body": {
+          "error": {
+            "code": "not_found",
+            "message": "synthetic error detail"
+          }
+        }
+      }
+    },
+    {
+      "name": "beacon_get_server_info",
+      "arguments": {},
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "synthetic error detail"
+          }
+        ],
+        "structuredContent": {
+          "error": {
+            "code": "RESOURCE_EXHAUSTED",
+            "retryAfter": "10",
+            "status": 429,
+            "type": "BeaconRateLimitError",
+            "upstreamCode": "rate_limited"
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/info",
+          "query": {}
+        }
+      ],
+      "scenario": {
+        "status": 429,
+        "body": {
+          "error": {
+            "code": "rate_limited",
+            "message": "synthetic error detail"
+          }
+        }
+      }
+    },
+    {
+      "name": "beacon_get_server_info",
+      "arguments": {},
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request failed with HTTP 503 Service Unavailable"
+          }
+        ],
+        "structuredContent": {
+          "error": {
+            "code": "DEADLINE_EXCEEDED",
+            "retryAfter": "10",
+            "status": 503,
+            "type": "BeaconTimeoutError",
+            "upstreamCode": "deadline_exceeded"
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/info",
+          "query": {}
+        }
+      ],
+      "scenario": {
+        "status": 503,
+        "body": {
+          "error": {
+            "code": "deadline_exceeded",
+            "message": "synthetic error detail"
+          }
+        }
+      }
+    },
+    {
+      "name": "beacon_get_server_info",
+      "arguments": {},
+      "expected": {
+        "isError": true,
+        "content": [
+          {
+            "type": "text",
+            "text": "Beacon request failed with HTTP 500 Internal Server Error"
+          }
+        ],
+        "structuredContent": {
+          "error": {
+            "code": "UNAVAILABLE",
+            "retryAfter": "10",
+            "status": 500,
+            "type": "BeaconUpstreamError",
+            "upstreamCode": "internal_server_error"
+          }
+        }
+      },
+      "requests": [
+        {
+          "path": "/api/v1/info",
+          "query": {}
+        }
+      ],
+      "scenario": {
+        "status": 500,
+        "body": {
+          "error": {
+            "code": "internal_server_error",
+            "message": "synthetic error detail"
+          }
+        }
+      }
+    }
+  ]
+}

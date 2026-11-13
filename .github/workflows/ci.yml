@@ -23,18 +23,15 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Install pinned Rust toolchain
-        run: rustup toolchain install 1.99.1 --profile minimal --component clippy --component rustfmt
-      - name: Check Rust formatting
-        run: cargo +1.99.1 fmt --manifest-path rust/Cargo.toml --all -- --check
-      - name: Check all Rust targets
-        run: cargo +1.99.1 check --manifest-path rust/Cargo.toml --workspace --all-targets --locked
-      - name: Lint Rust source and tests (all features)
-        run: cargo +1.99.1 clippy --manifest-path rust/Cargo.toml --workspace --all-targets --all-features --locked -- -D warnings
-      - name: Run Rust tests (all features)
-        run: cargo +1.99.1 test --manifest-path rust/Cargo.toml --workspace --all-features --locked
-      - name: Build Rust gateway
-        run: cargo +1.99.1 build --manifest-path rust/Cargo.toml --release --locked
+      - name: Install pinned uv
+        run: pipx install uv==0.11.29
+      - run: uv sync --locked
+      - run: uv run --locked ruff check src tests/python
+      - run: uv run --locked ruff format --check src tests/python
+      - run: uv run --locked pyright
+      - run: uv run --locked pytest
+      - name: Build Python distribution
+        run: uv build --no-sources
 
   container:
     name: Container verification

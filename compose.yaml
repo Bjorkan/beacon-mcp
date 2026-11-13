@@ -1,6 +1,6 @@
 services:
   beacon-mcp:
-    image: ${BEACON_MCP_IMAGE:?Set BEACON_MCP_IMAGE to a published Rust image SHA or digest}
+    image: ${BEACON_MCP_IMAGE:?Set BEACON_MCP_IMAGE to a published Python image SHA or digest}
     pull_policy: always
     environment:
       BEACON_BASE_URL: ${BEACON_BASE_URL:?Set BEACON_BASE_URL}
