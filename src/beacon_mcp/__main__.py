@@ -12,6 +12,27 @@ from beacon_mcp.app import create_app
 from beacon_mcp.config import Config
 
 
+class SafeDiagnostics(logging.Filter):
+    """Library diagnostics may embed bodies, headers, IDs or exception traces."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        if record.name.split(".")[0] in {
+            "mcp",
+            "httpx",
+            "httpx2",
+            "httpcore",
+            "httpcore2",
+            "websockets",
+            "uvicorn",
+        }:
+            record.msg = "Transport diagnostic (details suppressed)"
+            record.args = ()
+            record.exc_info = None
+            record.exc_text = None
+            record.stack_info = None
+        return True
+
+
 def healthcheck() -> int:
     host = os.environ.get("HOST", "127.0.0.1")
     if host in ("0.0.0.0", "::"):
@@ -45,8 +66,11 @@ def main() -> None:
         "silent": 100,
     }[config.log_level]
     logging.basicConfig(level=level, format="%(levelname)s %(name)s %(message)s")
+    for handler in logging.getLogger().handlers:
+        handler.setLevel(level)
+        handler.addFilter(SafeDiagnostics())
     # Libraries must never log URLs, headers or response contents, even at debug.
-    for name in ("httpx", "httpcore", "websockets", "mcp", "httpx2"):
+    for name in ("httpx", "httpcore", "httpcore2", "websockets", "mcp", "httpx2"):
         logging.getLogger(name).setLevel(logging.WARNING)
     uvicorn.run(
         create_app(config),
