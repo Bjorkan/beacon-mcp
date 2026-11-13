@@ -166,4 +166,8 @@ def create_server(
         **options,
     )
 
+    from beacon_mcp import prompts, resources
+
+    resources.register(server, client)
+    prompts.register(server)
     return server

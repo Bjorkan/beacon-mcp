@@ -37,7 +37,11 @@ async def rpc(http, method, **params):
             "Accept": "application/json, text/event-stream",
             "MCP-Protocol-Version": "2026-07-28",
             "Mcp-Method": method,
-            **({"Mcp-Name": params["name"]} if "name" in params else {}),
+            **(
+                {"Mcp-Name": params.get("name", params.get("uri"))}
+                if "name" in params or "uri" in params
+                else {}
+            ),
         },
         json={"jsonrpc": "2.0", "id": 1, "method": method, "params": {"_meta": META, **params}},
     )
