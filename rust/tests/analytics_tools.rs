@@ -107,7 +107,7 @@ async fn rpc(
 }
 
 #[tokio::test]
-async fn advertises_all_49_public_tools_and_calls_every_analytics_tool() {
+async fn advertises_all_51_public_and_composite_tools_and_calls_every_analytics_tool() {
     let (client, root, seen, token, tasks) = setup().await;
     let listed = rpc(&client, &root, "tools/list", None, json!({})).await;
     let expected_schemas: Value =
