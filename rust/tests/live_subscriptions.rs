@@ -528,9 +528,7 @@ async fn legacy_initialize_does_not_advertise_resource_subscribe() {
 async fn mixed_case_packet_and_node_subscriptions_receive_canonical_updates() {
     let shutdown = CancellationToken::new();
     let live = Live::configured(3, Duration::ZERO, shutdown.clone(), true);
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
-        .await
-        .unwrap();
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
     let root = format!("http://{}/", listener.local_addr().unwrap());
     let client = BeaconClient::new(
         "http://127.0.0.1:9/".parse().unwrap(),
@@ -543,7 +541,12 @@ async fn mixed_case_packet_and_node_subscriptions_receive_canonical_updates() {
         async move { axum::serve(listener, app).await.unwrap() }
     });
     let http = reqwest::Client::new();
-    let first = listen(&http, &root, &format!("beacon://nodes/{}", NODE.to_uppercase())).await;
+    let first = listen(
+        &http,
+        &root,
+        &format!("beacon://nodes/{}", NODE.to_uppercase()),
+    )
+    .await;
     let second = listen(&http, &root, "beacon://packets/AABBCCDDEEFF0011").await;
     assert_eq!(first.status(), 200);
     assert_eq!(second.status(), 200);
@@ -552,7 +555,10 @@ async fn mixed_case_packet_and_node_subscriptions_receive_canonical_updates() {
     let ack_node = until(&mut first, "notifications/subscriptions/acknowledged").await;
     let ack_packet = until(&mut second, "notifications/subscriptions/acknowledged").await;
     assert!(ack_node.contains(NODE), "{ack_node}");
-    assert!(ack_packet.contains("beacon://packets/aabbccddeeff0011"), "{ack_packet}");
+    assert!(
+        ack_packet.contains("beacon://packets/aabbccddeeff0011"),
+        "{ack_packet}"
+    );
     live.received("nodeUpdate", &json!({"nodeId":NODE}));
     live.received(
         "packetObservation",
