@@ -240,18 +240,10 @@ mod tests {
     #[test]
     fn traffic_events_require_explicit_opt_in_and_enabled_subscriptions() {
         let base = ("BEACON_BASE_URL", "https://beacon.example");
-        let enabled = parse(&[
-            base,
-            ("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", "true"),
-        ])
-        .unwrap();
+        let enabled = parse(&[base, ("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", "true")]).unwrap();
         assert!(enabled.subscriptions.enabled);
         assert!(enabled.subscriptions.traffic_enabled);
-        let disabled = parse(&[
-            base,
-            ("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", "false"),
-        ])
-        .unwrap();
+        let disabled = parse(&[base, ("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", "false")]).unwrap();
         assert!(!disabled.subscriptions.traffic_enabled);
         for inputs in [
             vec![
