@@ -541,24 +541,18 @@ async fn mixed_case_packet_and_node_subscriptions_receive_canonical_updates() {
         async move { axum::serve(listener, app).await.unwrap() }
     });
     let http = reqwest::Client::new();
-    let first = listen(
-        &http,
-        &root,
-        &format!("beacon://nodes/{}", NODE.to_uppercase()),
-    )
-    .await;
-    let second = listen(&http, &root, "beacon://packets/AABBCCDDEEFF0011").await;
+    let requested_node = format!("beacon://nodes/{}", NODE.to_uppercase());
+    let requested_packet = "beacon://packets/AABBCCDDEEFF0011";
+    let first = listen(&http, &root, &requested_node).await;
+    let second = listen(&http, &root, requested_packet).await;
     assert_eq!(first.status(), 200);
     assert_eq!(second.status(), 200);
     let mut first = first.bytes_stream();
     let mut second = second.bytes_stream();
     let ack_node = until(&mut first, "notifications/subscriptions/acknowledged").await;
     let ack_packet = until(&mut second, "notifications/subscriptions/acknowledged").await;
-    assert!(ack_node.contains(NODE), "{ack_node}");
-    assert!(
-        ack_packet.contains("beacon://packets/aabbccddeeff0011"),
-        "{ack_packet}"
-    );
+    assert!(ack_node.contains(&requested_node), "{ack_node}");
+    assert!(ack_packet.contains(requested_packet), "{ack_packet}");
     live.received("nodeUpdate", &json!({"nodeId":NODE}));
     live.received(
         "packetObservation",
@@ -566,11 +560,8 @@ async fn mixed_case_packet_and_node_subscriptions_receive_canonical_updates() {
     );
     let update_node = until(&mut first, "notifications/resources/updated").await;
     let update_packet = until(&mut second, "notifications/resources/updated").await;
-    assert!(update_node.contains(NODE), "{update_node}");
-    assert!(
-        update_packet.contains("beacon://packets/aabbccddeeff0011"),
-        "{update_packet}"
-    );
+    assert!(update_node.contains(&requested_node), "{update_node}");
+    assert!(update_packet.contains(requested_packet), "{update_packet}");
     assert!(!update_packet.contains("discarded"));
     shutdown.cancel();
     task.abort();
