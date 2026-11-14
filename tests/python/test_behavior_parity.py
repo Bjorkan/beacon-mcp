@@ -6,7 +6,8 @@ from pathlib import Path
 
 import httpx
 import pytest
-from conftest import gateway, rpc
+
+from tests.python.conftest import gateway, rpc
 
 BASELINE = json.loads(Path("tests/fixtures/behavior-baseline.json").read_text())
 
