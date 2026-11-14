@@ -9,6 +9,7 @@ from beacon_mcp.runtime import CONTRACTS, Registry
 from beacon_mcp.tool_support import array_result, location, page, query
 from beacon_mcp.validation import duration
 
+# These array endpoints ignore a query limit; the client still bounds reading.
 NO_LIMIT = frozenset(
     (
         Operation.Brokers,
@@ -30,60 +31,38 @@ def register_operations(registry: Registry, operations: dict[str, tuple[Operatio
 async def execute_extra(
     name: str, operation: Operation, shape: str, client: BeaconClient, arguments: dict[str, Any]
 ) -> Any:
-    location(arguments, region_message="mutually exclusive location filters")
-    if operation == Operation.RouteObservations and (
-        "range" in arguments
-        and any(key in arguments for key in ("since", "until", "pageCursor"))
-        or ("since" in arguments) != ("until" in arguments)
-    ):
-        raise invalid(
-            "range is exclusive with the explicit window and cursor; since and until must be paired"
-        )
-    if "range" in arguments:
-        duration(arguments["range"])
-    for key, value in arguments.items():
-        if key not in ("id", "pathKey", "range", "since", "until", "iata") and isinstance(
-            value, str
-        ):
-            if (
-                not value.strip()
-                or len(value.encode()) > 512
-                or re.search(r"[\x00-\x1f\x7f-\x9f]", value)
-            ):
-                raise invalid("invalid text filter")
-    id = arguments.get("id")
+    validate_arguments(operation, arguments)
+    resource_id = arguments.get("id")
     exclude = ("id", "pathKey", "limit")
     if operation == Operation.RouteObservations:
-        id = f"{arguments['iata'].upper()}:{arguments['pathKey']}"
+        resource_id = f"{arguments['iata'].upper()}:{arguments['pathKey']}"
         exclude += ("iata",)
     filters = query(arguments, exclude)
     limit = arguments.get("limit", 20)
-    if "limit" in CONTRACTS[name]["inputSchema"]["properties"] and operation not in NO_LIMIT:
+    accepts_limit = "limit" in CONTRACTS[name]["inputSchema"]["properties"]
+    if accepts_limit and operation not in NO_LIMIT:
         filters.append(("limit", str(limit)))
     if shape == "array":
-        return array_result(
-            await client.array_page(operation, id, filters, max_items=limit + 1), limit
+        response_page = await client.array_page(
+            operation, resource_id, filters, max_items=limit + 1
         )
-    response = await client.request(operation, id, filters)
+        return array_result(response_page, limit)
+    response = await client.request(operation, resource_id, filters)
     if shape == "page":
         result = page(response, limit)
         if operation == Operation.ObserverDirectory and isinstance(response, dict):
-            result.update(
-                {
-                    key: response[key]
-                    for key in (
-                        "windowStart",
-                        "windowEnd",
-                        "coverage",
-                        "sort",
-                        "effectiveSort",
-                        "generatedAt",
-                        "maxObservationCount",
-                        "observerTypes",
-                    )
-                    if key in response
-                }
-            )
+            for key in (
+                "windowStart",
+                "windowEnd",
+                "coverage",
+                "sort",
+                "effectiveSort",
+                "generatedAt",
+                "maxObservationCount",
+                "observerTypes",
+            ):
+                if key in response:
+                    result[key] = response[key]
         return result
     if response is None:
         return {"available": False}
@@ -93,3 +72,29 @@ async def execute_extra(
     if isinstance(response, list):
         return {"items": cast(list[object], response)}
     raise GatewayError("UNAVAILABLE", "Beacon returned an invalid result")
+
+
+def validate_arguments(operation: Operation, arguments: dict[str, Any]) -> None:
+    """Check endpoint constraints that the frozen JSON Schemas cannot express."""
+    location(arguments, region_message="mutually exclusive location filters")
+    if operation == Operation.RouteObservations:
+        range_conflicts = "range" in arguments and any(
+            key in arguments for key in ("since", "until", "pageCursor")
+        )
+        incomplete_window = ("since" in arguments) != ("until" in arguments)
+        if range_conflicts or incomplete_window:
+            raise invalid(
+                "range is exclusive with the explicit window and cursor; since and until must be paired"
+            )
+    if "range" in arguments:
+        duration(arguments["range"])
+    for key, value in arguments.items():
+        if key in ("id", "pathKey", "range", "since", "until", "iata"):
+            continue
+        if not isinstance(value, str):
+            continue
+        blank = not value.strip()
+        too_long = len(value.encode()) > 512
+        has_control_characters = re.search(r"[\x00-\x1f\x7f-\x9f]", value)
+        if blank or too_long or has_control_characters:
+            raise invalid("invalid text filter")
