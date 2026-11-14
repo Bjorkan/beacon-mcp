@@ -1,17 +1,18 @@
 import json
 from pathlib import Path
+from typing import Any, Never
 
 import pytest
 from conftest import gateway, rpc
 
-from beacon_mcp.client import GatewayError
+from beacon_mcp.client import BeaconClient, GatewayError
 from beacon_mcp.runtime import CONTRACTS, Registry
 
 
 async def test_sdk_discovery_and_frozen_tool_registration():
     registry = Registry()
 
-    async def implementation(_client, _args):
+    async def implementation(_client: BeaconClient, _args: dict[str, Any]) -> dict[str, object]:
         return {"items": ["not-duplicated-in-text"]}
 
     registry.register("beacon_list_iatas", implementation)
@@ -42,10 +43,10 @@ def test_contract_copies_and_unique_inventory():
         ("UNAVAILABLE", "BeaconUpstreamError"),
     ],
 )
-async def test_classified_errors(code, kind):
+async def test_classified_errors(code: str, kind: str) -> None:
     registry = Registry()
 
-    async def failure(_client, _args):
+    async def failure(_client: BeaconClient, _args: dict[str, Any]) -> Never:
         raise GatewayError(code, "redacted", status=503, retry_after="10")
 
     registry.register("beacon_get_server_info", failure)
@@ -70,9 +71,9 @@ async def test_sdk_owns_malformed_call_parameters():
 
 async def test_json_schema_validation_and_pydantic_integer_arguments():
     registry = Registry()
-    seen = []
+    seen: list[dict[str, Any]] = []
 
-    async def implementation(_client, args):
+    async def implementation(_client: BeaconClient, args: dict[str, Any]) -> dict[str, list[object]]:
         assert type(args["limit"]) is int
         assert all(type(value) is int for value in args["routeTypes"])
         seen.append(args)
@@ -98,7 +99,7 @@ async def test_json_schema_validation_and_pydantic_integer_arguments():
 async def test_sdk_handles_unexpected_handler_exceptions():
     registry = Registry()
 
-    async def failure(_client, _args):
+    async def failure(_client: BeaconClient, _args: dict[str, Any]) -> Never:
         raise RuntimeError("synthetic detail must stay off the wire")
 
     registry.register("beacon_get_server_info", failure)
