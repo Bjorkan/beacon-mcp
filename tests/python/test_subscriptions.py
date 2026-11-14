@@ -8,7 +8,6 @@ from typing import Any, cast
 import httpx
 import pytest
 import uvicorn
-from conftest import META, gateway, rpc
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.server.subscriptions import ListenHandler
@@ -17,6 +16,7 @@ from starlette.applications import Starlette
 from beacon_mcp.app import MAX_MCP_REQUEST_BYTES, create_app
 from beacon_mcp.client import BeaconClient
 from beacon_mcp.config import Config
+from tests.python.conftest import META, gateway, rpc
 
 ID = "123e4567-e89b-42d3-a456-426614174000"
 SUBSCRIPTION_ID = "io.modelcontextprotocol/subscriptionId"
