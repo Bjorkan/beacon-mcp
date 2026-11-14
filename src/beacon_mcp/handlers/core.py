@@ -60,11 +60,12 @@ async def execute(name: str, client: BeaconClient, args: dict[str, Any]) -> Any:
         if not isinstance(source, list):
             raise GatewayError("UNAVAILABLE", "Beacon returned invalid scopes")
         offset = args.get("cursor", 0)
-        items = cast(list[object], source)[offset : offset + limit]
+        scopes = cast(list[object], source)
+        items = scopes[offset : offset + limit]
         next_offset = offset + len(items)
         pagination: dict[str, Any] = (
             {"hasMore": True, "nextCursor": {"cursor": next_offset}}
-            if next_offset < len(source)
+            if next_offset < len(scopes)
             else {"hasMore": False}
         )
         return {"items": items, "pagination": pagination}
