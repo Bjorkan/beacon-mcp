@@ -6,13 +6,13 @@ from pathlib import Path
 
 import httpx
 import pytest
-from conftest import gateway, rpc
 from pydantic import TypeAdapter
 
 from beacon_mcp.__main__ import SafeDiagnostics
 from beacon_mcp.client import BeaconClient
 from beacon_mcp.config import Config
 from beacon_mcp.handlers.composite import diagnose_node
+from tests.python.conftest import gateway, rpc
 
 EXPECTED_NAMES = TypeAdapter(list[str]).validate_python(
     json.loads(Path("tests/fixtures/tool-names.json").read_text())

@@ -3,10 +3,10 @@ from pathlib import Path
 from typing import Any, Never
 
 import pytest
-from conftest import gateway, rpc
 
 from beacon_mcp.client import BeaconClient, GatewayError
 from beacon_mcp.runtime import CONTRACTS, Registry
+from tests.python.conftest import gateway, rpc
 
 
 async def test_sdk_discovery_and_frozen_tool_registration():

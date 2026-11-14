@@ -4,10 +4,10 @@ from typing import Never, TypedDict
 
 import httpx
 import pytest
-from conftest import gateway, rpc
 from pydantic import TypeAdapter
 
 from beacon_mcp.handlers import packet, routing
+from tests.python.conftest import gateway, rpc
 
 CASES: list[tuple[str, dict[str, object], str]] = [
     (

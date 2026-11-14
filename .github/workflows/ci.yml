@@ -33,6 +33,73 @@ jobs:
       - name: Build Python distribution
         run: uv build --no-sources
 
+  strict-types:
+    name: BasedPyright strict (1.39.8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository with complete Git history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Verify #95 against the temporary combined typing PRs
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 95 }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "CI typing integration"
+          git config user.email "ci-typing@invalid.example"
+          for pr in 80 81 82 83 84 85 86 87 88 89 90 94; do
+            merged_at="$(gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr}" --jq '.merged_at // ""')"
+            if [[ -n "$merged_at" ]]; then
+              echo "PR #$pr is already merged; no temporary merge needed."
+              continue
+            fi
+            git fetch --no-tags origin "refs/pull/$pr/head:refs/remotes/origin/typing-$pr"
+            git merge --no-ff --no-edit -X theirs "refs/remotes/origin/typing-$pr"
+          done
+          # Preserve qualified test-helper imports when independently authored
+          # test patches touch the same import block.
+          python - <<'PY'
+          from pathlib import Path
+          for path in Path("tests/python").glob("test_*.py"):
+              lines = path.read_text().splitlines(keepends=True)
+              seen = set()
+              output = []
+              for original in lines:
+                  line = original.replace(
+                      "from conftest import ", "from tests.python.conftest import "
+                  ).replace(
+                      "from test_subscriptions import ",
+                      "from tests.python.test_subscriptions import ",
+                  )
+                  if line.startswith("from tests.python.conftest import "):
+                      if line in seen:
+                          continue
+                      seen.add(line)
+                  output.append(line)
+              path.write_text("".join(output))
+          PY
+      - name: Install pinned uv
+        run: pipx install uv==0.11.29
+      - run: uv sync --locked
+      - name: Normalize import blocks after ephemeral test-file merges
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 95 }}
+        run: |
+          uv run --locked ruff check --select I --fix tests/python
+          uv run --locked ruff format tests/python
+      - name: Validate integration lint and formatting
+        run: |
+          uv run --locked ruff check src tests/python
+          uv run --locked ruff format --check src tests/python
+      - name: Validate integration tests and SDK contracts
+        run: uv run --locked pytest
+      - name: Analyze all project Python files with BasedPyright strict
+        run: uv run --locked basedpyright --project basedpyright-config.json
+
   container:
     name: Container verification
     runs-on: ubuntu-latest

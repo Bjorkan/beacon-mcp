@@ -7,8 +7,9 @@ from typing import NotRequired, TypedDict
 
 import httpx
 import pytest
-from conftest import gateway, rpc
 from pydantic import TypeAdapter
+
+from tests.python.conftest import gateway, rpc
 
 
 class UpstreamRequest(TypedDict):
