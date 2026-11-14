@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.28@sha256:bb22d9815c728170f72750f4e5b0d672e06176142e1d602c7e66c050100b7e5b
 FROM ghcr.io/astral-sh/uv:0.11.29@sha256:eb2843a1e56fd9e30c7276ce1a52cba86e64c7b385f5e3279a0e08e02dd058fc AS uv
-FROM python:3.13.14-slim-bookworm@sha256:67a1e1f215ccda113cfc024e8639049257e88f273898f595b61476d128d387e8 AS build
+FROM python:3.15.1-slim-bookworm@sha256:575f8bc12ec26542e0678bc6b60e385218248019d433157ec327264a78c3a853 AS build
 COPY --from=uv /uv /usr/local/bin/uv
 WORKDIR /opt/beacon
 COPY pyproject.toml uv.lock .python-version ./
@@ -8,7 +8,7 @@ COPY src ./src
 RUN --mount=type=cache,target=/root/.cache/uv,sharing=locked \
     uv sync --locked --no-dev --no-editable --no-managed-python --python /usr/local/bin/python
 
-FROM python:3.13.14-slim-bookworm@sha256:67a1e1f215ccda113cfc024e8639049257e88f273898f595b61476d128d387e8 AS runtime
+FROM python:3.15.1-slim-bookworm@sha256:575f8bc12ec26542e0678bc6b60e385218248019d433157ec327264a78c3a853 AS runtime
 LABEL org.opencontainers.image.title="Beacon MCP Server" \
       org.opencontainers.image.description="Read-only MCP gateway for MeshCore Beacon" \
       org.opencontainers.image.source="https://github.com/Bjorkan/beacon-mcp" \
