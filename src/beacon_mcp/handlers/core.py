@@ -7,7 +7,7 @@ from beacon_mcp.client import BeaconClient
 from beacon_mcp.errors import GatewayError, invalid
 from beacon_mcp.operations import Operation
 from beacon_mcp.runtime import Registry
-from beacon_mcp.tool_support import array_result, location, page, query
+from beacon_mcp.tool_support import Page, Pagination, array_result, location, page, query
 from beacon_mcp.validation import duration
 
 OPERATIONS: dict[str, Operation] = {
@@ -81,7 +81,7 @@ def validate_arguments(name: str, arguments: dict[str, Any]) -> None:
         raise invalid("invalid pageCursor")
 
 
-def scope_page(source: object, offset: int, limit: int) -> dict[str, Any]:
+def scope_page(source: object, offset: int, limit: int) -> Page:
     """Beacon returns all scope names; expose a bounded local offset page."""
     if not isinstance(source, list):
         raise GatewayError("UNAVAILABLE", "Beacon returned invalid scopes")
@@ -89,7 +89,7 @@ def scope_page(source: object, offset: int, limit: int) -> dict[str, Any]:
     scopes = cast(list[object], source)
     items = scopes[offset : offset + limit]
     next_offset = offset + len(items)
-    pagination: dict[str, Any] = {"hasMore": False}
+    pagination: Pagination = {"hasMore": False}
     if next_offset < len(scopes):
         pagination = {"hasMore": True, "nextCursor": {"cursor": next_offset}}
     return {"items": items, "pagination": pagination}

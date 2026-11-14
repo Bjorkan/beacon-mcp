@@ -23,3 +23,19 @@ def test_page_keeps_both_cursor_forms_including_zero_and_opaque_text() -> None:
 
 def test_oversized_plain_list_does_not_invent_a_cursor() -> None:
     assert page([1, 2, 3], 2) == {"items": [1, 2], "pagination": {"hasMore": True}}
+
+
+def test_page_passes_through_untrusted_cursor_and_sort_values() -> None:
+    cursor = {"position": [1, "opaque"]}
+    sort = ["upstream-specific"]
+    result = page(
+        {"items": [None], "hasMore": True, "nextCursor": cursor, "sort": sort, "order": None},
+        1,
+        include_sort=True,
+    )
+    assert result == {
+        "items": [None],
+        "pagination": {"hasMore": True, "nextCursor": {"cursor": cursor}},
+        "sort": sort,
+        "order": None,
+    }

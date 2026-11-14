@@ -7,7 +7,7 @@ from beacon_mcp.client import BeaconClient
 from beacon_mcp.errors import GatewayError, invalid
 from beacon_mcp.operations import Operation
 from beacon_mcp.runtime import Registry
-from beacon_mcp.tool_support import array_result, location, query
+from beacon_mcp.tool_support import Pagination, array_result, location, query
 from beacon_mcp.validation import json_object
 
 OPERATIONS: dict[str, Operation] = {
@@ -43,7 +43,7 @@ async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) ->
     if not isinstance(response, list):
         raise GatewayError("UNAVAILABLE", "Beacon returned invalid route or trace list")
     items = cast(list[object], response)[:limit]
-    pagination: dict[str, Any] = {"hasMore": False}
+    pagination: Pagination = {"hasMore": False}
     last = json_object(items[-1]) if len(items) == limit else None
     if last is not None:
         if operation == Operation.Routes:

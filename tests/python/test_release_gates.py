@@ -65,6 +65,40 @@ async def test_composite_failure_cancels_siblings_and_preserves_classification()
         await client.aclose()
 
 
+async def test_cancelling_composite_awaits_all_upstream_reads() -> None:
+    started: set[str] = set()
+    cancelled: set[str] = set()
+    all_started = asyncio.Event()
+
+    async def upstream(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        started.add(path)
+        if len(started) == 3:
+            all_started.set()
+        try:
+            await asyncio.Event().wait()
+            raise AssertionError("cancelled read unexpectedly resumed")
+        finally:
+            cancelled.add(path)
+
+    client = BeaconClient(
+        Config.from_env({"BEACON_BASE_URL": "https://beacon.test"}),
+        transport=httpx.MockTransport(upstream),
+    )
+    task = asyncio.create_task(diagnose_node(client, {"id": ID}))
+    try:
+        await asyncio.wait_for(all_started.wait(), 1)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+        assert len(started) == 3
+        assert cancelled == started
+    finally:
+        task.cancel()
+        await asyncio.gather(task, return_exceptions=True)
+        await client.aclose()
+
+
 async def test_inventory_order_and_forbidden_events() -> None:
     async with gateway() as http:
         assert [

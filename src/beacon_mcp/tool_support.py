@@ -1,10 +1,27 @@
 """Shared bounded transformations for public read-only tools."""
 
-from typing import Any, cast
+from typing import Any, NotRequired, TypedDict, cast
 
 from beacon_mcp.errors import GatewayError, invalid
 from beacon_mcp.json_stream import ArrayPage
 from beacon_mcp.validation import json_object, timestamp
+
+
+class Pagination(TypedDict):
+    """Gateway pagination metadata; cursor values stay opaque upstream data."""
+
+    hasMore: bool
+    nextCursor: NotRequired[dict[str, object]]
+    truncated: NotRequired[bool]
+
+
+class Page(TypedDict):
+    """A bounded tool result with optional upstream sort metadata."""
+
+    items: list[object]
+    pagination: Pagination
+    sort: NotRequired[object]
+    order: NotRequired[object]
 
 
 def location(
@@ -46,7 +63,7 @@ def query(arguments: dict[str, Any], exclude: tuple[str, ...] = ()) -> list[tupl
     return result
 
 
-def page(value: object, limit: int, include_sort: bool = False) -> dict[str, Any]:
+def page(value: object, limit: int, include_sort: bool = False) -> Page:
     """Limit a page while preserving the upstream cursor values exactly."""
     document = json_object(value)
     raw_items = document.get("items") if document is not None else value
@@ -55,7 +72,7 @@ def page(value: object, limit: int, include_sort: bool = False) -> dict[str, Any
     items = cast(list[object], raw_items)
     upstream_has_more = document is not None and document.get("hasMore") is True
     has_more = upstream_has_more or len(items) > limit
-    pagination: dict[str, Any] = {"hasMore": has_more}
+    pagination: Pagination = {"hasMore": has_more}
     if has_more and document is not None:
         cursor: dict[str, object] = {}
         for upstream_key, argument_key in (
@@ -66,14 +83,17 @@ def page(value: object, limit: int, include_sort: bool = False) -> dict[str, Any
                 cursor[argument_key] = document[upstream_key]
         if cursor:
             pagination["nextCursor"] = cursor
-    result: dict[str, Any] = {"items": items[:limit], "pagination": pagination}
+    result: Page = {"items": items[:limit], "pagination": pagination}
     if include_sort and document is not None:
-        result.update({key: document[key] for key in ("sort", "order") if key in document})
+        if "sort" in document:
+            result["sort"] = document["sort"]
+        if "order" in document:
+            result["order"] = document["order"]
     return result
 
 
-def array_result(value: ArrayPage, limit: int) -> dict[str, Any]:
-    pagination = {"hasMore": False}
+def array_result(value: ArrayPage, limit: int) -> Page:
+    pagination: Pagination = {"hasMore": False}
     if not value.complete or len(value.items) > limit:
         pagination["truncated"] = True
     return {"items": value.items[:limit], "pagination": pagination}

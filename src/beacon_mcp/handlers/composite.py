@@ -1,7 +1,6 @@
 """Stateless analysis using at most three concurrent allowlisted GETs."""
 
 import asyncio
-from collections.abc import Coroutine
 from typing import Any
 
 from beacon_mcp.client import BeaconClient
@@ -20,14 +19,18 @@ async def diagnose_node(client: BeaconClient, arguments: dict[str, Any]) -> dict
     node_id = identifier("uuid", arguments["id"])
     range_value = arguments.get("range", "24h")
     limit = arguments.get("neighborLimit", 10)
-    node, activity, neighbors_page = await together(
-        client.request(Operation.Node, node_id),
-        client.request(Operation.NodeActivity, node_id, [("range", range_value)]),
-        client.array_page(Operation.NodeNeighbors, node_id, max_items=limit + 1),
+    node_task = asyncio.create_task(client.request(Operation.Node, node_id))
+    activity_task = asyncio.create_task(
+        client.request(Operation.NodeActivity, node_id, [("range", range_value)])
     )
+    neighbors_task = asyncio.create_task(
+        client.array_page(Operation.NodeNeighbors, node_id, max_items=limit + 1)
+    )
+    await wait_for_tasks(node_task, activity_task, neighbors_task)
+    neighbors_page = neighbors_task.result()
     return {
-        "node": node,
-        "activity": activity,
+        "node": node_task.result(),
+        "activity": activity_task.result(),
         "neighbors": neighbors_page.items[:limit],
         "neighborsTruncated": not neighbors_page.complete or len(neighbors_page.items) > limit,
         "requestedRange": range_value,
@@ -40,21 +43,23 @@ async def compare_regions(client: BeaconClient, arguments: dict[str, Any]) -> di
     iata_b = arguments["iataB"].strip().upper()
     if iata_a == iata_b:
         raise invalid("iataA and iataB must be different")
-    overview_a, overview_b = await together(
-        client.request(Operation.Overview, query=[("iatas", iata_a)]),
-        client.request(Operation.Overview, query=[("iatas", iata_b)]),
-    )
+    overview_a = asyncio.create_task(client.request(Operation.Overview, query=[("iatas", iata_a)]))
+    overview_b = asyncio.create_task(client.request(Operation.Overview, query=[("iatas", iata_b)]))
+    await wait_for_tasks(overview_a, overview_b)
     return {
-        "regionA": {"iata": iata_a, "overview": overview_a},
-        "regionB": {"iata": iata_b, "overview": overview_b},
+        "regionA": {"iata": iata_a, "overview": overview_a.result()},
+        "regionB": {"iata": iata_b, "overview": overview_b.result()},
         "note": "Independent snapshots, not synchronized measurements.",
     }
 
 
-async def together(*calls: Coroutine[Any, Any, Any]) -> list[Any]:
-    tasks = [asyncio.create_task(call) for call in calls]
+async def wait_for_tasks(*tasks: asyncio.Task[object]) -> None:
+    """Wait for related reads and always cancel and await unfinished siblings.
+
+    Callers keep their individual tasks so each result retains its own type.
+    """
     try:
-        return list(await asyncio.gather(*tasks))
+        await asyncio.gather(*tasks)
     finally:
         for task in tasks:
             if not task.done():

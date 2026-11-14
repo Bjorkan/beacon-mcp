@@ -59,8 +59,9 @@ async def execute_extra(
         return array_result(response_page, limit)
     response = await client.request(operation, resource_id, filters)
     if shape == "page":
-        result = page(response, limit)
-        if operation == Operation.ObserverDirectory and isinstance(response, dict):
+        result: dict[str, object] = dict(page(response, limit))
+        document = json_object(response)
+        if operation == Operation.ObserverDirectory and document is not None:
             for key in (
                 "windowStart",
                 "windowEnd",
@@ -71,8 +72,8 @@ async def execute_extra(
                 "maxObservationCount",
                 "observerTypes",
             ):
-                if key in response:
-                    result[key] = response[key]
+                if key in document:
+                    result[key] = document[key]
         return result
     if response is None:
         return {"available": False}
