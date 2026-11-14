@@ -14,8 +14,7 @@ from beacon_mcp.runtime import Registry
 
 # HTTPX supports both synchronous and asynchronous MockTransport callbacks.
 MockHandler = (
-    Callable[[httpx.Request], httpx.Response]
-    | Callable[[httpx.Request], Awaitable[httpx.Response]]
+    Callable[[httpx.Request], httpx.Response] | Callable[[httpx.Request], Awaitable[httpx.Response]]
 )
 
 META = {
