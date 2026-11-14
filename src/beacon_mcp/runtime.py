@@ -56,13 +56,12 @@ def success(value: Any) -> types.CallToolResult:
 
 
 def tool_error(text: str, details: dict[str, Any] | None = None) -> types.CallToolResult:
-    fields: dict[str, Any] = {
-        "content": [types.TextContent(type="text", text=text)],
-        "is_error": True,
-    }
-    if details is not None:
-        fields["structured_content"] = {"error": details}
-    return types.CallToolResult(**fields)
+    content = [types.TextContent(type="text", text=text)]
+    if details is None:
+        return types.CallToolResult(content=content, is_error=True)
+    return types.CallToolResult(
+        content=content, is_error=True, structured_content={"error": details}
+    )
 
 
 def upstream_error(error: GatewayError) -> types.CallToolResult:
@@ -76,13 +75,12 @@ def upstream_error(error: GatewayError) -> types.CallToolResult:
         "INTERNAL": "BeaconInternalError",
     }[error.code]
     details: dict[str, Any] = {"code": error.code, "type": kind}
-    for key, value in (
-        ("status", error.status),
-        ("upstreamCode", error.upstream_code),
-        ("retryAfter", error.retry_after),
-    ):
-        if value is not None:
-            details[key] = value
+    if error.status is not None:
+        details["status"] = error.status
+    if error.upstream_code is not None:
+        details["upstreamCode"] = error.upstream_code
+    if error.retry_after is not None:
+        details["retryAfter"] = error.retry_after
     return tool_error(error.message, details)
 
 
