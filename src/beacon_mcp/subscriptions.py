@@ -6,7 +6,7 @@ import logging
 import re
 
 from mcp.server.subscriptions import InMemorySubscriptionBus, ResourceUpdated
-from websockets.asyncio.client import connect
+from websockets.asyncio.client import ClientConnection, connect
 
 from beacon_mcp.client import BeaconClient
 from beacon_mcp.config import Config
@@ -88,17 +88,7 @@ async def bridge(client: BeaconClient, live: Live) -> None:
 async def connect_once(
     client: BeaconClient, live: Live, *, handshake_timeout: float = 10, ping_interval: float = 30
 ) -> None:
-    headers: dict[str, str] = {}
-    try:
-        response: object = await client.request(Operation.WsTicket)
-        ticket_fields = json_object(response)
-        ticket = ticket_fields.get("ticket") if ticket_fields is not None else None
-        if not isinstance(ticket, str) or not re.fullmatch(r"[\x20-\x7e]{1,4096}", ticket):
-            raise ValueError("invalid WebSocket ticket")
-        headers["X-Beacon-Ticket"] = ticket
-    except GatewayError as error:
-        if error.code != "NOT_FOUND":
-            raise
+    headers = await ticket_headers(client)
     async with connect(
         live.config.ws_url,
         additional_headers=headers,
@@ -110,63 +100,96 @@ async def connect_once(
         proxy=None,
         ping_interval=None,
     ) as socket:
-        ready, seen_hello, awaiting_pong = False, False, False
-        ping_id = 0
-        loop = asyncio.get_running_loop()
-        handshake_deadline = loop.time() + handshake_timeout
-        next_ping = loop.time() + ping_interval
-        while not live.closed:
-            deadline = next_ping if ready else handshake_deadline
-            try:
-                async with asyncio.timeout(max(0, deadline - loop.time())):
-                    frame = await socket.recv()
-            except TimeoutError:
-                if not ready:
-                    raise ValueError("WebSocket subscription handshake timed out") from None
-                if awaiting_pong:
-                    raise ValueError("WebSocket application pong timed out") from None
-                ping_id += 1
-                await socket.send(json.dumps({"v": 1, "type": "ping", "id": f"mcp-ping-{ping_id}"}))
-                awaiting_pong = True
-                next_ping = loop.time() + ping_interval
-                continue
-            if not isinstance(frame, str):
-                continue
-            try:
-                decoded: object = json.loads(frame)
-            except (ValueError, RecursionError):
-                continue
-            message = json_object(decoded)
-            if message is None:
-                continue
-            if type(message.get("v")) is not int or message["v"] != 1:
-                continue
-            kind = message.get("type")
-            if kind == "hello" and not ready:
-                seen_hello = True
-                events = ["nodeUpdate", "observerStatus"]
-                if live.config.traffic_enabled:
-                    events += ["packetObservation", "channelMessage"]
-                await socket.send(
-                    json.dumps(
-                        {
-                            "v": 1,
-                            "type": "subscribe",
-                            "id": "mcp-changes",
-                            "scope": {"events": events},
-                        }
-                    )
+        await listen_connection(socket, live, handshake_timeout, ping_interval)
+
+
+async def ticket_headers(client: BeaconClient) -> dict[str, str]:
+    """Fetch a fresh ticket; only older servers returning 404 permit fallback."""
+    headers: dict[str, str] = {}
+    try:
+        response: object = await client.request(Operation.WsTicket)
+        ticket_fields = json_object(response)
+        ticket = ticket_fields.get("ticket") if ticket_fields is not None else None
+        if not isinstance(ticket, str) or not re.fullmatch(r"[\x20-\x7e]{1,4096}", ticket):
+            raise ValueError("invalid WebSocket ticket")
+        headers["X-Beacon-Ticket"] = ticket
+    except GatewayError as error:
+        if error.code != "NOT_FOUND":
+            raise
+    return headers
+
+
+async def listen_connection(
+    socket: ClientConnection, live: Live, handshake_timeout: float, ping_interval: float
+) -> None:
+    """Subscribe after hello, then receive changes while checking application pongs."""
+    ready = False
+    seen_hello = False
+    awaiting_pong = False
+    ping_id = 0
+    loop = asyncio.get_running_loop()
+    handshake_deadline = loop.time() + handshake_timeout
+    next_ping = loop.time() + ping_interval
+    while not live.closed:
+        deadline = next_ping if ready else handshake_deadline
+        try:
+            async with asyncio.timeout(max(0, deadline - loop.time())):
+                frame = await socket.recv()
+        except TimeoutError:
+            if not ready:
+                raise ValueError("WebSocket subscription handshake timed out") from None
+            if awaiting_pong:
+                raise ValueError("WebSocket application pong timed out") from None
+            ping_id += 1
+            await socket.send(json.dumps({"v": 1, "type": "ping", "id": f"mcp-ping-{ping_id}"}))
+            awaiting_pong = True
+            next_ping = loop.time() + ping_interval
+            continue
+        message = parse_message(frame)
+        if message is None:
+            continue
+        kind = message.get("type")
+        if kind == "hello" and not ready:
+            seen_hello = True
+            events = ["nodeUpdate", "observerStatus"]
+            if live.config.traffic_enabled:
+                events += ["packetObservation", "channelMessage"]
+            await socket.send(
+                json.dumps(
+                    {
+                        "v": 1,
+                        "type": "subscribe",
+                        "id": "mcp-changes",
+                        "scope": {"events": events},
+                    }
                 )
-            elif kind == "subscribed" and seen_hello and message.get("id") == "mcp-changes":
-                ready = True
-                live.reconnect_delay = 1.0
-                next_ping = loop.time() + ping_interval
-                logger.info("Beacon WebSocket subscribed to resource updates")
-            elif kind == "pong" and message.get("id") == f"mcp-ping-{ping_id}":
-                awaiting_pong = False
-            elif kind == "lagged":
-                logger.warning("Beacon WebSocket dropped events; no replay available")
-            elif kind == "event" and ready:
-                event_name = message.get("event")
-                if isinstance(event_name, str):
-                    live.received(event_name, message.get("data"))
+            )
+        elif kind == "subscribed" and seen_hello and message.get("id") == "mcp-changes":
+            ready = True
+            live.reconnect_delay = 1.0
+            next_ping = loop.time() + ping_interval
+            logger.info("Beacon WebSocket subscribed to resource updates")
+        elif kind == "pong" and message.get("id") == f"mcp-ping-{ping_id}":
+            awaiting_pong = False
+        elif kind == "lagged":
+            logger.warning("Beacon WebSocket dropped events; no replay available")
+        elif kind == "event" and ready:
+            event_name = message.get("event")
+            if isinstance(event_name, str):
+                live.received(event_name, message.get("data"))
+
+
+def parse_message(frame: str | bytes) -> dict[str, object] | None:
+    """Ignore binary, malformed or unsupported-version Beacon frames."""
+    if not isinstance(frame, str):
+        return None
+    try:
+        decoded: object = json.loads(frame)
+    except (ValueError, RecursionError):
+        return None
+    message = json_object(decoded)
+    if message is None:
+        return None
+    if type(message.get("v")) is not int or message["v"] != 1:
+        return None
+    return message
