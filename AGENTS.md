@@ -73,13 +73,20 @@ tests/container/run.sh
 
 The independent **BasedPyright 1.39.8 strict** CI job checks all Python sources,
 tests, container helpers, and scripts with `[tool.basedpyright]` in
-`pyproject.toml`. It intentionally has no baseline suppressions or excluded
-test suites. Its installation is exact-version pinned using `uvx --from` while
-the existing application/dev dependency lockfile stays unchanged. The strict job
-will fail until all associated typing PRs have been merged and any remaining
-strict diagnostics resolved; do not merge the strict gate while red.
-A future change can add BasedPyright to the `uv.lock` dev group for fully
-transitive-locked analyzer dependencies.
+`pyproject.toml`. The twelve rules present in the original 591-error report
+are explicitly configured as **errors** in strict mode. No test paths or
+diagnostic rules are excluded, and no baseline ignores are used. Additional
+BasedPyright advisory warnings (such as explicit `Any` and unused call
+results) remain visible but are not fatal; `failOnWarnings=false` prevents
+unrelated advisory categories from expanding this migration's acceptance scope.
+The integration review reported zero errors but 385 additional warnings.
+Those warnings are technical debt, not a claim of a warning-free codebase.
+
+The analyzer is exact-version pinned using `uvx --from`, while the
+application/dev `uv.lock` remains unchanged. The strict job is expected to
+fail on unmerged `main` until the earlier typing PRs land; never merge while
+the strict job is red. Full transitive locking of analyzer dependencies can
+be added separately.
 
 Set `BEACON_BASE_URL=https://beacon.example.org`, then run
 `uv run --locked beacon-mcp`. The root MCP endpoint
