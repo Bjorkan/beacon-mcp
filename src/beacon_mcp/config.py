@@ -5,12 +5,12 @@ import os
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import SplitResult, urlsplit, urlunsplit
 
 
 def public_url(value: str, name: str, schemes: tuple[str, ...]) -> str:
     try:
-        parts = urlsplit(value)
+        parts: SplitResult = urlsplit(value)
         valid: bool = (
             parts.scheme in schemes
             and bool(parts.hostname)
@@ -47,27 +47,29 @@ class Config:
         env = os.environ if env is None else env
 
         def integer(key: str, default: int, low: int, high: int) -> int:
-            value = env.get(key, str(default))
+            value: str = env.get(key, str(default))
             if not re.fullmatch(r"\+?[0-9]+", value) or not low <= int(value) <= high:
                 raise ValueError(f"invalid {key}")
             return int(value)
 
         def boolean(key: str, default: bool) -> bool:
-            value = env.get(key, str(default).lower())
+            value: str = env.get(key, str(default).lower())
             if value not in ("true", "false"):
                 raise ValueError(f"{key} must be true or false")
             return value == "true"
 
-        base_url = public_url(env.get("BEACON_BASE_URL", ""), "BEACON_BASE_URL", ("http", "https"))
+        base_url: str = public_url(
+            env.get("BEACON_BASE_URL", ""), "BEACON_BASE_URL", ("http", "https")
+        )
         base_url = base_url.rstrip("/") + "/"
-        parts = urlsplit(base_url)
-        ws_url = env.get("BEACON_WS_URL") or urlunsplit(
+        parts: SplitResult = urlsplit(base_url)
+        ws_url: str = env.get("BEACON_WS_URL") or urlunsplit(
             ("wss" if parts.scheme == "https" else "ws", parts.netloc, "/ws", "", "")
         )
         public_url(ws_url, "BEACON_WS_URL", ("ws", "wss"))
         if not urlsplit(ws_url).path.endswith("/ws"):
             raise ValueError("BEACON_WS_URL must end in /ws")
-        host = env.get("HOST", "0.0.0.0")
+        host: str = env.get("HOST", "0.0.0.0")
         try:
             ipaddress.ip_address(host)
         except ValueError:
@@ -76,11 +78,11 @@ class Config:
                 for label in host.split(".")
             ):
                 raise ValueError("HOST must be an IP address or hostname") from None
-        log_level = env.get("LOG_LEVEL", "info")
+        log_level: str = env.get("LOG_LEVEL", "info")
         if log_level not in ("fatal", "error", "warn", "info", "debug", "trace", "silent"):
             raise ValueError("invalid LOG_LEVEL")
-        enabled = boolean("BEACON_SUBSCRIPTIONS_ENABLED", True)
-        traffic = boolean("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", False)
+        enabled: bool = boolean("BEACON_SUBSCRIPTIONS_ENABLED", True)
+        traffic: bool = boolean("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", False)
         if traffic and not enabled:
             raise ValueError("Traffic subscriptions require BEACON_SUBSCRIPTIONS_ENABLED=true")
         return cls(

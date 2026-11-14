@@ -5,6 +5,7 @@ from typing import Any
 
 from beacon_mcp.client import BeaconClient
 from beacon_mcp.errors import invalid
+from beacon_mcp.json_stream import ArrayPage
 from beacon_mcp.operations import Operation
 from beacon_mcp.runtime import Registry
 from beacon_mcp.validation import identifier
@@ -16,18 +17,18 @@ def register(registry: Registry) -> None:
 
 
 async def diagnose_node(client: BeaconClient, arguments: dict[str, Any]) -> dict[str, object]:
-    node_id = identifier("uuid", arguments["id"])
-    range_value = arguments.get("range", "24h")
-    limit = arguments.get("neighborLimit", 10)
-    node_task = asyncio.create_task(client.request(Operation.Node, node_id))
-    activity_task = asyncio.create_task(
+    node_id: str = identifier("uuid", arguments["id"])
+    range_value: str = arguments.get("range", "24h")
+    limit: int = arguments.get("neighborLimit", 10)
+    node_task: asyncio.Task[object] = asyncio.create_task(client.request(Operation.Node, node_id))
+    activity_task: asyncio.Task[object] = asyncio.create_task(
         client.request(Operation.NodeActivity, node_id, [("range", range_value)])
     )
-    neighbors_task = asyncio.create_task(
+    neighbors_task: asyncio.Task[ArrayPage] = asyncio.create_task(
         client.array_page(Operation.NodeNeighbors, node_id, max_items=limit + 1)
     )
     await wait_for_tasks(node_task, activity_task, neighbors_task)
-    neighbors_page = neighbors_task.result()
+    neighbors_page: ArrayPage = neighbors_task.result()
     return {
         "node": node_task.result(),
         "activity": activity_task.result(),
@@ -39,12 +40,16 @@ async def diagnose_node(client: BeaconClient, arguments: dict[str, Any]) -> dict
 
 
 async def compare_regions(client: BeaconClient, arguments: dict[str, Any]) -> dict[str, object]:
-    iata_a = arguments["iataA"].strip().upper()
-    iata_b = arguments["iataB"].strip().upper()
+    iata_a: str = arguments["iataA"].strip().upper()
+    iata_b: str = arguments["iataB"].strip().upper()
     if iata_a == iata_b:
         raise invalid("iataA and iataB must be different")
-    overview_a = asyncio.create_task(client.request(Operation.Overview, query=[("iatas", iata_a)]))
-    overview_b = asyncio.create_task(client.request(Operation.Overview, query=[("iatas", iata_b)]))
+    overview_a: asyncio.Task[object] = asyncio.create_task(
+        client.request(Operation.Overview, query=[("iatas", iata_a)])
+    )
+    overview_b: asyncio.Task[object] = asyncio.create_task(
+        client.request(Operation.Overview, query=[("iatas", iata_b)])
+    )
     await wait_for_tasks(overview_a, overview_b)
     return {
         "regionA": {"iata": iata_a, "overview": overview_a.result()},
@@ -58,6 +63,7 @@ async def wait_for_tasks(*tasks: asyncio.Task[object]) -> None:
 
     Callers keep their individual tasks so each result retains its own type.
     """
+    task: asyncio.Task[object]
     try:
         await asyncio.gather(*tasks)
     finally:

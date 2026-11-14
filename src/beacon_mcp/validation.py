@@ -20,7 +20,7 @@ def timestamp(text: str) -> int:
 def duration(text: str) -> int:
     if not re.fullmatch(r"[0-9]+[mh]", text):
         raise invalid("invalid duration")
-    minutes = int(text[:-1]) * (60 if text[-1] == "h" else 1)
+    minutes: int = int(text[:-1]) * (60 if text[-1] == "h" else 1)
     if not 1 <= minutes <= 43200:
         raise invalid("range must be between 1 minute and 720 hours")
     return minutes
@@ -30,7 +30,7 @@ def identifier(kind: str, value: str) -> str:
     """Validate and normalize a path identifier before URL encoding."""
     if kind == "uuid":
         try:
-            parsed = uuid.UUID(value)
+            parsed: uuid.UUID = uuid.UUID(value)
             if (
                 len(value) == 36
                 and parsed.variant == uuid.RFC_4122
@@ -41,7 +41,7 @@ def identifier(kind: str, value: str) -> str:
             pass
         raise invalid("invalid UUID")
     if kind in ("hash", "tag"):
-        length = 16 if kind == "hash" else 8
+        length: int = 16 if kind == "hash" else 8
         if re.fullmatch(rf"[0-9a-fA-F]{{{length}}}", value):
             return value.lower()
     elif kind == "number":

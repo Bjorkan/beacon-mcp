@@ -4,6 +4,8 @@ import json
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractAsyncContextManager
 from importlib.resources import files
+from importlib.resources.abc import Traversable
+from types import ModuleType
 from typing import Any, cast
 
 import mcp.types as types
@@ -18,8 +20,8 @@ from beacon_mcp.client import BeaconClient
 from beacon_mcp.errors import GatewayError
 from beacon_mcp.validation import json_object
 
-INTEGER = TypeAdapter(int)
-INTEGERS = TypeAdapter(list[int])
+INTEGER: TypeAdapter[int] = TypeAdapter(int)
+INTEGERS: TypeAdapter[list[int]] = TypeAdapter(list[int])
 
 # Argument shapes and JSON Schema keywords differ between frozen tools. The
 # schemas validate those dynamic values before any Beacon-specific handler runs.
@@ -27,29 +29,30 @@ type Handler = Callable[[BeaconClient, dict[str, Any]], Awaitable[object]]
 
 
 def load_contracts() -> dict[str, Any]:
+    document: Traversable
     result: dict[str, Any] = {}
     for document in sorted(files("beacon_mcp").joinpath("contracts").iterdir(), key=str):
         if not document.name.endswith("-tool-definitions.json"):
             continue
         decoded: object = json.loads(document.read_text())
-        contracts = json_object(decoded)
+        contracts: dict[str, object] | None = json_object(decoded)
         if contracts is None:
             raise ValueError(f"invalid tool contract document: {document.name}")
         result.update(contracts)
     return result
 
 
-CONTRACTS = load_contracts()
+CONTRACTS: dict[str, Any] = load_contracts()
 TOOL_ORDER: list[str] = json.loads(
     files("beacon_mcp").joinpath("contracts/tool-order.json").read_text()
 )
 
 
 def success(value: object) -> types.CallToolResult:
-    text = "Beacon request succeeded."
+    text: str = "Beacon request succeeded."
     if isinstance(value, dict):
-        document = cast(dict[str, object], value)
-        items = document.get("items")
+        document: dict[str, object] = cast(dict[str, object], value)
+        items: object = document.get("items")
         if isinstance(items, list):
             text = f"Beacon returned {len(cast(list[object], items))} item(s)."
     return types.CallToolResult(
@@ -69,7 +72,7 @@ def tool_error(text: str, details: dict[str, object] | None = None) -> types.Cal
 
 
 def upstream_error(error: GatewayError) -> types.CallToolResult:
-    kind = {
+    kind: str = {
         "INVALID_ARGUMENT": "BeaconValidationError" if error.status else "BeaconInputError",
         "NOT_FOUND": "BeaconNotFoundError",
         "DEADLINE_EXCEEDED": "BeaconTimeoutError",
@@ -111,19 +114,22 @@ class Registry:
     async def call(
         self, client: BeaconClient, name: str, arguments: dict[str, Any]
     ) -> types.CallToolResult:
+        error: ValidationError | GatewayError
         if name not in self.handlers:
             return tool_error("Unknown Beacon tool")
         try:
             # Low-level Server validates MCP params, not arbitrary advertised JSON Schemas.
             # Use the standard JSON Schema validator for this application's frozen arguments.
             # jsonschema's public validate method is incompletely annotated in its stubs.
-            validate = cast(Callable[[object], None], self.validators[name].validate)
+            validate: Callable[[object], None] = cast(
+                Callable[[object], None], self.validators[name].validate
+            )
             validate(arguments)
         except ValidationError as error:
             return tool_error(f"Invalid arguments: {error.message}")
         try:
-            normalized = normalize_arguments(name, arguments)
-            result = await self.handlers[name](client, normalized)
+            normalized: dict[str, Any] = normalize_arguments(name, arguments)
+            result: object = await self.handlers[name](client, normalized)
             return success(result)
         except GatewayError as error:
             return upstream_error(error)
@@ -136,10 +142,12 @@ def normalize_arguments(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
     slicing and cursors, so normalize both scalar and array arguments here.
     Keep a separate dictionary because some handlers rewrite filter names.
     """
-    rules = CONTRACTS[name]["inputSchema"]["properties"]
+    key: str
+    value: Any
+    rules: dict[str, dict[str, Any]] = CONTRACTS[name]["inputSchema"]["properties"]
     normalized: dict[str, Any] = {}
     for key, value in arguments.items():
-        rule = rules[key]
+        rule: dict[str, Any] = rules[key]
         if rule.get("type") == "integer":
             normalized[key] = INTEGER.validate_python(value)
         elif rule.get("items", {}).get("type") == "integer":
@@ -151,6 +159,7 @@ def normalize_arguments(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
 
 def default_registry() -> Registry:
     # Import after Registry is defined: handler modules reference its type.
+    module: ModuleType
     from beacon_mcp.handlers import (
         activity,
         analytics,
@@ -162,7 +171,7 @@ def default_registry() -> Registry:
         statistics,
     )
 
-    registry = Registry()
+    registry: Registry = Registry()
     for module in (core, packet, routing, details, activity, statistics, analytics, composite):
         module.register(registry)
     return registry

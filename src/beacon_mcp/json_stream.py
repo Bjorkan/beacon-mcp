@@ -1,7 +1,7 @@
 """Read bounded JSON responses and stop large arrays at the requested limit."""
 
 import json
-from collections.abc import Iterator
+from collections.abc import Generator, Iterator
 from dataclasses import dataclass
 from typing import cast
 
@@ -11,7 +11,7 @@ import ijson
 from beacon_mcp.errors import GatewayError
 from beacon_mcp.validation import json_object
 
-MAX_BYTES = 5_242_880
+MAX_BYTES: int = 5_242_880
 
 
 @dataclass
@@ -23,10 +23,11 @@ class ArrayPage:
 
 
 async def read_bounded(response: httpx.Response) -> bytes:
-    length = response.headers.get("content-length", "")
+    chunk: bytes
+    length: str = response.headers.get("content-length", "")
     if length.isdigit() and int(length) > MAX_BYTES:
         raise GatewayError("RESPONSE_TOO_LARGE", "Beacon response exceeded 5 MiB")
-    data = bytearray()
+    data: bytearray = bytearray()
     async for chunk in response.aiter_bytes(chunk_size=8192):
         if len(data) + len(chunk) > MAX_BYTES:
             raise GatewayError("RESPONSE_TOO_LARGE", "Beacon response exceeded 5 MiB")
@@ -35,13 +36,14 @@ async def read_bounded(response: httpx.Response) -> bytes:
 
 
 async def read_array(response: httpx.Response, max_items: int) -> ArrayPage:
+    chunk: bytes
     items: list[object] = []
     pending: list[object] = ijson.sendable_list()
-    parser = ijson.items_coro(pending, "item", use_float=True)
+    parser: Generator[None, bytes] = ijson.items_coro(pending, "item", use_float=True)
     mode: str | None = None
-    consumed = 0
-    envelope = bytearray()
-    guard = JsonDepthGuard()
+    consumed: int = 0
+    envelope: bytearray = bytearray()
+    guard: JsonDepthGuard = JsonDepthGuard()
     try:
         async for chunk in response.aiter_bytes(chunk_size=8192):
             consumed += len(chunk)
@@ -50,7 +52,7 @@ async def read_array(response: httpx.Response, max_items: int) -> ArrayPage:
                     return ArrayPage(items, False)
                 raise GatewayError("RESPONSE_TOO_LARGE", "Beacon response exceeded 5 MiB")
             if mode is None:
-                stripped = chunk.lstrip()
+                stripped: bytes = chunk.lstrip()
                 if not stripped:
                     continue
                 mode = "array" if stripped.startswith(b"[") else "envelope"
@@ -65,11 +67,11 @@ async def read_array(response: httpx.Response, max_items: int) -> ArrayPage:
                 return ArrayPage(items, False)
         if mode == "envelope":
             value: object = decode_json(envelope)
-            document = json_object(value)
-            source = document.get("items") if document is not None else value
+            document: dict[str, object] | None = json_object(value)
+            source: object = document.get("items") if document is not None else value
             if not isinstance(source, list):
                 raise ValueError
-            elements = cast(list[object], source)
+            elements: list[object] = cast(list[object], source)
             return ArrayPage(elements[:max_items], len(elements) <= max_items)
         try:
             parser.close()
@@ -93,6 +95,7 @@ class JsonDepthGuard:
         self.escaped: bool = False
 
     def feed(self, chunk: bytes) -> None:
+        byte: int
         for byte in chunk:
             if self.quoted:
                 if self.escaped:
@@ -112,6 +115,9 @@ class JsonDepthGuard:
 
 
 def decode_json(data: bytes | bytearray) -> object:
+    iterator: Iterator[object]
+    depth: int
+
     def nonfinite(_value: str) -> None:
         raise ValueError("invalid JSON number")
 
@@ -120,7 +126,7 @@ def decode_json(data: bytes | bytearray) -> object:
     while pending:
         iterator, depth = pending[-1]
         try:
-            item = next(iterator)
+            item: object = next(iterator)
         except StopIteration:
             pending.pop()
             continue

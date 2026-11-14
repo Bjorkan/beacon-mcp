@@ -24,21 +24,22 @@ OPERATIONS: dict[str, Operation] = {
 
 
 def register(registry: Registry) -> None:
+    name: str
     for name in OPERATIONS:
         registry.register(name, partial(execute, name))
 
 
 async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) -> object:
     validate_arguments(name, arguments)
-    operation = OPERATIONS[name]
-    limit = arguments.get("limit", 20)
-    filters = query(arguments, ("id", "limit"))
+    operation: Operation = OPERATIONS[name]
+    limit: int = arguments.get("limit", 20)
+    filters: list[tuple[str, str]] = query(arguments, ("id", "limit"))
     if operation in (Operation.Iatas, Operation.Regions):
         return array_result(
             await client.array_page(operation, query=filters, max_items=limit + 1), limit
         )
     if operation == Operation.Scopes:
-        source = await client.request(
+        source: object = await client.request(
             operation, query=[(k, v) for k, v in filters if k != "cursor"]
         )
         return scope_page(source, arguments.get("cursor", 0), limit)
@@ -52,6 +53,7 @@ async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) ->
 
 
 def validate_arguments(name: str, arguments: dict[str, Any]) -> None:
+    key: str
     location(arguments)
     if "type" in arguments and "typeName" in arguments:
         raise invalid("type and typeName are mutually exclusive")
@@ -86,9 +88,9 @@ def scope_page(source: object, offset: int, limit: int) -> Page:
     if not isinstance(source, list):
         raise GatewayError("UNAVAILABLE", "Beacon returned invalid scopes")
 
-    scopes = cast(list[object], source)
-    items = scopes[offset : offset + limit]
-    next_offset = offset + len(items)
+    scopes: list[object] = cast(list[object], source)
+    items: list[object] = scopes[offset : offset + limit]
+    next_offset: int = offset + len(items)
     pagination: Pagination = {"hasMore": False}
     if next_offset < len(scopes):
         pagination = {"hasMore": True, "nextCursor": {"cursor": next_offset}}

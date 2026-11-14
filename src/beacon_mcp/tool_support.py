@@ -39,14 +39,16 @@ def location(
 
 def query(arguments: dict[str, Any], exclude: tuple[str, ...] = ()) -> list[tuple[str, str]]:
     """Encode validated tool arguments using Beacon's query conventions."""
+    key: str
+    value: Any
     result: list[tuple[str, str]] = []
     for key, value in arguments.items():
         if key in exclude:
             continue
         if key in ("since", "until"):
-            converted = str(timestamp(value))
+            converted: str = str(timestamp(value))
         elif isinstance(value, list):
-            elements = cast(list[object], value)
+            elements: list[object] = cast(list[object], value)
             if key == "iatas":
                 converted = ",".join(str(item).strip().upper() for item in elements)
             else:
@@ -59,8 +61,8 @@ def query(arguments: dict[str, Any], exclude: tuple[str, ...] = ()) -> list[tupl
             converted = str(value)
         result.append((key, converted))
     if "since" in arguments and "until" in arguments:
-        since = timestamp(arguments["since"])
-        until = timestamp(arguments["until"])
+        since: int = timestamp(arguments["since"])
+        until: int = timestamp(arguments["until"])
         if since >= until:
             raise invalid("since must be before until")
     return result
@@ -68,13 +70,15 @@ def query(arguments: dict[str, Any], exclude: tuple[str, ...] = ()) -> list[tupl
 
 def page(value: object, limit: int, include_sort: bool = False) -> Page:
     """Limit a page while preserving the upstream cursor values exactly."""
-    document = json_object(value)
-    raw_items = document.get("items") if document is not None else value
+    upstream_key: str
+    argument_key: str
+    document: dict[str, object] | None = json_object(value)
+    raw_items: object = document.get("items") if document is not None else value
     if not isinstance(raw_items, list):
         raise GatewayError("UNAVAILABLE", "Beacon returned invalid page")
-    items = cast(list[object], raw_items)
-    upstream_has_more = document is not None and document.get("hasMore") is True
-    has_more = upstream_has_more or len(items) > limit
+    items: list[object] = cast(list[object], raw_items)
+    upstream_has_more: bool = document is not None and document.get("hasMore") is True
+    has_more: bool = upstream_has_more or len(items) > limit
     pagination: Pagination = {"hasMore": has_more}
     if has_more and document is not None:
         cursor: dict[str, object] = {}

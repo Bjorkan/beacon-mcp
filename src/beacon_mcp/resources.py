@@ -24,13 +24,16 @@ RESOURCE_OPERATIONS: dict[str, tuple[Operation, str]] = {
 
 
 def parse_uri(uri: str) -> tuple[str, str] | None:
+    kind: str
+    separator: str
+    raw: str
     if not uri.startswith("beacon://"):
         return None
     kind, separator, raw = uri[9:].partition("/")
     if not separator or kind not in RESOURCE_OPERATIONS:
         return None
     try:
-        id = identifier(RESOURCE_OPERATIONS[kind][1], raw)
+        id: str = identifier(RESOURCE_OPERATIONS[kind][1], raw)
         if kind in ("channels", "regions"):
             id = str(int(id))
     except (GatewayError, ValueError):
@@ -65,12 +68,15 @@ def register(server: Server[dict[str, object]], client: BeaconClient) -> None:
     async def read(
         _ctx: ServerRequestContext[dict[str, object]], params: types.ReadResourceRequestParams
     ) -> types.ReadResourceResult:
-        parsed = parse_uri(str(params.uri))
+        kind: str
+        id: str
+        error: GatewayError
+        parsed: tuple[str, str] | None = parse_uri(str(params.uri))
         if parsed is None:
             raise MCPError(-32602, "Invalid Beacon resource URI")
         kind, id = parsed
         try:
-            data = await client.request(RESOURCE_OPERATIONS[kind][0], id)
+            data: object = await client.request(RESOURCE_OPERATIONS[kind][0], id)
         except GatewayError as error:
             if error.code == "NOT_FOUND":
                 raise MCPError(-32002, "Beacon resource not found") from None

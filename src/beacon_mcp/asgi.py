@@ -11,7 +11,7 @@ from starlette.responses import JSONResponse
 from starlette.routing import BaseRoute, Mount, Route
 from starlette.types import ASGIApp, Lifespan, Message, Receive, Scope, Send
 
-logger = logging.getLogger("beacon_mcp.access")
+logger: logging.Logger = logging.getLogger("beacon_mcp.access")
 
 
 class AccessLog:
@@ -25,14 +25,14 @@ class AccessLog:
         headers: dict[bytes, bytes] = dict(scope["headers"])
 
         def safe(key: bytes) -> str:
-            raw = headers.get(key, b"")
+            raw: bytes = headers.get(key, b"")
             if re.fullmatch(rb"[A-Za-z0-9_./-]{1,80}", raw):
                 return raw.decode("ascii")
             return "unspecified"
 
-        method = safe(b"mcp-method")
-        tool = safe(b"mcp-name") if method == "tools/call" else "-"
-        start = time.monotonic()
+        method: str = safe(b"mcp-method")
+        tool: str = safe(b"mcp-name") if method == "tools/call" else "-"
+        start: float = time.monotonic()
 
         async def logged_send(message: Message) -> None:
             if message["type"] == "http.response.start":

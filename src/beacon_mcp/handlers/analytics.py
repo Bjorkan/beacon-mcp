@@ -19,11 +19,13 @@ OPERATIONS: dict[str, Operation] = {
 
 
 def register(registry: Registry) -> None:
+    name: str
     for name in OPERATIONS:
         registry.register(name, partial(execute, name))
 
 
 async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) -> object:
+    key: str
     arguments = dict(arguments)
     location(arguments, region_message="invalid region filter")
     if "region" in arguments and (
@@ -35,9 +37,9 @@ async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) ->
             arguments[key] = identifier("uuid", arguments[key])
         if arguments["observerA"] == arguments["observerB"]:
             raise invalid("observerA and observerB must be different")
-    limit = arguments.get("limit", 20)
-    filters = query(arguments, ("limit",))
-    operation = OPERATIONS[name]
+    limit: int = arguments.get("limit", 20)
+    filters: list[tuple[str, str]] = query(arguments, ("limit",))
+    operation: Operation = OPERATIONS[name]
     if operation == Operation.TopAdvertisers:
         return array_result(
             await client.array_page(

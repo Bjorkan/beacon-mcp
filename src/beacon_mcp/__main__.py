@@ -4,6 +4,7 @@ import logging
 import math
 import os
 import sys
+from http.client import HTTPResponse
 from urllib.request import ProxyHandler, build_opener
 
 import uvicorn
@@ -34,7 +35,8 @@ class SafeDiagnostics(logging.Filter):
 
 
 def healthcheck() -> int:
-    host = os.environ.get("HOST", "127.0.0.1")
+    response: HTTPResponse
+    host: str = os.environ.get("HOST", "127.0.0.1")
     if host in ("0.0.0.0", "::"):
         host = "127.0.0.1" if host == "0.0.0.0" else "[::1]"
     elif ":" in host:
@@ -49,14 +51,17 @@ def healthcheck() -> int:
 
 
 def main() -> None:
+    error: ValueError
+    handler: logging.Handler
+    name: str
     if sys.argv[1:] == ["--healthcheck"]:
         sys.exit(healthcheck())
     try:
-        config = Config.from_env()
+        config: Config = Config.from_env()
     except ValueError as error:
         print(str(error), file=sys.stderr)
         sys.exit(1)
-    level = {
+    level: int = {
         "fatal": logging.CRITICAL,
         "error": logging.ERROR,
         "warn": logging.WARNING,

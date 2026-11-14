@@ -6,6 +6,7 @@ from typing import Any, Literal, cast
 
 from beacon_mcp.client import BeaconClient
 from beacon_mcp.errors import GatewayError, invalid
+from beacon_mcp.json_stream import ArrayPage
 from beacon_mcp.operations import Operation
 from beacon_mcp.runtime import CONTRACTS, Registry
 from beacon_mcp.tool_support import array_result, location, page, query
@@ -30,6 +31,9 @@ NO_LIMIT: frozenset[Operation] = frozenset(
 def register_operations(
     registry: Registry, operations: dict[str, tuple[Operation, ResponseShape]]
 ) -> None:
+    name: str
+    operation: Operation
+    shape: ResponseShape
     for name, (operation, shape) in operations.items():
         registry.register(name, partial(execute_extra, name, operation, shape))
 
@@ -41,26 +45,27 @@ async def execute_extra(
     client: BeaconClient,
     arguments: dict[str, Any],
 ) -> object:
+    key: str
     validate_arguments(operation, arguments)
-    resource_id = arguments.get("id")
-    exclude = ("id", "pathKey", "limit")
+    resource_id: str | None = arguments.get("id")
+    exclude: tuple[str, ...] = ("id", "pathKey", "limit")
     if operation == Operation.RouteObservations:
         resource_id = f"{arguments['iata'].upper()}:{arguments['pathKey']}"
         exclude += ("iata",)
-    filters = query(arguments, exclude)
-    limit = arguments.get("limit", 20)
-    accepts_limit = "limit" in CONTRACTS[name]["inputSchema"]["properties"]
+    filters: list[tuple[str, str]] = query(arguments, exclude)
+    limit: int = arguments.get("limit", 20)
+    accepts_limit: bool = "limit" in CONTRACTS[name]["inputSchema"]["properties"]
     if accepts_limit and operation not in NO_LIMIT:
         filters.append(("limit", str(limit)))
     if shape == "array":
-        response_page = await client.array_page(
+        response_page: ArrayPage = await client.array_page(
             operation, resource_id, filters, max_items=limit + 1
         )
         return array_result(response_page, limit)
-    response = await client.request(operation, resource_id, filters)
+    response: object = await client.request(operation, resource_id, filters)
     if shape == "page":
         result: dict[str, object] = dict(page(response, limit))
-        document = json_object(response)
+        document: dict[str, object] | None = json_object(response)
         if operation == Operation.ObserverDirectory and document is not None:
             for key in (
                 "windowStart",
@@ -87,12 +92,14 @@ async def execute_extra(
 
 def validate_arguments(operation: Operation, arguments: dict[str, Any]) -> None:
     """Check endpoint constraints that the frozen JSON Schemas cannot express."""
+    key: str
+    value: Any
     location(arguments, region_message="mutually exclusive location filters")
     if operation == Operation.RouteObservations:
-        range_conflicts = "range" in arguments and any(
+        range_conflicts: bool = "range" in arguments and any(
             key in arguments for key in ("since", "until", "pageCursor")
         )
-        incomplete_window = ("since" in arguments) != ("until" in arguments)
+        incomplete_window: bool = ("since" in arguments) != ("until" in arguments)
         if range_conflicts or incomplete_window:
             raise invalid(
                 "range is exclusive with the explicit window and cursor; since and until must be paired"
@@ -104,8 +111,8 @@ def validate_arguments(operation: Operation, arguments: dict[str, Any]) -> None:
             continue
         if not isinstance(value, str):
             continue
-        blank = not value.strip()
-        too_long = len(value.encode()) > 512
-        has_control_characters = re.search(r"[\x00-\x1f\x7f-\x9f]", value)
+        blank: bool = not value.strip()
+        too_long: bool = len(value.encode()) > 512
+        has_control_characters: re.Match[str] | None = re.search(r"[\x00-\x1f\x7f-\x9f]", value)
         if blank or too_long or has_control_characters:
             raise invalid("invalid text filter")

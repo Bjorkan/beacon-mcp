@@ -16,16 +16,16 @@ from beacon_mcp.runtime import Registry, create_server
 from beacon_mcp.subscriptions import Live, bridge
 
 # Native SDK body admission replaces the former 20-URI subscription wrapper cap.
-MAX_MCP_REQUEST_BYTES = 131072
+MAX_MCP_REQUEST_BYTES: int = 131072
 
 
 def create_app(
     config: Config, *, client: BeaconClient | None = None, registry: Registry | None = None
 ) -> Starlette:
     """Build the gateway; the SDK lifespan opens and closes Beacon resources."""
-    beacon = client or BeaconClient(config)
-    live = Live(config) if config.subscriptions_enabled else None
-    listener = (
+    beacon: BeaconClient = client or BeaconClient(config)
+    live: Live | None = Live(config) if config.subscriptions_enabled else None
+    listener: ListenHandler | None = (
         ListenHandler(live.bus, max_subscriptions=config.max_streams, max_buffered_events=1024)
         if live is not None
         else None
@@ -51,10 +51,10 @@ def create_app(
                 await live.close()
             await beacon.aclose()
 
-    server = create_server(
+    server: Server[dict[str, object]] = create_server(
         beacon, registry, on_subscriptions_listen=listener, lifespan=beacon_lifespan
     )
-    endpoint = server.streamable_http_app(
+    endpoint: Starlette = server.streamable_http_app(
         streamable_http_path="/",
         json_response=True,
         stateless_http=True,
@@ -69,7 +69,7 @@ def create_app(
         async with server.session_manager.run():
             yield
 
-    app = create_asgi_app(endpoint, lifespan=lifespan)
+    app: Starlette = create_asgi_app(endpoint, lifespan=lifespan)
     app.state.server = server
     app.state.live = live
     app.state.listener = listener

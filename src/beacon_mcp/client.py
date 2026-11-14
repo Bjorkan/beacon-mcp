@@ -17,27 +17,29 @@ from beacon_mcp.json_stream import ArrayPage, decode_json, read_array, read_boun
 from beacon_mcp.operations import ARRAY_OPERATIONS, Operation
 from beacon_mcp.validation import identifier, json_object
 
-MAX_URL = 8_192
+MAX_URL: int = 8_192
 
 
 def classify(response: httpx.Response, body: object) -> GatewayError:
-    payload = json_object(body)
-    error = json_object(payload.get("error")) if payload is not None else None
+    payload: dict[str, object] | None = json_object(body)
+    error: dict[str, object] | None = (
+        json_object(payload.get("error")) if payload is not None else None
+    )
     details: dict[str, object] = error if error is not None else {}
-    raw_code = details.get("code")
-    upstream = raw_code if isinstance(raw_code, str) else None
-    status = response.status_code
-    code = {400: "INVALID_ARGUMENT", 404: "NOT_FOUND", 429: "RESOURCE_EXHAUSTED"}.get(
+    raw_code: object = details.get("code")
+    upstream: str | None = raw_code if isinstance(raw_code, str) else None
+    status: int = response.status_code
+    code: str = {400: "INVALID_ARGUMENT", 404: "NOT_FOUND", 429: "RESOURCE_EXHAUSTED"}.get(
         status, "UNAVAILABLE"
     )
     if status == 503 and upstream == "deadline_exceeded":
         code = "DEADLINE_EXCEEDED"
     try:
-        reason = HTTPStatus(status).phrase
+        reason: str = HTTPStatus(status).phrase
     except ValueError:
         reason = "<unknown status code>"
-    message = f"Beacon request failed with HTTP {status} {reason}"
-    upstream_message = details.get("message")
+    message: str = f"Beacon request failed with HTTP {status} {reason}"
+    upstream_message: object = details.get("message")
     if status < 500 and isinstance(upstream_message, str):
         message = upstream_message
     return GatewayError(
@@ -78,15 +80,20 @@ class BeaconClient:
     def url(self, operation: Operation, id: str | None, query: list[tuple[str, str]]) -> str:
         # Public callers are typed, but reject invalid runtime values explicitly.
         # Narrowing from object prevents static tools from assuming the guard is dead.
+        path: str
+        kind: str
+        _: bool | str
+        key: str
+        suffix: str
         if not isinstance(cast(object, operation), Operation):
             raise invalid("invalid public operation")
         path, kind, _ = operation.value
-        url = self.config.base_url + "api/v1/" + path
+        url: str = self.config.base_url + "api/v1/" + path
         if kind:
             if id is None:
                 raise invalid("missing identifier")
             if kind == "route":
-                parts = id.split(":")
+                parts: list[str] = id.split(":")
                 if (
                     len(parts) != 2
                     or not re.fullmatch(r"[A-Za-z0-9]{3}", parts[0])
@@ -151,21 +158,23 @@ class BeaconClient:
         query: list[tuple[str, str]],
         max_items: int | None,
     ) -> object:
-        url = self.url(operation, id, query)
-        timeout = (
+        attempt: int
+        response: httpx.Response
+        url: str = self.url(operation, id, query)
+        timeout: float = (
             self.config.stats_timeout_ms if operation.value[2] else self.config.timeout_ms
         ) / 1000
         # One end-to-end request budget, including jitter and an optional retry.
-        deadline = asyncio.get_running_loop().time() + timeout
+        deadline: float = asyncio.get_running_loop().time() + timeout
         for attempt in range(2):
             try:
                 # HTTPX's inactivity timeout alone doesn't bound a slow-drip body.
                 async with asyncio.timeout_at(deadline):
                     async with self.http.stream("GET", url, timeout=timeout) as response:
-                        body = await read_response(response, max_items)
+                        body: object = await read_response(response, max_items)
                         if response.is_success:
                             return body
-                        can_retry = (
+                        can_retry: bool = (
                             attempt == 0
                             and response.status_code in (502, 503, 504)
                             and "retry-after" not in response.headers
@@ -193,14 +202,14 @@ async def read_response(response: httpx.Response, max_items: int | None) -> obje
         return None
     # HTTPX otherwise inflates a chunk before applying our byte cap.
     # Match the reference client's uncompressed public GET transport.
-    encoded = response.headers.get("content-encoding", "").strip().lower()
+    encoded: str = response.headers.get("content-encoding", "").strip().lower()
     if encoded not in ("", "identity"):
         if response.is_success:
             raise GatewayError("UNAVAILABLE", "Beacon returned unsupported content encoding")
         return None
     if response.is_success and max_items is not None:
         return await read_array(response, max_items)
-    data = await read_bounded(response)
+    data: bytes = await read_bounded(response)
     try:
         return decode_json(data)
     except (ValueError, RecursionError):

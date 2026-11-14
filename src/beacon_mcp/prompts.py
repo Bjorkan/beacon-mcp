@@ -10,7 +10,7 @@ from mcp.shared.exceptions import MCPError
 from beacon_mcp.errors import GatewayError
 from beacon_mcp.validation import identifier
 
-PROMPTS = [
+PROMPTS: list[dict[str, object]] = [
     {
         "name": "beacon_node_diagnostics",
         "description": "Investigate a node using public Beacon telemetry",
@@ -41,7 +41,7 @@ def register(server: Server[dict[str, object]]) -> None:
         _ctx: ServerRequestContext[dict[str, object]], params: types.GetPromptRequestParams
     ) -> types.GetPromptResult:
         def argument(key: str) -> str:
-            value = (params.arguments or {}).get(key)
+            value: str | None = (params.arguments or {}).get(key)
             if not isinstance(value, str):
                 raise MCPError(-32602, f"Missing {key}")
             if len(value.encode()) > 128 or re.search(r"[\x00-\x1f\x7f-\x9f]", value):
@@ -56,17 +56,17 @@ def register(server: Server[dict[str, object]]) -> None:
 
         if params.name == "beacon_node_diagnostics":
             try:
-                node_id = identifier("uuid", argument("id"))
+                node_id: str = identifier("uuid", argument("id"))
             except GatewayError:
                 raise MCPError(-32602, "Invalid node UUID") from None
-            text = (
+            text: str = (
                 f"Inspect public MeshCore node {node_id} using beacon_diagnose_node. "
                 "Explain originated packet activity, neighbor observations, uncertainty and coverage. "
                 "Do not infer that an unseen node is offline. No writes or persistence."
             )
         elif params.name == "beacon_region_comparison":
-            iata_a = iata("iataA")
-            iata_b = iata("iataB")
+            iata_a: str = iata("iataA")
+            iata_b: str = iata("iataB")
             if iata_a == iata_b:
                 raise MCPError(-32602, "IATAs must be different")
             text = (
@@ -75,8 +75,8 @@ def register(server: Server[dict[str, object]]) -> None:
                 "and do not imply synchronized snapshots or causality. No writes or persistence."
             )
         elif params.name == "beacon_route_review":
-            code = iata("iata")
-            path_key = argument("pathKey")
+            code: str = iata("iata")
+            path_key: str = argument("pathKey")
             if not re.fullmatch(r"[0-9a-fA-F]{32}", path_key):
                 raise MCPError(-32602, "Invalid pathKey")
             text = (

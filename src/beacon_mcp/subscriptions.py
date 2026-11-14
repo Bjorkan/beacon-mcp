@@ -15,7 +15,7 @@ from beacon_mcp.operations import Operation
 from beacon_mcp.resources import parse_uri
 from beacon_mcp.validation import json_object
 
-logger = logging.getLogger("beacon_mcp.subscriptions")
+logger: logging.Logger = logging.getLogger("beacon_mcp.subscriptions")
 
 
 class Live:
@@ -29,7 +29,7 @@ class Live:
         self.reconnect_delay: float = 1.0
 
     def received(self, event: str, data: object) -> None:
-        fields = json_object(data)
+        fields: dict[str, object] | None = json_object(data)
         if self.closed or fields is None:
             return
         kind: str
@@ -49,10 +49,10 @@ class Live:
             return
         if not isinstance(value, str):
             return
-        parsed = parse_uri(f"beacon://{kind}/{value}")
+        parsed: tuple[str, str] | None = parse_uri(f"beacon://{kind}/{value}")
         if parsed is None:
             return
-        uri = f"beacon://{parsed[0]}/{parsed[1]}"
+        uri: str = f"beacon://{parsed[0]}/{parsed[1]}"
         if uri in self.pending or len(self.pending) >= 1024:
             return
         # Task captures only a canonical URI, never the event envelope or payload.
@@ -66,8 +66,9 @@ class Live:
             self.pending.pop(uri, None)
 
     async def close(self) -> None:
+        task: asyncio.Task[None]
         self.closed = True
-        tasks = list(self.pending.values())
+        tasks: list[asyncio.Task[None]] = list(self.pending.values())
         for task in tasks:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
@@ -90,7 +91,8 @@ async def bridge(client: BeaconClient, live: Live) -> None:
 async def connect_once(
     client: BeaconClient, live: Live, *, handshake_timeout: float = 10, ping_interval: float = 30
 ) -> None:
-    headers = await ticket_headers(client)
+    socket: ClientConnection
+    headers: dict[str, str] = await ticket_headers(client)
     async with connect(
         live.config.ws_url,
         additional_headers=headers,
@@ -107,11 +109,12 @@ async def connect_once(
 
 async def ticket_headers(client: BeaconClient) -> dict[str, str]:
     """Fetch a fresh ticket; only older servers returning 404 permit fallback."""
+    error: GatewayError
     headers: dict[str, str] = {}
     try:
         response: object = await client.request(Operation.WsTicket)
-        ticket_fields = json_object(response)
-        ticket = ticket_fields.get("ticket") if ticket_fields is not None else None
+        ticket_fields: dict[str, object] | None = json_object(response)
+        ticket: object = ticket_fields.get("ticket") if ticket_fields is not None else None
         if not isinstance(ticket, str) or not re.fullmatch(r"[\x20-\x7e]{1,4096}", ticket):
             raise ValueError("invalid WebSocket ticket")
         headers["X-Beacon-Ticket"] = ticket
@@ -125,18 +128,18 @@ async def listen_connection(
     socket: ClientConnection, live: Live, handshake_timeout: float, ping_interval: float
 ) -> None:
     """Subscribe after hello, then receive changes while checking application pongs."""
-    ready = False
-    seen_hello = False
-    awaiting_pong = False
-    ping_id = 0
-    loop = asyncio.get_running_loop()
-    handshake_deadline = loop.time() + handshake_timeout
-    next_ping = loop.time() + ping_interval
+    ready: bool = False
+    seen_hello: bool = False
+    awaiting_pong: bool = False
+    ping_id: int = 0
+    loop: asyncio.AbstractEventLoop = asyncio.get_running_loop()
+    handshake_deadline: float = loop.time() + handshake_timeout
+    next_ping: float = loop.time() + ping_interval
     while not live.closed:
-        deadline = next_ping if ready else handshake_deadline
+        deadline: float = next_ping if ready else handshake_deadline
         try:
             async with asyncio.timeout(max(0, deadline - loop.time())):
-                frame = await socket.recv()
+                frame: str | bytes = await socket.recv()
         except TimeoutError:
             if not ready:
                 raise ValueError("WebSocket subscription handshake timed out") from None
@@ -147,13 +150,13 @@ async def listen_connection(
             awaiting_pong = True
             next_ping = loop.time() + ping_interval
             continue
-        message = parse_message(frame)
+        message: dict[str, object] | None = parse_message(frame)
         if message is None:
             continue
-        kind = message.get("type")
+        kind: object = message.get("type")
         if kind == "hello" and not ready:
             seen_hello = True
-            events = ["nodeUpdate", "observerStatus"]
+            events: list[str] = ["nodeUpdate", "observerStatus"]
             if live.config.traffic_enabled:
                 events += ["packetObservation", "channelMessage"]
             await socket.send(
@@ -176,7 +179,7 @@ async def listen_connection(
         elif kind == "lagged":
             logger.warning("Beacon WebSocket dropped events; no replay available")
         elif kind == "event" and ready:
-            event_name = message.get("event")
+            event_name: object = message.get("event")
             if isinstance(event_name, str):
                 live.received(event_name, message.get("data"))
 
@@ -189,7 +192,7 @@ def parse_message(frame: str | bytes) -> dict[str, object] | None:
         decoded: object = json.loads(frame)
     except (ValueError, RecursionError):
         return None
-    message = json_object(decoded)
+    message: dict[str, object] | None = json_object(decoded)
     if message is None:
         return None
     if type(message.get("v")) is not int or message["v"] != 1:
