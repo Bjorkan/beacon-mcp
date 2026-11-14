@@ -32,7 +32,7 @@ def default_handler(_request: httpx.Request) -> httpx.Response:
 @asynccontextmanager
 async def gateway(
     handler: MockHandler | None = None, registry: Registry | None = None, **env: str
-) -> AsyncGenerator[httpx.AsyncClient, None]:
+) -> AsyncGenerator[httpx.AsyncClient]:
     config = Config.from_env(
         {"BEACON_BASE_URL": "https://beacon.test", "BEACON_SUBSCRIPTIONS_ENABLED": "false", **env}
     )
