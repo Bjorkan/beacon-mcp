@@ -37,10 +37,6 @@ def parse_uri(uri: str) -> tuple[str, str] | None:
     return kind, id
 
 
-def rpc_error(code: int, message: str) -> MCPError:
-    return MCPError(code, message)
-
-
 def register(server: Server, client: BeaconClient) -> None:
     async def list_resources(
         _ctx: ServerRequestContext, _params: types.PaginatedRequestParams
@@ -68,14 +64,14 @@ def register(server: Server, client: BeaconClient) -> None:
     ) -> types.ReadResourceResult:
         parsed = parse_uri(str(params.uri))
         if parsed is None:
-            raise rpc_error(-32602, "Invalid Beacon resource URI")
+            raise MCPError(-32602, "Invalid Beacon resource URI")
         kind, id = parsed
         try:
             data = await client.request(RESOURCE_OPERATIONS[kind][0], id)
         except GatewayError as error:
             if error.code == "NOT_FOUND":
-                raise rpc_error(-32002, "Beacon resource not found") from None
-            raise rpc_error(-32603, "Beacon resource temporarily unavailable") from None
+                raise MCPError(-32002, "Beacon resource not found") from None
+            raise MCPError(-32603, "Beacon resource temporarily unavailable") from None
         return types.ReadResourceResult(
             contents=[
                 types.TextResourceContents(
