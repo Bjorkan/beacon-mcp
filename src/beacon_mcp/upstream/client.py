@@ -12,8 +12,8 @@ import httpx
 
 from beacon_mcp.config import Config
 from beacon_mcp.errors import GatewayError, invalid
-from beacon_mcp.upstream.json_stream import ArrayPage, decode_json, read_array, read_bounded
 from beacon_mcp.upstream.json_stream import MAX_BYTES as MAX_BYTES
+from beacon_mcp.upstream.json_stream import ArrayPage, decode_json, read_array, read_bounded
 from beacon_mcp.upstream.operations import ARRAY_OPERATIONS, Operation
 from beacon_mcp.validation import identifier, json_object
 
