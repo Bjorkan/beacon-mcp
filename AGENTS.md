@@ -65,7 +65,7 @@ uv sync --locked
 uv run --locked ruff check src tests/python
 uv run --locked ruff format --check src tests/python
 uv run --locked pyright
-uvx --from basedpyright==1.39.8 basedpyright --project basedpyright-config.json
+uv run --locked basedpyright --project basedpyright-config.json
 uv run --locked pytest
 uv build --no-sources
 tests/container/run.sh
@@ -86,8 +86,9 @@ Ruff, pytest, and BasedPyright on the result. These temporary merges are
 never pushed and do not modify the independent PR branches or `main`.
 Already-merged prerequisite PRs are skipped. #95 must be merged last;
 afterward every normal CI run checks the actual repository without temporary
-merges. The BasedPyright version is pinned by `uvx --from`; the dev lockfile
-continues to pin the existing runtime/test dependencies.
+merges. BasedPyright 1.39.8 and its transitive dependencies are pinned in the
+committed `uv.lock` as development dependencies, so the identical tool runs
+locally and in GitHub Actions with `uv run --locked`.
 
 Set `BEACON_BASE_URL=https://beacon.example.org`, then run
 `uv run --locked beacon-mcp`. The root MCP endpoint
