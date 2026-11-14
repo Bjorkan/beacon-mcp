@@ -9,7 +9,7 @@ DETAIL_CASES = [
     ("beacon_get_iata_border", {"id": "arn"}, "/api/v1/iatas/ARN/border"),
     (
         "beacon_list_observer_directory",
-        {"iatas": ["arn"], "cursor": 12},
+        {"iatas": ["arn"]},
         "/api/v1/observers/directory",
     ),
     ("beacon_get_region", {"id": "3"}, "/api/v1/regions/3"),
@@ -53,3 +53,68 @@ async def test_scope_path_restrictions(id):
     async with gateway(forbidden) as http:
         result = await rpc(http, "tools/call", name="beacon_get_scope", arguments={"id": id})
     assert result["result"]["isError"]
+
+
+@pytest.mark.parametrize("sort", ["traffic", "name"])
+async def test_directory_continuation_preserves_returned_window(sort):
+    requests = []
+    start_ms, end_ms = 1794009600123, 1794096000987
+
+    def upstream(request):
+        params = dict(request.url.params)
+        requests.append(params)
+        assert params["iatas"] == "ARN" and params["sort"] == sort
+        assert params["limit"] == "2"
+        if "cursor" in params:
+            # Beacon requires the original window with every nonzero cursor.
+            assert params["cursor"] == "2"
+            assert params["since"] == str(start_ms)
+            assert params["until"] == str(end_ms)
+            return httpx.Response(
+                200,
+                json={
+                    "items": [{"id": "observer-c"}],
+                    "hasMore": False,
+                    "windowStart": start_ms,
+                    "windowEnd": end_ms,
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "items": [{"id": "observer-a"}, {"id": "observer-b"}],
+                "hasMore": True,
+                "nextCursor": 2,
+                "windowStart": start_ms,
+                "windowEnd": end_ms,
+            },
+        )
+
+    async with gateway(upstream) as http:
+        first = (
+            await rpc(
+                http,
+                "tools/call",
+                name="beacon_list_observer_directory",
+                arguments={"iatas": ["arn"], "sort": sort, "limit": 2},
+            )
+        )["result"]["structuredContent"]
+        second = (
+            await rpc(
+                http,
+                "tools/call",
+                name="beacon_list_observer_directory",
+                arguments={
+                    "iatas": ["arn"],
+                    "sort": sort,
+                    "limit": 2,
+                    **first["pagination"]["nextCursor"],
+                    "since": "2026-11-07T00:00:00.123Z",
+                    "until": "2026-11-08T00:00:00.987Z",
+                },
+            )
+        )["result"]
+    assert not second["isError"]
+    assert second["structuredContent"]["items"] == [{"id": "observer-c"}]
+    assert second["structuredContent"]["pagination"] == {"hasMore": False}
+    assert len(requests) == 2
