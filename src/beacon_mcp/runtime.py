@@ -56,7 +56,7 @@ def success(value: Any) -> types.CallToolResult:
 
 
 def tool_error(text: str, details: dict[str, Any] | None = None) -> types.CallToolResult:
-    content = [types.TextContent(type="text", text=text)]
+    content: list[types.ContentBlock] = [types.TextContent(type="text", text=text)]
     if details is None:
         return types.CallToolResult(content=content, is_error=True)
     return types.CallToolResult(
