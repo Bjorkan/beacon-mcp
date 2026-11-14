@@ -1,13 +1,15 @@
 import json
 from pathlib import Path
+from typing import Never, TypedDict
 
 import httpx
 import pytest
+from pydantic import TypeAdapter
 from conftest import gateway, rpc
 
 from beacon_mcp.handlers import packet, routing
 
-CASES = [
+CASES: list[tuple[str, dict[str, object], str]] = [
     (
         "beacon_search_packets",
         {"payloadTypeName": "reserved", "hashPrefix": "aBcDe", "iatas": ["arn"]},
@@ -30,10 +32,10 @@ CASES = [
 
 
 @pytest.mark.parametrize("name,args,path", CASES)
-async def test_all_ten_and_cursors(name, args, path):
-    seen = []
+async def test_all_ten_and_cursors(name: str, args: dict[str, object], path: str) -> None:
+    seen: list[httpx.Request] = []
 
-    def upstream(request):
+    def upstream(request: httpx.Request) -> httpx.Response:
         seen.append(request)
         assert request.url.path == path
         if name in ("beacon_list_routes", "beacon_search_traces"):
@@ -63,16 +65,23 @@ async def test_all_ten_and_cursors(name, args, path):
         assert data["pagination"]["nextCursor"] == {"cursor": 123, "cursorTag": "aabbccdd"}
 
 
-NEGATIVE = [
-    case
-    for case in json.loads(Path("tests/fixtures/invalid-tool-cases.json").read_text())
-    if case["name"] in {*packet.OPERATIONS, *routing.OPERATIONS}
+class NegativeCase(TypedDict):
+    name: str
+    arguments: dict[str, object]
+
+
+# Validate fixture records before selecting tool-specific negative tests.
+_negative_cases = TypeAdapter(list[NegativeCase]).validate_python(
+    json.loads(Path("tests/fixtures/invalid-tool-cases.json").read_text())
+)
+NEGATIVE: list[NegativeCase] = [
+    case for case in _negative_cases if case["name"] in {*packet.OPERATIONS, *routing.OPERATIONS}
 ]
 
 
 @pytest.mark.parametrize("case", NEGATIVE)
-async def test_packet_routing_negative_arguments_rejected(case):
-    def forbidden(_):
+async def test_packet_routing_negative_arguments_rejected(case: NegativeCase) -> None:
+    def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("invalid request reached upstream")
 
     async with gateway(forbidden) as http:
@@ -94,8 +103,8 @@ async def test_packet_routing_negative_arguments_rejected(case):
         ("beacon_search_traces", {"region": "å" * 128}),
     ],
 )
-async def test_utf8_packet_routing_bounds(name, args):
-    def forbidden(_):
+async def test_utf8_packet_routing_bounds(name: str, args: dict[str, object]) -> None:
+    def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("oversized UTF-8 filter reached Beacon")
 
     async with gateway(forbidden) as http:
