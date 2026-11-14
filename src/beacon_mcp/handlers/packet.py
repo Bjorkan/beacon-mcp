@@ -44,6 +44,31 @@ def register(registry: Registry) -> None:
 
 async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) -> Any:
     arguments = dict(arguments)
+    prepare_arguments(name, arguments)
+    operation = OPERATIONS[name]
+    if operation == Operation.Packet:
+        return await client.request(operation, arguments["hash"])
+    channel_id = None
+    if operation == Operation.ChannelMessages:
+        channel_id = str(arguments["channelId"])
+    if name == "beacon_search_messages" and "channelId" in arguments:
+        arguments["channelID"] = arguments.pop("channelId")
+    limit = arguments.get("limit", 20)
+    exclude = ("limit", "channelId") if channel_id is not None else ("limit",)
+    filters = query(arguments, exclude)
+    response = await client.request(operation, channel_id, [*filters, ("limit", str(limit))])
+    result = page(response, limit)
+    cursor = result["pagination"].get("nextCursor", {})
+    if operation == Operation.Channels and isinstance(cursor.get("pageCursor"), str):
+        cursor.pop("cursor", None)
+    if operation == Operation.Packets and "hashPrefix" in arguments:
+        cursor.pop("pageCursor", None)
+    if "nextCursor" in result["pagination"] and not cursor:
+        del result["pagination"]["nextCursor"]
+    return result
+
+
+def prepare_arguments(name: str, arguments: dict[str, Any]) -> None:
     location(arguments, region_message="invalid region filter")
     if (
         name == "beacon_list_channels"
@@ -57,16 +82,14 @@ async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) ->
         "payloadType" in arguments or "payloadTypes" in arguments
     ):
         raise invalid("payloadTypeName cannot be combined with payloadType or payloadTypes")
-    if any(
-        a in arguments and b in arguments
-        for a, b in (
-            ("scope", "scopes"),
-            ("payloadType", "payloadTypes"),
-            ("routeType", "routeTypes"),
-            ("channelId", "channelHash"),
-        )
+    for first, second in (
+        ("scope", "scopes"),
+        ("payloadType", "payloadTypes"),
+        ("routeType", "routeTypes"),
+        ("channelId", "channelHash"),
     ):
-        raise invalid("mutually exclusive filters")
+        if first in arguments and second in arguments:
+            raise invalid("mutually exclusive filters")
     if any(
         (not arguments[key].strip() or len(arguments[key].encode()) > 128)
         for key in ("region", "scope")
@@ -87,21 +110,3 @@ async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) ->
         64 if name == "beacon_list_channels" else 512
     ):
         raise invalid("invalid pageCursor")
-    operation = OPERATIONS[name]
-    if operation == Operation.Packet:
-        return await client.request(operation, arguments["hash"])
-    id = str(arguments["channelId"]) if operation == Operation.ChannelMessages else None
-    if name == "beacon_search_messages" and "channelId" in arguments:
-        arguments["channelID"] = arguments.pop("channelId")
-    limit = arguments.get("limit", 20)
-    exclude = ("limit", "channelId") if id is not None else ("limit",)
-    filters = query(arguments, exclude)
-    result = page(await client.request(operation, id, [*filters, ("limit", str(limit))]), limit)
-    cursor = result["pagination"].get("nextCursor", {})
-    if operation == Operation.Channels and isinstance(cursor.get("pageCursor"), str):
-        cursor.pop("cursor", None)
-    if operation == Operation.Packets and "hashPrefix" in arguments:
-        cursor.pop("pageCursor", None)
-    if "nextCursor" in result["pagination"] and not cursor:
-        del result["pagination"]["nextCursor"]
-    return result

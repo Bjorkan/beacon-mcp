@@ -26,25 +26,7 @@ def register(registry: Registry) -> None:
 
 async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) -> Any:
     arguments = dict(arguments)
-    location(arguments, region_message="mutually exclusive or incomplete filters")
-    if ("fromIata" in arguments) != ("toIata" in arguments):
-        raise invalid("fromIata and toIata must be given together")
-    if ("fromIata" in arguments and "iatas" in arguments) or any(
-        key in arguments and "cursor" not in arguments for key in ("cursorId", "cursorTag")
-    ):
-        raise invalid("mutually exclusive or incomplete filters")
-    if any(
-        (not arguments[key].strip() or len(arguments[key].encode()) > 128)
-        for key in ("region", "scope")
-        if key in arguments
-    ):
-        raise invalid("invalid text filter")
-    if (
-        name == "beacon_find_cross_iata_routes"
-        and "iatas" in arguments
-        and len({value.upper() for value in arguments["iatas"]}) < 2
-    ):
-        raise invalid("cross-IATA search requires two distinct codes")
+    validate_arguments(name, arguments)
     for key in ("from", "to", "fromHash", "toHash"):
         if key in arguments:
             arguments[key] = arguments[key].lower()
@@ -64,13 +46,36 @@ async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) ->
     pagination: dict[str, Any] = {"hasMore": False}
     last = json_object(items[-1]) if len(items) == limit else None
     if last is not None:
-        cursor: dict[str, object] = (
-            {"cursor": last.get("lastSeen"), "cursorId": last.get("id")}
-            if operation == Operation.Routes
-            else {"cursor": last.get("lastHeardAt"), "cursorTag": last.get("traceTag")}
-        )
+        if operation == Operation.Routes:
+            cursor = {"cursor": last.get("lastSeen"), "cursorId": last.get("id")}
+        else:
+            cursor = {"cursor": last.get("lastHeardAt"), "cursorTag": last.get("traceTag")}
         if isinstance(cursor["cursor"], (int, float)) and all(
             value is not None for value in cursor.values()
         ):
             pagination = {"hasMore": True, "nextCursor": cursor}
     return {"items": items, "pagination": pagination}
+
+
+def validate_arguments(name: str, arguments: dict[str, Any]) -> None:
+    location(arguments, region_message="mutually exclusive or incomplete filters")
+    if ("fromIata" in arguments) != ("toIata" in arguments):
+        raise invalid("fromIata and toIata must be given together")
+    conflicting_locations = "fromIata" in arguments and "iatas" in arguments
+    missing_cursor_time = "cursor" not in arguments and any(
+        key in arguments for key in ("cursorId", "cursorTag")
+    )
+    if conflicting_locations or missing_cursor_time:
+        raise invalid("mutually exclusive or incomplete filters")
+    if any(
+        (not arguments[key].strip() or len(arguments[key].encode()) > 128)
+        for key in ("region", "scope")
+        if key in arguments
+    ):
+        raise invalid("invalid text filter")
+    if (
+        name == "beacon_find_cross_iata_routes"
+        and "iatas" in arguments
+        and len({value.upper() for value in arguments["iatas"]}) < 2
+    ):
+        raise invalid("cross-IATA search requires two distinct codes")

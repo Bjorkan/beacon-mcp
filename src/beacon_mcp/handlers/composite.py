@@ -17,34 +17,36 @@ def register(registry: Registry) -> None:
 
 
 async def diagnose_node(client: BeaconClient, arguments: dict[str, Any]) -> Any:
-    id = identifier("uuid", arguments["id"])
-    range_value, limit = arguments.get("range", "24h"), arguments.get("neighborLimit", 10)
-    node, activity, result = await together(
-        client.request(Operation.Node, id),
-        client.request(Operation.NodeActivity, id, [("range", range_value)]),
-        client.array_page(Operation.NodeNeighbors, id, max_items=limit + 1),
+    node_id = identifier("uuid", arguments["id"])
+    range_value = arguments.get("range", "24h")
+    limit = arguments.get("neighborLimit", 10)
+    node, activity, neighbors_page = await together(
+        client.request(Operation.Node, node_id),
+        client.request(Operation.NodeActivity, node_id, [("range", range_value)]),
+        client.array_page(Operation.NodeNeighbors, node_id, max_items=limit + 1),
     )
     return {
         "node": node,
         "activity": activity,
-        "neighbors": result.items[:limit],
-        "neighborsTruncated": not result.complete or len(result.items) > limit,
+        "neighbors": neighbors_page.items[:limit],
+        "neighborsTruncated": not neighbors_page.complete or len(neighbors_page.items) > limit,
         "requestedRange": range_value,
         "note": "Read-only snapshot; Beacon may have incomplete geographic coverage.",
     }
 
 
 async def compare_regions(client: BeaconClient, arguments: dict[str, Any]) -> Any:
-    a, b = arguments["iataA"].strip().upper(), arguments["iataB"].strip().upper()
-    if a == b:
+    iata_a = arguments["iataA"].strip().upper()
+    iata_b = arguments["iataB"].strip().upper()
+    if iata_a == iata_b:
         raise invalid("iataA and iataB must be different")
-    left, right = await together(
-        client.request(Operation.Overview, query=[("iatas", a)]),
-        client.request(Operation.Overview, query=[("iatas", b)]),
+    overview_a, overview_b = await together(
+        client.request(Operation.Overview, query=[("iatas", iata_a)]),
+        client.request(Operation.Overview, query=[("iatas", iata_b)]),
     )
     return {
-        "regionA": {"iata": a, "overview": left},
-        "regionB": {"iata": b, "overview": right},
+        "regionA": {"iata": iata_a, "overview": overview_a},
+        "regionB": {"iata": iata_b, "overview": overview_b},
         "note": "Independent snapshots, not synchronized measurements.",
     }
 

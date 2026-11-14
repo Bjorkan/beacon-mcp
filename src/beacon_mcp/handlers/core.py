@@ -29,6 +29,29 @@ def register(registry: Registry) -> None:
 
 
 async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) -> Any:
+    validate_arguments(name, arguments)
+    operation = OPERATIONS[name]
+    limit = arguments.get("limit", 20)
+    filters = query(arguments, ("id", "limit"))
+    if operation in (Operation.Iatas, Operation.Regions):
+        return array_result(
+            await client.array_page(operation, query=filters, max_items=limit + 1), limit
+        )
+    if operation == Operation.Scopes:
+        source = await client.request(
+            operation, query=[(k, v) for k, v in filters if k != "cursor"]
+        )
+        return scope_page(source, arguments.get("cursor", 0), limit)
+    if operation in (Operation.Nodes, Operation.Observers):
+        return page(
+            await client.request(operation, query=[*filters, ("limit", str(limit))]),
+            limit,
+            operation == Operation.Nodes,
+        )
+    return await client.request(operation, arguments.get("id"), filters)
+
+
+def validate_arguments(name: str, arguments: dict[str, Any]) -> None:
     location(arguments)
     if "type" in arguments and "typeName" in arguments:
         raise invalid("type and typeName are mutually exclusive")
@@ -56,33 +79,17 @@ async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) ->
             raise invalid("range must be 48h or less for intervals under 1h")
     if "pageCursor" in arguments and len(arguments["pageCursor"].encode()) > 512:
         raise invalid("invalid pageCursor")
-    operation = OPERATIONS[name]
-    limit = arguments.get("limit", 20)
-    filters = query(arguments, ("id", "limit"))
-    if operation in (Operation.Iatas, Operation.Regions):
-        return array_result(
-            await client.array_page(operation, query=filters, max_items=limit + 1), limit
-        )
-    if operation == Operation.Scopes:
-        source = await client.request(
-            operation, query=[(k, v) for k, v in filters if k != "cursor"]
-        )
-        if not isinstance(source, list):
-            raise GatewayError("UNAVAILABLE", "Beacon returned invalid scopes")
-        offset = arguments.get("cursor", 0)
-        scopes = cast(list[object], source)
-        items = scopes[offset : offset + limit]
-        next_offset = offset + len(items)
-        pagination: dict[str, Any] = (
-            {"hasMore": True, "nextCursor": {"cursor": next_offset}}
-            if next_offset < len(scopes)
-            else {"hasMore": False}
-        )
-        return {"items": items, "pagination": pagination}
-    if operation in (Operation.Nodes, Operation.Observers):
-        return page(
-            await client.request(operation, query=[*filters, ("limit", str(limit))]),
-            limit,
-            operation == Operation.Nodes,
-        )
-    return await client.request(operation, arguments.get("id"), filters)
+
+
+def scope_page(source: object, offset: int, limit: int) -> dict[str, Any]:
+    """Beacon returns all scope names; expose a bounded local offset page."""
+    if not isinstance(source, list):
+        raise GatewayError("UNAVAILABLE", "Beacon returned invalid scopes")
+
+    scopes = cast(list[object], source)
+    items = scopes[offset : offset + limit]
+    next_offset = offset + len(items)
+    pagination: dict[str, Any] = {"hasMore": False}
+    if next_offset < len(scopes):
+        pagination = {"hasMore": True, "nextCursor": {"cursor": next_offset}}
+    return {"items": items, "pagination": pagination}
