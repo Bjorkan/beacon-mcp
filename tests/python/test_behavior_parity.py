@@ -9,7 +9,7 @@ import httpx
 import pytest
 from pydantic import TypeAdapter
 
-from tests.python.conftest import gateway, rpc
+from tests.python.helpers import gateway, rpc
 
 
 class UpstreamRequest(TypedDict):

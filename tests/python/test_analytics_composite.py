@@ -7,7 +7,7 @@ import pytest
 from pydantic import TypeAdapter
 
 from beacon_mcp.runtime import CONTRACTS, default_registry
-from tests.python.conftest import gateway, rpc
+from tests.python.helpers import gateway, rpc
 
 
 class NegativeCase(TypedDict):

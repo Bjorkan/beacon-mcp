@@ -116,7 +116,9 @@ async def test_ticket_handshake_and_reconnect(legacy: bool, traffic: bool) -> No
             await client.aclose()
 
 
-@pytest.mark.parametrize("scenario", ["no-hello", "bad-ack", "oversized", "missing-pong"])
+@pytest.mark.parametrize(
+    "scenario", ["no-hello", "bad-ack", "oversized", "missing-pong", "wrong-pong"]
+)
 async def test_handshake_frame_and_heartbeat_fail_closed(scenario: str) -> None:
     async def mock(socket: ServerConnection) -> None:
         if scenario == "oversized":
@@ -133,6 +135,9 @@ async def test_handshake_frame_and_heartbeat_fail_closed(scenario: str) -> None:
                     }
                 )
             )
+            if scenario == "wrong-pong":
+                await socket.recv()
+                await socket.send(json.dumps({"v": 1, "type": "pong", "id": "wrong"}))
         await socket.wait_closed()
 
     def not_found(_request: httpx.Request) -> httpx.Response:
@@ -153,3 +158,53 @@ async def test_handshake_frame_and_heartbeat_fail_closed(scenario: str) -> None:
         finally:
             await client.aclose()
             await live.close()
+
+
+async def test_valid_pongs_keep_connection_alive_after_ignored_malformed_frames() -> None:
+    pings: list[str] = []
+    events: asyncio.Queue[ServerEvent] = asyncio.Queue()
+
+    async def upstream(socket: ServerConnection) -> None:
+        for frame in (
+            b'{"v":1,"type":"hello"}',
+            "invalid JSON",
+            "[]",
+            '{"v":true,"type":"hello"}',
+            '{"v":1.0,"type":"hello"}',
+            '{"v":2,"type":"hello"}',
+        ):
+            await socket.send(frame)
+        await socket.send(json.dumps({"v": 1, "type": "hello"}))
+        assert json.loads(await socket.recv())["type"] == "subscribe"
+        await socket.send(json.dumps({"v": 1, "type": "subscribed", "id": "mcp-changes"}))
+        for expected_id in ("mcp-ping-1", "mcp-ping-2"):
+            ping = json.loads(await socket.recv())
+            assert ping == {"v": 1, "type": "ping", "id": expected_id}
+            pings.append(expected_id)
+            await socket.send(json.dumps({"v": 1, "type": "pong", "id": expected_id}))
+        await socket.send(
+            json.dumps({"v": 1, "type": "event", "event": "nodeUpdate", "data": {"nodeId": ID}})
+        )
+        await socket.wait_closed()
+
+    async with serve(upstream, "127.0.0.1", 0) as server:
+        port = server.sockets[0].getsockname()[1]
+        cfg = config(BEACON_WS_URL=f"ws://127.0.0.1:{port}/ws")
+        client = BeaconClient(
+            cfg,
+            transport=httpx.MockTransport(lambda _: httpx.Response(200, json={"ticket": "test"})),
+        )
+        live = Live(cfg)
+        live.bus.subscribe(events.put_nowait)
+        task = asyncio.create_task(connect_once(client, live, ping_interval=0.05))
+        try:
+            update = await asyncio.wait_for(events.get(), 2)
+            assert isinstance(update, ResourceUpdated)
+            assert update.uri == f"beacon://nodes/{ID}"
+            assert pings == ["mcp-ping-1", "mcp-ping-2"]
+            assert not task.done()
+        finally:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+            await live.close()
+            await client.aclose()

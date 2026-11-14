@@ -5,7 +5,7 @@ import pytest
 
 from beacon_mcp.handlers.core import OPERATIONS
 from beacon_mcp.runtime import CONTRACTS
-from tests.python.conftest import gateway, rpc
+from tests.python.helpers import gateway, rpc
 
 ID = "123e4567-e89b-42d3-a456-426614174000"
 

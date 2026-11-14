@@ -2,7 +2,7 @@ import httpx
 import pytest
 
 from beacon_mcp.handlers.statistics import OPERATIONS
-from tests.python.conftest import gateway, rpc
+from tests.python.helpers import gateway, rpc
 
 
 @pytest.mark.parametrize("name", OPERATIONS)

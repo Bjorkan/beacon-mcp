@@ -3,7 +3,7 @@ from typing import Never
 import httpx
 import pytest
 
-from tests.python.conftest import gateway, rpc
+from tests.python.helpers import gateway, rpc
 
 DETAIL_CASES: list[tuple[str, dict[str, object], str]] = [
     ("beacon_list_brokers", {}, "/api/v1/brokers"),

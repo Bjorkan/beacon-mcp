@@ -7,7 +7,7 @@ import pytest
 from pydantic import TypeAdapter
 
 from beacon_mcp.handlers import packet, routing
-from tests.python.conftest import gateway, rpc
+from tests.python.helpers import gateway, rpc
 
 CASES: list[tuple[str, dict[str, object], str]] = [
     (
