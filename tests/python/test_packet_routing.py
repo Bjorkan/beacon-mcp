@@ -4,8 +4,8 @@ from typing import Never, TypedDict
 
 import httpx
 import pytest
-from pydantic import TypeAdapter
 from conftest import gateway, rpc
+from pydantic import TypeAdapter
 
 from beacon_mcp.handlers import packet, routing
 
