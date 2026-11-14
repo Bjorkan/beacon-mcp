@@ -47,6 +47,17 @@ jobs:
       - run: uv sync --locked
       - name: Analyze all project Python files with BasedPyright strict
         run: uvx --from basedpyright==1.39.8 basedpyright
+      # Temporary diagnostic artifact: removed after local integration review.
+      - name: Prepare strict integration review sources
+        if: always()
+        run: tar --exclude=.git --exclude=.venv --exclude=.pytest_cache -czf /tmp/beacon-source.tar.gz .
+      - name: Upload review source bundle
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: strict-source-bundle
+          path: /tmp/beacon-source.tar.gz
+          retention-days: 1
 
   container:
     name: Container verification
