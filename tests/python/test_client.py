@@ -1,5 +1,7 @@
 import asyncio
 import json
+from collections.abc import AsyncIterator, Awaitable, Callable
+from typing import Never
 
 import httpx
 import pytest
@@ -8,15 +10,20 @@ from beacon_mcp.client import MAX_BYTES, BeaconClient, GatewayError, Operation
 from beacon_mcp.config import Config
 
 
-def client(handler):
+MockHandler = (
+    Callable[[httpx.Request], httpx.Response] | Callable[[httpx.Request], Awaitable[httpx.Response]]
+)
+
+
+def client(handler: MockHandler) -> BeaconClient:
     return BeaconClient(
         Config.from_env({"BEACON_BASE_URL": "https://example.test/prefix"}),
         transport=httpx.MockTransport(handler),
     )
 
 
-async def test_fixed_encoded_get():
-    def handler(request):
+async def test_fixed_encoded_get() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
         assert request.method == "GET"
         assert request.url.path == "/prefix/api/v1/nodes"
         assert request.url.query == b"iatas=ARN%2CMMX&scope=%23se13"
@@ -45,8 +52,8 @@ async def test_fixed_encoded_get():
         (Operation.RegionDetail, "0"),
     ],
 )
-async def test_reject_before_network(op, id):
-    def forbidden(_):
+async def test_reject_before_network(op: Operation, id: str) -> None:
+    def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("unsafe upstream request")
 
     c = client(forbidden)
@@ -66,10 +73,10 @@ async def test_reject_before_network(op, id):
         (503, "DEADLINE_EXCEEDED"),
     ],
 )
-async def test_status_and_retry_after(status, code):
+async def test_status_and_retry_after(status: int, code: str) -> None:
     calls = 0
 
-    def handler(_):
+    def handler(_request: httpx.Request) -> httpx.Response:
         nonlocal calls
         calls += 1
         return httpx.Response(
@@ -90,10 +97,10 @@ async def test_status_and_retry_after(status, code):
         await c.aclose()
 
 
-async def test_retry_exactly_once():
+async def test_retry_exactly_once() -> None:
     calls = 0
 
-    def handler(_):
+    def handler(_request: httpx.Request) -> httpx.Response:
         nonlocal calls
         calls += 1
         return httpx.Response(503, json={})
@@ -108,22 +115,30 @@ async def test_retry_exactly_once():
 
 
 class Chunks(httpx.AsyncByteStream):
-    def __init__(self, pieces):
+    def __init__(self, pieces: list[bytes]) -> None:
         self.pieces, self.count, self.closed = pieces, 0, False
 
-    async def __aiter__(self):
+    async def __aiter__(self) -> AsyncIterator[bytes]:
         for piece in self.pieces:
             self.count += 1
             yield piece
 
-    async def aclose(self):
+    async def aclose(self) -> None:
         self.closed = True
 
 
-async def test_incremental_early_close_and_nested_json():
+def fixed_response(response: httpx.Response) -> MockHandler:
+    """Provide a typed handler for a fixed synthetic upstream response."""
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return response
+
+    return handler
+
+
+async def test_incremental_early_close_and_nested_json() -> None:
     item = {"name": 'a,\\"b', "nested": [1, {"k": "v"}]}
     stream = Chunks([b"[" + (json.dumps(item).encode() + b",") * 200] * 1000)
-    c = client(lambda _: httpx.Response(200, stream=stream))
+    c = client(fixed_response(httpx.Response(200, stream=stream)))
     try:
         page = await c.array_page(Operation.RouteSearch, max_items=3)
         assert page.items == [item] * 3 and not page.complete
@@ -136,8 +151,8 @@ async def test_incremental_early_close_and_nested_json():
     "body,expected,complete",
     [(b'["ARN","MMX"]', ["ARN", "MMX"], True), (b'{"items":[1,2,3]}', [1, 2], False)],
 )
-async def test_array_and_envelope(body, expected, complete):
-    c = client(lambda _: httpx.Response(200, content=body))
+async def test_array_and_envelope(body: bytes, expected: list[str | int], complete: bool) -> None:
+    c = client(fixed_response(httpx.Response(200, content=body)))
     try:
         page = await c.array_page(Operation.Iatas, max_items=2 if not complete else 3)
         assert page.items == expected and page.complete == complete
@@ -148,8 +163,8 @@ async def test_array_and_envelope(body, expected, complete):
 @pytest.mark.parametrize(
     "body,code", [(b"invalid", "UNAVAILABLE"), (b"x" * (MAX_BYTES + 1), "RESPONSE_TOO_LARGE")]
 )
-async def test_bad_bodies(body, code):
-    c = client(lambda _: httpx.Response(200, content=body))
+async def test_bad_bodies(body: bytes, code: str) -> None:
+    c = client(fixed_response(httpx.Response(200, content=body)))
     try:
         with pytest.raises(GatewayError) as caught:
             await c.request(Operation.ServerInfo)
@@ -158,8 +173,8 @@ async def test_bad_bodies(body, code):
         await c.aclose()
 
 
-async def test_total_deadline_and_cancellation():
-    async def handler(_):
+async def test_total_deadline_and_cancellation() -> None:
+    async def handler(_request: httpx.Request) -> httpx.Response:
         await asyncio.sleep(2)
         return httpx.Response(200, json={})
 
@@ -188,8 +203,8 @@ async def test_total_deadline_and_cancellation():
         (b"[" * 129 + b"0" + b"]" * 129, False),
     ],
 )
-async def test_nonfinite_and_excessively_nested_json(body, array):
-    c = client(lambda _: httpx.Response(200, content=body))
+async def test_nonfinite_and_excessively_nested_json(body: bytes, array: bool) -> None:
+    c = client(fixed_response(httpx.Response(200, content=body)))
     try:
         with pytest.raises(GatewayError) as caught:
             if array:
@@ -201,8 +216,8 @@ async def test_nonfinite_and_excessively_nested_json(body, array):
         await c.aclose()
 
 
-async def test_truncated_array_retains_complete_items_with_explicit_truncation():
-    c = client(lambda _: httpx.Response(200, content=b'[{"id":1},'))
+async def test_truncated_array_retains_complete_items_with_explicit_truncation() -> None:
+    c = client(fixed_response(httpx.Response(200, content=b'[{"id":1},')))
     try:
         result = await c.array_page(Operation.Iatas, max_items=3)
         assert result.items == [{"id": 1}] and not result.complete
@@ -211,10 +226,10 @@ async def test_truncated_array_retains_complete_items_with_explicit_truncation()
 
 
 @pytest.mark.parametrize("status,code", [(200, "UNAVAILABLE"), (429, "RESOURCE_EXHAUSTED")])
-async def test_unexpected_compression_is_never_inflated_or_read(status, code):
+async def test_unexpected_compression_is_never_inflated_or_read(status: int, code: str) -> None:
     stream = Chunks([b"compressed body must never be read"])
 
-    def upstream(request):
+    def upstream(request: httpx.Request) -> httpx.Response:
         assert request.headers["accept-encoding"] == "identity"
         return httpx.Response(
             status, headers={"Content-Encoding": "gzip", "Retry-After": "10"}, stream=stream
@@ -232,10 +247,10 @@ async def test_unexpected_compression_is_never_inflated_or_read(status, code):
         await c.aclose()
 
 
-async def test_public_reads_never_retain_or_resend_cookies():
+async def test_public_reads_never_retain_or_resend_cookies() -> None:
     calls = 0
 
-    def upstream(request):
+    def upstream(request: httpx.Request) -> httpx.Response:
         nonlocal calls
         calls += 1
         assert "cookie" not in request.headers
