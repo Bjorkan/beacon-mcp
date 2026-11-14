@@ -65,14 +65,16 @@ uv sync --locked
 uv run --locked ruff check src tests/python
 uv run --locked ruff format --check src tests/python
 uv run --locked pyright
-uvx --from basedpyright==1.39.8 basedpyright
+uvx --from basedpyright==1.39.8 basedpyright --project basedpyright-config.json
 uv run --locked pytest
 uv build --no-sources
 tests/container/run.sh
 ```
 
-The independent **BasedPyright 1.39.8 strict** CI job checks the entire
-Python source, test and script tree with `[tool.basedpyright]`. All twelve
+The independent **BasedPyright 1.39.8 strict** CI job uses the explicit
+`basedpyright-config.json` project file (to avoid BasedPyright rejecting both
+`[tool.pyright]` and `[tool.basedpyright]` sections in one TOML). It checks the entire
+Python source, test and script tree with `basedpyright-config.json`. All twelve
 diagnostic categories from the original 591-error report are explicitly
 configured as **errors**; none is ignored or downgraded. BasedPyright's
 additional advisory categories (not present in the original report) remain
