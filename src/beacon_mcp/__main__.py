@@ -7,11 +7,6 @@ import sys
 from http.client import HTTPResponse
 from urllib.request import ProxyHandler, build_opener
 
-import uvicorn
-
-from beacon_mcp.app import create_app
-from beacon_mcp.config import Config
-
 
 class SafeDiagnostics(logging.Filter):
     """Library diagnostics may embed bodies, headers, IDs or exception traces."""
@@ -56,6 +51,14 @@ def main() -> None:
     name: str
     if sys.argv[1:] == ["--healthcheck"]:
         sys.exit(healthcheck())
+
+    # Docker's health timeout includes imports. Keep the probe independent of
+    # the MCP stack, which can take several seconds to load under a CPU limit.
+    import uvicorn
+
+    from beacon_mcp.app import create_app
+    from beacon_mcp.config import Config
+
     try:
         config: Config = Config.from_env()
     except ValueError as error:

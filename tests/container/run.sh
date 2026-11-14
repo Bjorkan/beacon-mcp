@@ -22,6 +22,7 @@ docker run -d --name "$mock" --network "$network" --no-healthcheck \
   python:3.13-slim@sha256:09a17cad02668ae61ece136b4fd36ac3849e14f670ebedb637ea3e15580525bc \
   python /mock.py >/dev/null
 docker run -d --name "$gateway" --network "$network" -p 127.0.0.1::3000 \
+  --health-interval=1s --health-start-period=1s --health-timeout=3s \
   --read-only --tmpfs /tmp:rw,noexec,nosuid,size=16m --cap-drop=ALL \
   --security-opt=no-new-privileges:true --memory=256m --cpus=0.5 --pids-limit=100 \
   -e BEACON_BASE_URL=http://"$mock":8080 \
@@ -31,6 +32,14 @@ port="$(docker port "$gateway" 3000/tcp | sed 's/.*://')"
 i=0
 until PORT_TO_TEST="$port" python3 tests/container/smoke.py 2>/dev/null; do
   i=$((i + 1)); test "$i" -lt 30 || { docker logs "$gateway"; exit 1; }
+  sleep 1
+done
+# Observe Docker's actual health result, including interpreter/import time.
+# A direct HTTP smoke call alone cannot catch a probe killed by its timeout.
+i=0
+until test "$(docker inspect -f '{{.State.Health.Status}}' "$gateway")" = "healthy"; do
+  i=$((i + 1))
+  test "$i" -lt 30 || { echo "Container health check did not become healthy."; exit 1; }
   sleep 1
 done
 test "$(docker exec "$gateway" id -u)" = "1000"

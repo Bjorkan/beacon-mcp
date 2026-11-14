@@ -27,6 +27,9 @@ must refetch and re-listen. CLI signal status follows Uvicorn/OS defaults.
 Shutdown grace is rounded up to whole seconds. Compose allows 15 seconds by
 default; increase `stop_grace_period` when increasing `SHUTDOWN_GRACE_MS`.
 Health/readiness reports process availability without probing Beacon.
+The `--healthcheck` command loads only standard-library code before probing the
+local HTTP endpoint. Keep server/SDK imports on the normal startup path: Docker's
+three-second health timeout also includes interpreter startup and imports.
 
 ## Release process
 
