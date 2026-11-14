@@ -4,7 +4,7 @@ import asyncio
 import json
 import logging
 import re
-from typing import Any
+from typing import cast
 
 from mcp.server.subscriptions import InMemorySubscriptionBus, ResourceUpdated
 from websockets.asyncio.client import connect
@@ -24,17 +24,23 @@ class Live:
         self.closed = False
         self.reconnect_delay = 1.0
 
-    def received(self, event: str, data: Any) -> None:
+    def received(self, event: str, data: object) -> None:
         if self.closed or not isinstance(data, dict):
             return
+        # Beacon frames are JSON objects; validate at the untrusted event boundary.
+        if not all(isinstance(key, str) for key in data):
+            return
+        fields = cast(dict[str, object], data)
+        kind: str
+        value: object
         if event == "nodeUpdate":
-            kind, value = "nodes", data.get("nodeId")
+            kind, value = "nodes", fields.get("nodeId")
         elif event == "observerStatus":
-            kind, value = "observers", data.get("observerId")
+            kind, value = "observers", fields.get("observerId")
         elif event == "packetObservation" and self.config.traffic_enabled:
-            kind, value = "packets", data.get("packetHash")
+            kind, value = "packets", fields.get("packetHash")
         elif event == "channelMessage" and self.config.traffic_enabled:
-            kind, value = "channels", data.get("channelId")
+            kind, value = "channels", fields.get("channelId")
             if not isinstance(value, int) or isinstance(value, bool):
                 return
             value = str(value)
@@ -83,10 +89,12 @@ async def bridge(client: BeaconClient, live: Live) -> None:
 async def connect_once(
     client: BeaconClient, live: Live, *, handshake_timeout: float = 10, ping_interval: float = 30
 ) -> None:
-    headers = {}
+    headers: dict[str, str] = {}
     try:
-        response = await client.request(Operation.WsTicket)
-        ticket = response.get("ticket") if isinstance(response, dict) else None
+        response: object = await client.request(Operation.WsTicket)
+        ticket: object = None
+        if isinstance(response, dict) and all(isinstance(key, str) for key in response):
+            ticket = cast(dict[str, object], response).get("ticket")
         if not isinstance(ticket, str) or not re.fullmatch(r"[\x20-\x7e]{1,4096}", ticket):
             raise ValueError("invalid WebSocket ticket")
         headers["X-Beacon-Ticket"] = ticket
@@ -127,14 +135,15 @@ async def connect_once(
             if not isinstance(frame, str):
                 continue
             try:
-                message = json.loads(frame)
+                decoded: object = json.loads(frame)
             except (ValueError, RecursionError):
                 continue
-            if (
-                not isinstance(message, dict)
-                or type(message.get("v")) is not int
-                or message["v"] != 1
+            if not isinstance(decoded, dict) or not all(
+                isinstance(key, str) for key in decoded
             ):
+                continue
+            message = cast(dict[str, object], decoded)
+            if type(message.get("v")) is not int or message["v"] != 1:
                 continue
             kind = message.get("type")
             if kind == "hello" and not ready:
@@ -162,4 +171,6 @@ async def connect_once(
             elif kind == "lagged":
                 logger.warning("Beacon WebSocket dropped events; no replay available")
             elif kind == "event" and ready:
-                live.received(message.get("event", ""), message.get("data"))
+                event_name = message.get("event")
+                if isinstance(event_name, str):
+                    live.received(event_name, message.get("data"))
