@@ -9,5 +9,31 @@
   "automerge": true,
   "automergeType": "pr",
   "platformAutomerge": true,
-  "ignoreTests": false
+  "ignoreTests": false,
+  "packageRules": [
+    {
+      "description": "Group Python runtime and uv toolchain updates",
+      "matchPackageNames": [
+        "python",
+        "uv",
+        "ghcr.io/astral-sh/uv"
+      ],
+      "groupName": "Python toolchain",
+      "groupSlug": "python-toolchain"
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^\\.github\\/workflows\\/ci\\.yml$/"
+      ],
+      "matchStrings": [
+        "pipx install uv==(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "depNameTemplate": "uv",
+      "datasourceTemplate": "pypi",
+      "versioningTemplate": "pep440"
+    }
+  ]
 }
