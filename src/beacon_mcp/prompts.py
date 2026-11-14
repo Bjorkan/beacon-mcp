@@ -56,20 +56,35 @@ def register(server: Server) -> None:
 
         if params.name == "beacon_node_diagnostics":
             try:
-                id = identifier("uuid", argument("id"))
+                node_id = identifier("uuid", argument("id"))
             except GatewayError:
                 raise MCPError(-32602, "Invalid node UUID") from None
-            text = f"Inspect public MeshCore node {id} using beacon_diagnose_node. Explain originated packet activity, neighbor observations, uncertainty and coverage. Do not infer that an unseen node is offline. No writes or persistence."
+            text = (
+                f"Inspect public MeshCore node {node_id} using beacon_diagnose_node. "
+                "Explain originated packet activity, neighbor observations, uncertainty and coverage. "
+                "Do not infer that an unseen node is offline. No writes or persistence."
+            )
         elif params.name == "beacon_region_comparison":
-            a, b = iata("iataA"), iata("iataB")
-            if a == b:
+            iata_a = iata("iataA")
+            iata_b = iata("iataB")
+            if iata_a == iata_b:
                 raise MCPError(-32602, "IATAs must be different")
-            text = f"Use beacon_compare_regions with iataA={a} and iataB={b}. Compare only actual fields, distinguish coverage from performance, and do not imply synchronized snapshots or causality. No writes or persistence."
+            text = (
+                f"Use beacon_compare_regions with iataA={iata_a} and iataB={iata_b}. "
+                "Compare only actual fields, distinguish coverage from performance, "
+                "and do not imply synchronized snapshots or causality. No writes or persistence."
+            )
         elif params.name == "beacon_route_review":
-            code, key = iata("iata"), argument("pathKey")
-            if not re.fullmatch(r"[0-9a-fA-F]{32}", key):
+            code = iata("iata")
+            path_key = argument("pathKey")
+            if not re.fullmatch(r"[0-9a-fA-F]{32}", path_key):
                 raise MCPError(-32602, "Invalid pathKey")
-            text = f"Review saved MeshCore route in IATA {code}, pathKey {key.lower()}. Use beacon_get_route_observations for retained evidence and beacon_get_path_stats for context. Explain evidence gaps. Do not claim present reachability without recent evidence. Read-only requests."
+            text = (
+                f"Review saved MeshCore route in IATA {code}, pathKey {path_key.lower()}. "
+                "Use beacon_get_route_observations for retained evidence and "
+                "beacon_get_path_stats for context. Explain evidence gaps. "
+                "Do not claim present reachability without recent evidence. Read-only requests."
+            )
         else:
             raise MCPError(-32602, "Unknown Beacon prompt")
         return types.GetPromptResult(

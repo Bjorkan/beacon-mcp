@@ -1,0 +1,101 @@
+# Readability review
+
+This behavior-preserving review started from `349adfe` on `main`. The baseline
+passed 305 offline tests, Ruff, strict BasedPyright and the distribution build.
+The work is split into local commits for naming, shared validation, runtime,
+HTTP/JSON separation, handlers, WebSocket processing, tests and documentation.
+
+## Inventory and decisions
+
+The [architecture guide](architecture.md) inventories every application module
+and handler family and describes their call relationships. The remaining Python
+files were reviewed as follows:
+
+| Files under `tests/python/` | Responsibility |
+| --- | --- |
+| `test_core.py`, `test_details.py`, `test_activity.py`, `test_statistics.py` | Endpoint families, bounds and continuation behavior |
+| `test_packet_routing.py`, `test_analytics_composite.py` | Packet/route filters, analytics and bounded composite requests |
+| `test_behavior_parity.py`, `test_openapi.py` | Frozen bytes/results/requests and released Swagger parity |
+| `test_client.py`, `test_deadline.py`, `test_json_stream.py` | Safe HTTP reads, retry budget, truncation and JSON boundaries |
+| `test_runtime.py`, `test_tool_support.py` | SDK dispatch, schema validation, integer normalization and exact cursors |
+| `test_foundation.py`, `test_release_gates.py` | Configuration, health, redaction, cancellation and release invariants |
+| `test_resources_prompts.py` | Fresh canonical resource reads and pure analysis prompts |
+| `test_websocket.py`, `test_subscriptions.py`, `test_lifecycle.py` | Tickets, heartbeat/reconnect, SDK SSE behavior and process shutdown |
+| `helpers.py`, `subscription_helpers.py` | Shared mocked HTTP and real local SSE test support |
+| `__init__.py` and `tests/__init__.py` | Test package markers |
+
+`tests/container/mock-beacon.py` and `smoke.py` are the synthetic upstream and
+host smoke client for the hardened image. `scripts/sync-openapi.py` explicitly
+updates the vendored specification from an immutable commit. They already have
+clear, narrow responsibilities and retain their implementations.
+
+The principal changes address nested conditional expressions, repeated
+short names, mixed transport/parsing responsibilities, endpoint execution
+interleaved with validation, and test modules importing helpers from other
+test modules or `conftest.py`.
+
+`Operation` and its array allowlist now use direct enum references in their own
+module. Shared errors and identifier validation no longer require importing
+the HTTP client. JSON reading has its own module, while HTTP classification
+stays with the transport. The request deadline still encloses all decoding and
+retry delays. Existing imports from `client.py` used by Python tests remain
+available; application modules import definitions from their owning modules.
+
+Endpoint-family registration tables remain small and explicit. Separate
+validation/preparation functions clarify the main execution paths without
+creating one wrapper for every tool. Composite cleanup still cancels and awaits
+sibling tasks on failure; replacing it with another concurrency model could
+change exception behavior and was unnecessary.
+
+The WebSocket receive loop still keeps handshake and heartbeat state together.
+Ticket acquisition and frame validation are separate named functions; no new
+state-machine framework is introduced. The incremental JSON parser still needs
+string/escape/depth state across chunks. Those are protocol constraints, not
+abstractions to remove. New tests exercise split escape state, nesting limits,
+exact cursors, ignored malformed frames, valid pongs and wrong pong IDs.
+
+Configuration, application lifespan and access logging retain their existing
+structure: they already have clear boundaries and use supported SDK APIs.
+Local configuration names, log level constants, prompt text layout and module
+docstrings received small readability improvements. Dynamic JSON arguments and
+results retain `Any` where the SDK/upstream boundary warrants it; opaque inputs
+use `object` where sufficient. No dependencies or type-checking rules changed.
+
+Ruff's naming and complexity rules were evaluated without changing the required
+lint configuration. Naming checks passed. A blanket complexity threshold would
+encourage splitting necessary validation/parser branches into more helpers.
+The existing rules remain; named control flow and review determine useful
+function boundaries.
+
+## Upstream contract review
+
+On 2026-11-14, GitHub's latest published release was
+[v2.2.0](https://github.com/MeshCore-Beacon/beacon-server/releases/tag/v2.2.0).
+Its annotated tag object `0856dfbf257ea0a12fdcd0c5045644bade9f6f1f` resolves to
+`265a835e36931a2c39b9b08e7a78837b9cf0e343`, exactly the existing pin.
+The released public handlers and request/response types were compared with
+the operation tables, query handling and frozen contracts. No new release or
+API adoption is involved, and neither the vendored specification nor the
+generated discovery contracts changed.
+
+Existing deliberate differences remain: MCP limits are bounded to 50, arrays
+can truncate, node lists differ from details, route search returns segments,
+cursor forms vary, and nullable minimum client versions are accepted. Ordinary
+message handlers only use IATA filters and ignore documented region filters;
+backfill resolves regions. Route evidence carries an opaque window-bound
+cursor. The gateway continues to pass those values through unchanged.
+The Swagger parity and synthetic baseline tests retain these exceptions.
+
+## Verification
+
+Every implementation stage passed the locked sync, Ruff lint/format checks,
+strict BasedPyright, the complete offline suite and the distribution build
+before the next stage. Final verification passed 312 tests (the original 305
+plus seven regression cases), with zero type errors and warnings. The hardened
+container integration script also passed, including read-only filesystem,
+non-root execution, resource limits, health, MCP smoke calls and shutdown.
+
+The 51-tool inventory, frozen discovery document hashes, synthetic result and
+request parity, vendored specification, dependency lock, lint/type settings and
+deployment configuration are unchanged. No production traffic or deployment
+was needed for verification. No known behavior regression remains from review.

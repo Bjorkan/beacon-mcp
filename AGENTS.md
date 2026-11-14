@@ -58,6 +58,9 @@ the pinned Go handlers only call `parseIATAs` and ignore both parameters.
 
 The Python package lives in `src/beacon_mcp/`; the complete offline tests live
 in `tests/python/`, with language-independent fixtures in `tests/fixtures/`.
+See [the architecture guide](docs/architecture.md) for module responsibilities,
+request flow and tool registration. Shared test helpers belong in `helpers.py`
+and `subscription_helpers.py`; reserve `conftest.py` for pytest fixtures/configuration.
 Use Python 3.13.14, uv 0.11.29 and the committed `uv.lock`:
 
 ```sh
@@ -72,11 +75,9 @@ tests/container/run.sh
 
 The **BasedPyright strict** CI job reads its single
 `[tool.basedpyright]` configuration from `pyproject.toml`.
-The redundant standard-mode Pyright dependency and check have been removed. It checks all Python sources,
-tests, container helpers, and scripts in strict mode. All twelve categories
-from the supplied original 591-error report remain configured as **errors**.
+It checks all Python sources, tests, container helpers, and scripts in strict mode.
+All twelve explicitly configured diagnostic categories remain **errors**.
 `failOnWarnings=true` is retained, so any strict warning also blocks CI.
-The integrated verification passed with **0 errors and 0 warnings**.
 
 BasedPyright and its transitive dependencies are pinned in the
 committed `uv.lock`. CI checks the checked-out repository directly; no
@@ -97,6 +98,11 @@ only for transient network failures or HTTP 502/503/504 **without**
 `Retry-After`; rate limits must not be retried immediately. Error messages
 from upstream 5xx must be redacted. Never log packet/message bodies, auth
 headers, upstream response bodies, stack traces or environment values.
+
+`client.py` owns HTTP transport and classification; `json_stream.py` owns byte/depth
+limits and incremental arrays. `validation.py` owns identifier/date checks and
+JSON object narrowing, while `errors.py` defines shared application failures.
+Keep the client's end-to-end deadline around response decoding and retry delays.
 
 Each of the 51 tools publishes an input/output schema, description and
 read-only/idempotent/open-world hints. The checked-in JSON documents in

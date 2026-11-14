@@ -23,6 +23,7 @@ MAX_MCP_REQUEST_BYTES = 131072
 def create_app(
     config: Config, *, client: BeaconClient | None = None, registry: Registry | None = None
 ) -> Starlette:
+    """Build the gateway; the SDK lifespan opens and closes Beacon resources."""
     beacon = client or BeaconClient(config)
     live = Live(config) if config.subscriptions_enabled else None
     listener = (

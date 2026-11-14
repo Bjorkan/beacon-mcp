@@ -19,6 +19,8 @@ logger = logging.getLogger("beacon_mcp.subscriptions")
 
 
 class Live:
+    """Debounce canonical resource URIs and publish them to the SDK's local bus."""
+
     def __init__(self, config: Config):
         self.config = config
         self.bus = InMemorySubscriptionBus()

@@ -16,6 +16,8 @@ MAX_BYTES = 5_242_880
 
 @dataclass
 class ArrayPage:
+    """A bounded prefix; complete is true only after consuming the entire array."""
+
     items: list[Any]
     complete: bool
 

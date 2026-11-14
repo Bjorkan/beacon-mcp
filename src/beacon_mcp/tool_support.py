@@ -46,7 +46,7 @@ def query(arguments: dict[str, Any], exclude: tuple[str, ...] = ()) -> list[tupl
     return result
 
 
-def page(value: Any, limit: int, include_sort: bool = False) -> dict[str, Any]:
+def page(value: object, limit: int, include_sort: bool = False) -> dict[str, Any]:
     """Limit a page while preserving the upstream cursor values exactly."""
     document = json_object(value)
     raw_items = document.get("items") if document is not None else value

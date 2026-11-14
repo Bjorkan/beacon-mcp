@@ -57,12 +57,12 @@ def main() -> None:
         print(str(error), file=sys.stderr)
         sys.exit(1)
     level = {
-        "fatal": 50,
-        "error": 40,
-        "warn": 30,
-        "info": 20,
-        "debug": 10,
-        "trace": 10,
+        "fatal": logging.CRITICAL,
+        "error": logging.ERROR,
+        "warn": logging.WARNING,
+        "info": logging.INFO,
+        "debug": logging.DEBUG,
+        "trace": logging.DEBUG,
         "silent": 100,
     }[config.log_level]
     logging.basicConfig(level=level, format="%(levelname)s %(name)s %(message)s")

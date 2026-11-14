@@ -65,6 +65,9 @@ Want to run the service, contribute, or understand the implementation? See
 [AGENTS.md](AGENTS.md) for setup, deployment, architecture, security, and test
 details.
 
+For a guided walkthrough of the Python modules and request flow, see
+[the architecture guide](docs/architecture.md).
+
 The gateway currently exposes **51 read-only MCP tools** covering the published
 Beacon Server **2.2.0** public REST GET API, including node activity,
 node-originated observations, neighbors, observer telemetry and adverts,

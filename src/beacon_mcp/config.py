@@ -58,14 +58,14 @@ class Config:
                 raise ValueError(f"{key} must be true or false")
             return value == "true"
 
-        base = public_url(env.get("BEACON_BASE_URL", ""), "BEACON_BASE_URL", ("http", "https"))
-        base = base.rstrip("/") + "/"
-        parts = urlsplit(base)
-        ws = env.get("BEACON_WS_URL") or urlunsplit(
+        base_url = public_url(env.get("BEACON_BASE_URL", ""), "BEACON_BASE_URL", ("http", "https"))
+        base_url = base_url.rstrip("/") + "/"
+        parts = urlsplit(base_url)
+        ws_url = env.get("BEACON_WS_URL") or urlunsplit(
             ("wss" if parts.scheme == "https" else "ws", parts.netloc, "/ws", "", "")
         )
-        public_url(ws, "BEACON_WS_URL", ("ws", "wss"))
-        if not urlsplit(ws).path.endswith("/ws"):
+        public_url(ws_url, "BEACON_WS_URL", ("ws", "wss"))
+        if not urlsplit(ws_url).path.endswith("/ws"):
             raise ValueError("BEACON_WS_URL must end in /ws")
         host = env.get("HOST", "0.0.0.0")
         try:
@@ -76,19 +76,19 @@ class Config:
                 for label in host.split(".")
             ):
                 raise ValueError("HOST must be an IP address or hostname") from None
-        level = env.get("LOG_LEVEL", "info")
-        if level not in ("fatal", "error", "warn", "info", "debug", "trace", "silent"):
+        log_level = env.get("LOG_LEVEL", "info")
+        if log_level not in ("fatal", "error", "warn", "info", "debug", "trace", "silent"):
             raise ValueError("invalid LOG_LEVEL")
         enabled = boolean("BEACON_SUBSCRIPTIONS_ENABLED", True)
         traffic = boolean("BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED", False)
         if traffic and not enabled:
             raise ValueError("Traffic subscriptions require BEACON_SUBSCRIPTIONS_ENABLED=true")
         return cls(
-            base_url=base,
-            ws_url=ws,
+            base_url=base_url,
+            ws_url=ws_url,
             host=host,
             port=integer("PORT", 3000, 1024, 65535),
-            log_level=level,
+            log_level=log_level,
             timeout_ms=integer("BEACON_TIMEOUT_MS", 10000, 100, 120000),
             stats_timeout_ms=integer("BEACON_STATS_TIMEOUT_MS", 20000, 100, 300000),
             shutdown_grace_ms=integer("SHUTDOWN_GRACE_MS", 10000, 100, 60000),

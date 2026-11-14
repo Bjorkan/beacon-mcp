@@ -1,4 +1,4 @@
-"""Allowlisted public GET operations, bounded streaming and classified failures."""
+"""Public GET transport with safe URLs, one retry and an end-to-end deadline."""
 
 import asyncio
 import re
@@ -20,7 +20,7 @@ from beacon_mcp.validation import identifier, json_object
 MAX_URL = 8_192
 
 
-def classify(response: httpx.Response, body: Any) -> GatewayError:
+def classify(response: httpx.Response, body: object) -> GatewayError:
     payload = json_object(body)
     error = json_object(payload.get("error")) if payload is not None else None
     details: dict[str, object] = error if error is not None else {}
@@ -57,6 +57,8 @@ class NoCookies(DefaultCookiePolicy):
 
 
 class BeaconClient:
+    """Issue only allowlisted reads; never accept caller-controlled HTTP details."""
+
     def __init__(self, config: Config, *, transport: httpx.AsyncBaseTransport | None = None):
         self.config = config
         self.http = httpx.AsyncClient(
