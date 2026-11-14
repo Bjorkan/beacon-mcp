@@ -60,5 +60,7 @@ include = ["src/beacon_mcp", "tests/python", "tests/container", "scripts"]
 extraPaths = ["src", "tests/python"]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
+# Do not accept green CI with unresolved Unknown-type warnings.
+failOnWarnings = true
 venvPath = "."
 venv = ".venv"
