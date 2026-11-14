@@ -59,6 +59,62 @@ jobs:
           path: /tmp/beacon-source.tar.gz
           retention-days: 1
 
+  # Temporary non-merging preview used to resolve strict diagnostics against
+  # the combined pending independent typing PRs. Remove after diagnosis.
+  strict-integration-preview:
+    name: Temporary full typing integration diagnostics
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out PR 95 with complete Git history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Compose temporary integration of pending PRs
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "CI Integration Preview"
+          git config user.email "ci-preview@invalid.example"
+          for pr in 80 81 82 83 84 85 86 87 88 89 90 94; do
+            echo "::group::Merge PR $pr into temporary runner checkout"
+            git fetch --no-tags origin "refs/pull/$pr/head:refs/remotes/origin/typing-$pr"
+            git merge --no-ff --no-edit "refs/remotes/origin/typing-$pr"
+            echo "::endgroup::"
+          done
+      - name: Install pinned uv
+        run: pipx install uv==0.11.29
+      - run: uv sync --locked
+      - name: Collect machine-readable full integration diagnostics
+        shell: bash
+        run: |
+          set +e
+          uvx --from basedpyright==1.39.8 basedpyright --outputjson > /tmp/strict-integration.json
+          status=$?
+          set -e
+          python - <<'PY'
+          import json
+          with open("/tmp/strict-integration.json") as stream:
+              report = json.load(stream)
+          print("Combined strict diagnostics:", report["summary"])
+          PY
+          echo "Analyzer exit code: $status"
+      - name: Bundle integrated review snapshot
+        if: always()
+        shell: bash
+        run: |
+          tar --exclude=.git --exclude=.venv --exclude=.pytest_cache -czf /tmp/strict-integrated-source.tar.gz .
+      - name: Upload full integration report and source
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: strict-integrated-review
+          path: |
+            /tmp/strict-integration.json
+            /tmp/strict-integrated-source.tar.gz
+          retention-days: 1
+
   container:
     name: Container verification
     runs-on: ubuntu-latest
