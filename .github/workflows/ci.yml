@@ -33,7 +33,7 @@ jobs:
         run: uv build --no-sources
 
   strict-types:
-    name: BasedPyright strict (1.39.8)
+    name: Pyright
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
