@@ -44,7 +44,8 @@ TOOL_ORDER = json.loads(files("beacon_mcp").joinpath("contracts/tool-order.json"
 
 
 def success(value: Any) -> types.CallToolResult:
-    item_list: object = value.get("items") if isinstance(value, dict) else None
+    document = cast(dict[str, object], value) if isinstance(value, dict) else None
+    item_list: object = document.get("items") if document is not None else None
     count = len(cast(list[object], item_list)) if isinstance(item_list, list) else None
     text = f"Beacon returned {count} item(s)." if count is not None else "Beacon request succeeded."
     return types.CallToolResult(
