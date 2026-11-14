@@ -89,7 +89,9 @@ async def event(lines: AsyncIterator[str], method: str) -> dict[str, Any]:
         async for line in lines:
             if line.startswith("data:"):
                 decoded: object = json.loads(line[5:].strip())
-                if isinstance(decoded, dict) and all(isinstance(key, str) for key in decoded):
+                if isinstance(decoded, dict) and all(
+                    isinstance(key, str) for key in cast(dict[object, object], decoded)
+                ):
                     value = cast(dict[str, Any], decoded)
                     if value.get("method") == method:
                         return value
