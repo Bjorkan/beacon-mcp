@@ -6,6 +6,7 @@ on:
     tags: ["v*"]
   pull_request:
 
+# Cancel superseded runs on main (even during publishing), while keeping PRs and tags isolated.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -95,6 +96,19 @@ jobs:
             type=sha,format=long
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
+      # Concurrency scheduling is not ordered by commit time. Reject a stale
+      # main run before starting a registry push, even if it started later.
+      - name: Verify main is still at this commit
+        if: github.ref == 'refs/heads/main'
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          current_sha="$(git ls-remote --exit-code origin refs/heads/main | cut -f1)"
+          if [ "$current_sha" != "$EXPECTED_SHA" ]; then
+            echo "::error::Refusing to publish stale main commit $EXPECTED_SHA (current: $current_sha)"
+            exit 1
+          fi
       - name: Build and publish image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:

@@ -37,7 +37,12 @@ container verification job. The `test` and `strict-types` jobs run independently
 requires all three to succeed, so a failed or skipped check prevents an image
 from being pushed. Pull requests only verify; they never publish. A successful
 push to `main` (or a `v*` version tag) publishes a new container image to GHCR;
-publishing is not a production deployment.
+publishing is not a production deployment. Each new push to `main` cancels
+older `main` runs (including publishing), while a new PR commit cancels earlier
+runs of the same PR. Version-tag runs remain independent. Before starting
+GHCR publication for `main`, the publish job also verifies that its commit
+still matches the current `main` tip; an outdated run fails closed. Cancellation
+cannot undo an image push that has already completed.
 
 Update the production `BEACON_MCP_IMAGE` digest only after reviewing the
 published image and the target environment. Keep a known-good image digest
