@@ -82,12 +82,12 @@ async def test_reference_result_and_upstream_requests(case: ReferenceCase) -> No
         # Deliberate SDK/JSON Schema validation change: retain rejection and no GETs,
         # not the reference implementation's hand-formatted validation messages.
         assert actual["isError"] is True and actual["content"]
-        structured = actual.get("structuredContent")
-        if isinstance(structured, dict):
-            payload = RESULT.validate_python(structured)
-            error = payload.get("error")
-            if isinstance(error, dict):
-                assert RESULT.validate_python(error).get("code") == "INVALID_ARGUMENT"
+        # Keep the original parity invariant: a present error field must
+        # be a valid object with the expected classification; never skip it.
+        payload = RESULT.validate_python(actual.get("structuredContent", {}))
+        error = payload.get("error")
+        if error is not None:
+            assert RESULT.validate_python(error).get("code") == "INVALID_ARGUMENT"
     else:
         assert actual == case["expected"]
     assert sorted(seen, key=lambda value: json.dumps(value, sort_keys=True)) == case["requests"]
