@@ -98,7 +98,7 @@ jobs:
       - name: Validate integration tests and SDK contracts
         run: uv run --locked pytest
       - name: Analyze all project Python files with BasedPyright strict
-        run: uvx --from basedpyright==1.39.8 basedpyright
+        run: uvx --from basedpyright==1.39.8 basedpyright --project basedpyright-config.json
 
   container:
     name: Container verification
