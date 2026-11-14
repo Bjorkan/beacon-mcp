@@ -28,7 +28,7 @@ class Live:
         if self.closed or not isinstance(data, dict):
             return
         # Beacon frames are JSON objects; validate at the untrusted event boundary.
-        if not all(isinstance(key, str) for key in data):
+        if not all(isinstance(key, str) for key in cast(dict[object, object], data)):
             return
         fields = cast(dict[str, object], data)
         kind: str
@@ -93,7 +93,9 @@ async def connect_once(
     try:
         response: object = await client.request(Operation.WsTicket)
         ticket: object = None
-        if isinstance(response, dict) and all(isinstance(key, str) for key in response):
+        if isinstance(response, dict) and all(
+            isinstance(key, str) for key in cast(dict[object, object], response)
+        ):
             ticket = cast(dict[str, object], response).get("ticket")
         if not isinstance(ticket, str) or not re.fullmatch(r"[\x20-\x7e]{1,4096}", ticket):
             raise ValueError("invalid WebSocket ticket")
@@ -138,7 +140,9 @@ async def connect_once(
                 decoded: object = json.loads(frame)
             except (ValueError, RecursionError):
                 continue
-            if not isinstance(decoded, dict) or not all(isinstance(key, str) for key in decoded):
+            if not isinstance(decoded, dict) or not all(
+                isinstance(key, str) for key in cast(dict[object, object], decoded)
+            ):
                 continue
             message = cast(dict[str, object], decoded)
             if type(message.get("v")) is not int or message["v"] != 1:
