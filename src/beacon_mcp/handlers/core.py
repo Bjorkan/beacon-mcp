@@ -1,7 +1,7 @@
 """Nine original server, node, observer and location tools."""
 
 from functools import partial
-from typing import Any
+from typing import Any, cast
 
 from beacon_mcp.client import BeaconClient, GatewayError, Operation, invalid
 from beacon_mcp.runtime import Registry
@@ -60,9 +60,9 @@ async def execute(name: str, client: BeaconClient, args: dict[str, Any]) -> Any:
         if not isinstance(source, list):
             raise GatewayError("UNAVAILABLE", "Beacon returned invalid scopes")
         offset = args.get("cursor", 0)
-        items = source[offset : offset + limit]
+        items = cast(list[object], source)[offset : offset + limit]
         next_offset = offset + len(items)
-        pagination = (
+        pagination: dict[str, Any] = (
             {"hasMore": True, "nextCursor": {"cursor": next_offset}}
             if next_offset < len(source)
             else {"hasMore": False}
