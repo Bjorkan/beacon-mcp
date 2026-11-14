@@ -1,6 +1,6 @@
 import asyncio
 import json
-from collections.abc import AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncIterator, Callable, Coroutine
 from typing import Never
 
 import httpx
@@ -10,7 +10,7 @@ from beacon_mcp.client import MAX_BYTES, BeaconClient, GatewayError, Operation
 from beacon_mcp.config import Config
 
 MockHandler = (
-    Callable[[httpx.Request], httpx.Response] | Callable[[httpx.Request], Awaitable[httpx.Response]]
+    Callable[[httpx.Request], httpx.Response] | Callable[[httpx.Request], Coroutine[None, None, httpx.Response]]
 )
 
 
