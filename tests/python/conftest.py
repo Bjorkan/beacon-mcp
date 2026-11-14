@@ -1,6 +1,6 @@
 """Typed shared ASGI/HTTPX fixtures for the frozen MCP contract tests."""
 
-from collections.abc import AsyncGenerator, Awaitable, Callable
+from collections.abc import AsyncGenerator, Callable, Coroutine
 from contextlib import asynccontextmanager
 from typing import Any, cast
 
@@ -14,7 +14,7 @@ from beacon_mcp.runtime import Registry
 
 # HTTPX supports both synchronous and asynchronous MockTransport callbacks.
 MockHandler = (
-    Callable[[httpx.Request], httpx.Response] | Callable[[httpx.Request], Awaitable[httpx.Response]]
+    Callable[[httpx.Request], httpx.Response] | Callable[[httpx.Request], Coroutine[None, None, httpx.Response]]
 )
 
 META = {
