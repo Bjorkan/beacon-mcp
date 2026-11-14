@@ -21,7 +21,7 @@ from beacon_mcp.validation import json_object
 INTEGER = TypeAdapter(int)
 INTEGERS = TypeAdapter(list[int])
 
-Handler = Callable[[BeaconClient, dict[str, Any]], Awaitable[Any]]
+Handler = Callable[[BeaconClient, dict[str, Any]], Awaitable[object]]
 
 
 def load_contracts() -> dict[str, Any]:
@@ -43,7 +43,7 @@ TOOL_ORDER: list[str] = json.loads(
 )
 
 
-def success(value: Any) -> types.CallToolResult:
+def success(value: object) -> types.CallToolResult:
     text = "Beacon request succeeded."
     if isinstance(value, dict):
         document = cast(dict[str, object], value)
@@ -57,7 +57,7 @@ def success(value: Any) -> types.CallToolResult:
     )
 
 
-def tool_error(text: str, details: dict[str, Any] | None = None) -> types.CallToolResult:
+def tool_error(text: str, details: dict[str, object] | None = None) -> types.CallToolResult:
     content: list[types.ContentBlock] = [types.TextContent(type="text", text=text)]
     if details is None:
         return types.CallToolResult(content=content, is_error=True)
@@ -76,7 +76,7 @@ def upstream_error(error: GatewayError) -> types.CallToolResult:
         "UNAVAILABLE": "BeaconUpstreamError",
         "INTERNAL": "BeaconInternalError",
     }[error.code]
-    details: dict[str, Any] = {"code": error.code, "type": kind}
+    details: dict[str, object] = {"code": error.code, "type": kind}
     if error.status is not None:
         details["status"] = error.status
     if error.upstream_code is not None:
@@ -171,7 +171,7 @@ def create_server(
     registry: Registry | None = None,
     *,
     on_subscriptions_listen: ListenHandler | None = None,
-    lifespan: Callable[[Server], AbstractAsyncContextManager[dict[str, Any]]] | None = None,
+    lifespan: Callable[[Server], AbstractAsyncContextManager[dict[str, object]]] | None = None,
 ) -> Server:
     registry = registry if registry is not None else default_registry()
 

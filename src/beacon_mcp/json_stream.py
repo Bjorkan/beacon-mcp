@@ -3,7 +3,7 @@
 import json
 from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import cast
 
 import httpx
 import ijson
@@ -18,7 +18,7 @@ MAX_BYTES = 5_242_880
 class ArrayPage:
     """A bounded prefix; complete is true only after consuming the entire array."""
 
-    items: list[Any]
+    items: list[object]
     complete: bool
 
 
@@ -35,7 +35,7 @@ async def read_bounded(response: httpx.Response) -> bytes:
 
 
 async def read_array(response: httpx.Response, max_items: int) -> ArrayPage:
-    items: list[Any] = []
+    items: list[object] = []
     pending: list[object] = ijson.sendable_list()
     parser = ijson.items_coro(pending, "item", use_float=True)
     mode: str | None = None
@@ -111,7 +111,7 @@ class JsonDepthGuard:
                 self.depth -= 1
 
 
-def decode_json(data: bytes | bytearray) -> Any:
+def decode_json(data: bytes | bytearray) -> object:
     def nonfinite(_value: str) -> None:
         raise ValueError("invalid JSON number")
 

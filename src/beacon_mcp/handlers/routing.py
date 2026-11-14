@@ -24,7 +24,7 @@ def register(registry: Registry) -> None:
         registry.register(name, partial(execute, name))
 
 
-async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) -> Any:
+async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) -> object:
     arguments = dict(arguments)
     validate_arguments(name, arguments)
     for key in ("from", "to", "fromHash", "toHash"):

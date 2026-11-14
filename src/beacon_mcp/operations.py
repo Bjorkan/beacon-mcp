@@ -58,7 +58,7 @@ class Operation(Enum):
     TopTalkers = ("stats/top-talkers", "", True)
 
 
-ARRAY_OPERATIONS = frozenset(
+ARRAY_OPERATIONS: frozenset[Operation] = frozenset(
     {
         Operation.Iatas,
         Operation.Regions,

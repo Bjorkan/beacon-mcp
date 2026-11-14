@@ -5,7 +5,7 @@ import re
 import secrets
 from http import HTTPStatus
 from http.cookiejar import CookieJar, DefaultCookiePolicy
-from typing import Any, cast
+from typing import cast, overload
 from urllib.parse import quote, urlencode
 
 import httpx
@@ -112,7 +112,7 @@ class BeaconClient:
         operation: Operation,
         id: str | None = None,
         query: list[tuple[str, str]] | None = None,
-    ) -> Any:
+    ) -> object:
         return await self._get(operation, id, query or [], None)
 
     async def array_page(
@@ -126,13 +126,31 @@ class BeaconClient:
             raise invalid("invalid array page request")
         return await self._get(operation, id, query or [], max_items)
 
+    @overload
+    async def _get(
+        self,
+        operation: Operation,
+        id: str | None,
+        query: list[tuple[str, str]],
+        max_items: None,
+    ) -> object: ...
+
+    @overload
+    async def _get(
+        self,
+        operation: Operation,
+        id: str | None,
+        query: list[tuple[str, str]],
+        max_items: int,
+    ) -> ArrayPage: ...
+
     async def _get(
         self,
         operation: Operation,
         id: str | None,
         query: list[tuple[str, str]],
         max_items: int | None,
-    ) -> Any:
+    ) -> object:
         url = self.url(operation, id, query)
         timeout = (
             self.config.stats_timeout_ms if operation.value[2] else self.config.timeout_ms
@@ -169,7 +187,7 @@ class BeaconClient:
         raise GatewayError("UNAVAILABLE", "Beacon retry attempts exhausted")
 
 
-async def read_response(response: httpx.Response, max_items: int | None) -> Any:
+async def read_response(response: httpx.Response, max_items: int | None) -> object:
     """Decode a response within the caller's deadline, without inflating it."""
     if response.status_code == 204 and max_items is None:
         return None

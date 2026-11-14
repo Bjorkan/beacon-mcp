@@ -40,7 +40,7 @@ async def execute_extra(
     shape: ResponseShape,
     client: BeaconClient,
     arguments: dict[str, Any],
-) -> Any:
+) -> object:
     validate_arguments(operation, arguments)
     resource_id = arguments.get("id")
     exclude = ("id", "pathKey", "limit")

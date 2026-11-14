@@ -3,7 +3,6 @@
 import asyncio
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any
 
 from mcp.server.lowlevel import Server
 from mcp.server.subscriptions import ListenHandler
@@ -33,8 +32,10 @@ def create_app(
     )
 
     @asynccontextmanager
-    async def beacon_lifespan(_server: Server) -> AsyncGenerator[dict[str, Any]]:
-        task = asyncio.create_task(bridge(beacon, live)) if live is not None else None
+    async def beacon_lifespan(_server: Server) -> AsyncGenerator[dict[str, object]]:
+        task: asyncio.Task[None] | None = (
+            asyncio.create_task(bridge(beacon, live)) if live is not None else None
+        )
         app.state.bridge_task = task
         try:
             yield {}

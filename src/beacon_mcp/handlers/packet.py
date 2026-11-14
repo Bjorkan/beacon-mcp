@@ -42,7 +42,7 @@ def register(registry: Registry) -> None:
         registry.register(name, partial(execute, name))
 
 
-async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) -> Any:
+async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) -> object:
     arguments = dict(arguments)
     prepare_arguments(name, arguments)
     operation = OPERATIONS[name]

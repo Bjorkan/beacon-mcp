@@ -16,7 +16,7 @@ def register(registry: Registry) -> None:
     registry.register("beacon_compare_regions", compare_regions)
 
 
-async def diagnose_node(client: BeaconClient, arguments: dict[str, Any]) -> Any:
+async def diagnose_node(client: BeaconClient, arguments: dict[str, Any]) -> dict[str, object]:
     node_id = identifier("uuid", arguments["id"])
     range_value = arguments.get("range", "24h")
     limit = arguments.get("neighborLimit", 10)
@@ -35,7 +35,7 @@ async def diagnose_node(client: BeaconClient, arguments: dict[str, Any]) -> Any:
     }
 
 
-async def compare_regions(client: BeaconClient, arguments: dict[str, Any]) -> Any:
+async def compare_regions(client: BeaconClient, arguments: dict[str, Any]) -> dict[str, object]:
     iata_a = arguments["iataA"].strip().upper()
     iata_b = arguments["iataB"].strip().upper()
     if iata_a == iata_b:
