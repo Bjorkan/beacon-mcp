@@ -4,11 +4,13 @@ import datetime
 import re
 import sys
 from pathlib import Path
-from urllib.request import HTTPRedirectHandler, build_opener
+from urllib.request import HTTPRedirectHandler, Request, build_opener
 
 
 class NoRedirect(HTTPRedirectHandler):
-    def redirect_request(self, *_args, **_kwargs):
+    def redirect_request(
+        self, req: Request, fp: object, code: int, msg: str, headers: object, newurl: str
+    ) -> None:
         raise ValueError("Swagger source redirected unexpectedly")
 
 
