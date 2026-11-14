@@ -1,4 +1,4 @@
-"""Typed shared ASGI/HTTPX fixtures for the frozen MCP contract tests."""
+"""Typed shared ASGI/HTTPX helpers for the frozen MCP contract tests."""
 
 from collections.abc import AsyncGenerator, Callable, Coroutine
 from contextlib import asynccontextmanager
@@ -13,12 +13,12 @@ from beacon_mcp.config import Config
 from beacon_mcp.runtime import Registry
 
 # HTTPX supports both synchronous and asynchronous MockTransport callbacks.
-MockHandler = (
+type MockHandler = (
     Callable[[httpx.Request], httpx.Response]
     | Callable[[httpx.Request], Coroutine[None, None, httpx.Response]]
 )
 
-META = {
+META: dict[str, object] = {
     "io.modelcontextprotocol/protocolVersion": "2026-07-28",
     "io.modelcontextprotocol/clientInfo": {"name": "parity-test", "version": "1"},
     "io.modelcontextprotocol/clientCapabilities": {},
@@ -47,7 +47,7 @@ async def gateway(
             yield http
 
 
-async def rpc(http: httpx.AsyncClient, method: str, **params: Any) -> dict[str, Any]:
+async def rpc(http: httpx.AsyncClient, method: str, **params: object) -> dict[str, Any]:
     identifier: object = params.get("name", params.get("uri"))
     headers = {
         "Accept": "application/json, text/event-stream",

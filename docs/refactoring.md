@@ -57,9 +57,9 @@ exact cursors, ignored malformed frames, valid pongs and wrong pong IDs.
 Configuration, application lifespan and access logging retain their existing
 structure: they already have clear boundaries and use supported SDK APIs.
 Local configuration names, log level constants, prompt text layout and module
-docstrings received small readability improvements. Dynamic JSON arguments and
-results retain `Any` where the SDK/upstream boundary warrants it; opaque inputs
-use `object` where sufficient. No dependencies or type-checking rules changed.
+docstrings received small readability improvements. Schema-driven tool
+arguments retain `Any` where their JSON Schema boundary warrants it; opaque
+inputs and results use `object`. No dependencies or type-checking rules changed.
 
 Ruff's naming and complexity rules were evaluated without changing the required
 lint configuration. Naming checks passed. A blanket complexity threshold would
@@ -86,7 +86,7 @@ backfill resolves regions. Route evidence carries an opaque window-bound
 cursor. The gateway continues to pass those values through unchanged.
 The Swagger parity and synthetic baseline tests retain these exceptions.
 
-## Verification
+## Initial refactoring verification
 
 Every implementation stage passed the locked sync, Ruff lint/format checks,
 strict BasedPyright, the complete offline suite and the distribution build
@@ -99,3 +99,43 @@ The 51-tool inventory, frozen discovery document hashes, synthetic result and
 request parity, vendored specification, dependency lock, lint/type settings and
 deployment configuration are unchanged. No production traffic or deployment
 was needed for verification. No known behavior regression remains from review.
+
+## Typing follow-up
+
+The follow-up starts from `873e271` and reviews all 51 Python files, including
+tests, container helpers and scripts. Every ordinary function now annotates its
+parameters and return value (except the conventional `self`/`cls` parameters).
+Missing return annotations in constructors and async tests were completed.
+Shared operation tables, callback aliases, ASGI byte headers, lifecycle tasks
+and externally useful instance attributes have explicit types. Obvious local
+values continue to use inference.
+
+HTTP and JSON decoding now return `object`, array items are `list[object]`, and
+handlers return opaque results rather than propagating `Any`. Two overloads
+describe the client's ordinary/array read modes. `Page` and `Pagination` are
+TypedDicts for the gateway's known result structure, with optional opaque cursor
+and sort metadata. `ResponseShape` limits registration to the existing three
+shape strings without changing runtime dispatch.
+
+Composite requests retain their individual tasks and retrieve typed results
+after `wait_for_tasks()` finishes. The helper preserves the existing gather,
+cancellation and sibling cleanup behavior without heterogeneous `list[Any]`
+results or new generic machinery. The SDK's generic server/request contexts
+carry the actual dictionary lifespan state. Remaining `Any` uses are limited
+to varying schema-driven arguments/contracts, SDK keyword forwarding and nested
+test RPC/SSE payloads. Existing guarded casts at JSON container boundaries
+remain; no new casts, ignores, dependencies or relaxed diagnostics were added.
+
+All 312 existing cases remain, with two additional regressions for complete
+composite cancellation cleanup and pass-through of opaque pagination metadata.
+The latest published upstream release/tag was rechecked and still resolves to
+the same immutable commit recorded above; integration rules and contracts are
+unchanged. Ruff naming checks pass. Complexity checks were evaluated again;
+remaining branches describe endpoint/protocol constraints and do not justify
+additional helpers solely to meet a numerical threshold.
+
+Final follow-up verification passed the locked sync, Ruff lint/format checks,
+strict BasedPyright with zero errors and warnings, all 314 offline cases,
+distribution builds and hardened container integration. Frozen contracts,
+fixtures, upstream pins, dependencies, deployment files and CI gates remain
+unchanged. No known behavior regression remains from this follow-up review.

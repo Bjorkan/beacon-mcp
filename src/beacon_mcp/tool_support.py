@@ -1,5 +1,6 @@
 """Shared bounded transformations for public read-only tools."""
 
+from collections.abc import Mapping
 from typing import Any, NotRequired, TypedDict, cast
 
 from beacon_mcp.errors import GatewayError, invalid
@@ -25,7 +26,9 @@ class Page(TypedDict):
 
 
 def location(
-    arguments: dict[str, Any], *, region_message: str = "region and regionId are mutually exclusive"
+    arguments: Mapping[str, object],
+    *,
+    region_message: str = "region and regionId are mutually exclusive",
 ) -> None:
     """Reject competing spellings of the same location filter."""
     if "region" in arguments and "regionId" in arguments:

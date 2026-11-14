@@ -103,6 +103,12 @@ headers, upstream response bodies, stack traces or environment values.
 limits and incremental arrays. `validation.py` owns identifier/date checks and
 JSON object narrowing, while `errors.py` defines shared application failures.
 Keep the client's end-to-end deadline around response decoding and retry delays.
+Raw Beacon JSON stays `object` until narrowed; array elements remain `object`.
+Use the `Page` and `Pagination` TypedDicts for gateway-built result envelopes,
+and preserve opaque cursor/sort values. Keep `Any` at documented schema/SDK/test
+boundaries rather than letting it propagate through HTTP results or async tasks.
+Annotate function parameters/returns and shared data explicitly; rely on inference
+for obvious local values. See the architecture guide's type-boundary explanation.
 
 Each of the 51 tools publishes an input/output schema, description and
 read-only/idempotent/open-world hints. The checked-in JSON documents in

@@ -12,11 +12,11 @@ class GatewayError(Exception):
         retry_after: str | None = None,
     ) -> None:
         super().__init__(message)
-        self.code = code
-        self.message = message
-        self.status = status
-        self.upstream_code = upstream_code
-        self.retry_after = retry_after
+        self.code: str = code
+        self.message: str = message
+        self.status: int | None = status
+        self.upstream_code: str | None = upstream_code
+        self.retry_after: str | None = retry_after
 
 
 def invalid(message: str) -> GatewayError:

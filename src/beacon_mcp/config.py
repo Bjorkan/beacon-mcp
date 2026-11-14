@@ -11,9 +11,9 @@ from urllib.parse import urlsplit, urlunsplit
 def public_url(value: str, name: str, schemes: tuple[str, ...]) -> str:
     try:
         parts = urlsplit(value)
-        valid = (
+        valid: bool = (
             parts.scheme in schemes
-            and parts.hostname
+            and bool(parts.hostname)
             and parts.port != 0
             and "@" not in parts.netloc
             and "?" not in value

@@ -12,7 +12,7 @@ from beacon_mcp.errors import GatewayError
 from beacon_mcp.operations import Operation
 from beacon_mcp.validation import identifier
 
-RESOURCE_OPERATIONS = {
+RESOURCE_OPERATIONS: dict[str, tuple[Operation, str]] = {
     "nodes": (Operation.Node, "uuid"),
     "observers": (Operation.Observer, "uuid"),
     "packets": (Operation.Packet, "hash"),
@@ -40,14 +40,14 @@ def parse_uri(uri: str) -> tuple[str, str] | None:
     return kind, id
 
 
-def register(server: Server, client: BeaconClient) -> None:
+def register(server: Server[dict[str, object]], client: BeaconClient) -> None:
     async def list_resources(
-        _ctx: ServerRequestContext, _params: types.PaginatedRequestParams
+        _ctx: ServerRequestContext[dict[str, object]], _params: types.PaginatedRequestParams
     ) -> types.ListResourcesResult:
         return types.ListResourcesResult(resources=[])
 
     async def templates(
-        _ctx: ServerRequestContext, _params: types.PaginatedRequestParams
+        _ctx: ServerRequestContext[dict[str, object]], _params: types.PaginatedRequestParams
     ) -> types.ListResourceTemplatesResult:
         return types.ListResourceTemplatesResult(
             resource_templates=[
@@ -63,7 +63,7 @@ def register(server: Server, client: BeaconClient) -> None:
         )
 
     async def read(
-        _ctx: ServerRequestContext, params: types.ReadResourceRequestParams
+        _ctx: ServerRequestContext[dict[str, object]], params: types.ReadResourceRequestParams
     ) -> types.ReadResourceResult:
         parsed = parse_uri(str(params.uri))
         if parsed is None:

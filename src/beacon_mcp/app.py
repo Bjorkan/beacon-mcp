@@ -32,7 +32,9 @@ def create_app(
     )
 
     @asynccontextmanager
-    async def beacon_lifespan(_server: Server) -> AsyncGenerator[dict[str, object]]:
+    async def beacon_lifespan(
+        _server: Server[dict[str, object]],
+    ) -> AsyncGenerator[dict[str, object]]:
         task: asyncio.Task[None] | None = (
             asyncio.create_task(bridge(beacon, live)) if live is not None else None
         )

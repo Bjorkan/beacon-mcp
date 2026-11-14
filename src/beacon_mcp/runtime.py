@@ -21,7 +21,9 @@ from beacon_mcp.validation import json_object
 INTEGER = TypeAdapter(int)
 INTEGERS = TypeAdapter(list[int])
 
-Handler = Callable[[BeaconClient, dict[str, Any]], Awaitable[object]]
+# Argument shapes and JSON Schema keywords differ between frozen tools. The
+# schemas validate those dynamic values before any Beacon-specific handler runs.
+type Handler = Callable[[BeaconClient, dict[str, Any]], Awaitable[object]]
 
 
 def load_contracts() -> dict[str, Any]:
@@ -171,26 +173,28 @@ def create_server(
     registry: Registry | None = None,
     *,
     on_subscriptions_listen: ListenHandler | None = None,
-    lifespan: Callable[[Server], AbstractAsyncContextManager[dict[str, object]]] | None = None,
-) -> Server:
+    lifespan: Callable[[Server[dict[str, object]]], AbstractAsyncContextManager[dict[str, object]]]
+    | None = None,
+) -> Server[dict[str, object]]:
     registry = registry if registry is not None else default_registry()
 
     async def list_tools(
-        _ctx: ServerRequestContext, _params: types.PaginatedRequestParams | None
+        _ctx: ServerRequestContext[dict[str, object]], _params: types.PaginatedRequestParams | None
     ) -> types.ListToolsResult:
         return types.ListToolsResult(tools=registry.list_tools())
 
     async def call_tool(
-        _ctx: ServerRequestContext, params: types.CallToolRequestParams
+        _ctx: ServerRequestContext[dict[str, object]], params: types.CallToolRequestParams
     ) -> types.CallToolResult:
         return await registry.call(client, params.name, params.arguments or {})
 
+    # Omit the option when absent to preserve the SDK's own default lifespan.
     options: dict[str, Any] = {"lifespan": lifespan} if lifespan is not None else {}
 
     def input_schema(name: str) -> dict[str, Any] | None:
         return CONTRACTS[name]["inputSchema"] if name in registry.handlers else None
 
-    server = Server(
+    server: Server[dict[str, object]] = Server(
         "beacon-mcp",
         version=__version__,
         on_list_tools=list_tools,

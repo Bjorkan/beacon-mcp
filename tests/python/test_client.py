@@ -112,7 +112,9 @@ async def test_retry_exactly_once() -> None:
 
 class Chunks(httpx.AsyncByteStream):
     def __init__(self, pieces: list[bytes]) -> None:
-        self.pieces, self.count, self.closed = pieces, 0, False
+        self.pieces: list[bytes] = pieces
+        self.count: int = 0
+        self.closed: bool = False
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
         for piece in self.pieces:

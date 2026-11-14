@@ -29,16 +29,16 @@ PROMPTS = [
 ]
 
 
-def register(server: Server) -> None:
+def register(server: Server[dict[str, object]]) -> None:
     async def list_prompts(
-        _ctx: ServerRequestContext, _params: types.PaginatedRequestParams
+        _ctx: ServerRequestContext[dict[str, object]], _params: types.PaginatedRequestParams
     ) -> types.ListPromptsResult:
         return types.ListPromptsResult(
             prompts=[types.Prompt.model_validate(prompt) for prompt in PROMPTS]
         )
 
     async def get(
-        _ctx: ServerRequestContext, params: types.GetPromptRequestParams
+        _ctx: ServerRequestContext[dict[str, object]], params: types.GetPromptRequestParams
     ) -> types.GetPromptResult:
         def argument(key: str) -> str:
             value = (params.arguments or {}).get(key)

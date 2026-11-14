@@ -85,6 +85,31 @@ these failures to tool results. JSON Schema errors become invalid-argument tool
 results; malformed MCP requests and unexpected exceptions remain SDK errors.
 Resources and prompts translate their own application errors to MCP errors.
 
+## Type boundaries
+
+Raw JSON from `decode_json()` and `BeaconClient.request()` is `object`: the
+caller must inspect its shape before accessing fields. `ArrayPage.items` is
+`list[object]`; knowing that a response is an array does not establish its item
+types. The client's overloads distinguish ordinary reads from bounded array reads
+without casting an unknown result to `ArrayPage`.
+
+`Page` and `Pagination` in `tool_support.py` describe the dictionaries the gateway
+builds itself. They are `TypedDict` annotations, so the actual results remain
+ordinary dictionaries. Optional cursor and sort values stay opaque to preserve
+upstream behavior. Additional endpoint registration uses the three literal
+`ResponseShape` values: `array`, `page` and `object`.
+
+Handlers return `object`, and composite handlers keep individually typed tasks
+until all related reads finish. `wait_for_tasks()` handles cancellation and
+cleanup without erasing the tasks' result types. SDK server/request contexts
+and application lifespans use `dict[str, object]` for their shared context.
+
+`Any` remains in schema-driven tool arguments and JSON Schema documents because
+their fields vary across tools. The frozen schema validates arguments before a
+handler sees them. Test RPC/SSE helpers also leave nested payloads dynamic so
+tests can exercise malformed protocol shapes. These boundaries do not weaken
+the strict type-checking settings or introduce runtime coercion of Beacon data.
+
 ## Add a tool
 
 1. Follow the upstream release review in `AGENTS.md`; inspect the released

@@ -88,9 +88,9 @@ class JsonDepthGuard:
     """Reject excessive nesting before the streaming parser allocates a tree."""
 
     def __init__(self) -> None:
-        self.depth = 0
-        self.quoted = False
-        self.escaped = False
+        self.depth: int = 0
+        self.quoted: bool = False
+        self.escaped: bool = False
 
     def feed(self, chunk: bytes) -> None:
         for byte in chunk:
