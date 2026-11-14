@@ -184,6 +184,13 @@ gateway does not trust `X-Forwarded-*`. Do not buffer subscription SSE streams.
 The offline tests mock upstream REST/WebSocket behavior. Live checks against
 `beacon.meshat.se` must remain small and read-only; do not print message or
 packet contents or commit production smoke scripts. Keep stacked PRs buildable; satisfy the complete test, container and CI gates
-before merge. PR readiness follows the maintainer's explicit instructions; do not merge
+before merge. The single `.github/workflows/ci.yml` runs `test` and
+`strict-types` as independent Python gates; `container` depends on both, and
+`publish-image` depends explicitly on `test`, `strict-types`, and `container`.
+Do not remove these publish dependencies: a failed or skipped gate must block
+GHCR publication. Pull requests verify without publishing; only successful
+pushes to `main` or `v*` tags may publish. GitHub branch protection / rulesets
+are separate repository settings and should require successful checks for merges.
+PR readiness follows the maintainer's explicit instructions; do not merge
 automatically. An upstream outage produces a tool error, not an unhealthy
 gateway or a runaway retry loop.

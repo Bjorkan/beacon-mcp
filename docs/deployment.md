@@ -32,9 +32,12 @@ Health/readiness reports process availability without probing Beacon.
 
 The Python SDK v2 migration is already merged into `main`. Pull requests
 are checked by Ruff, BasedPyright strict, pytest, distribution build and the
-container verification job. A successful push to `main` (or an approved
-version tag) publishes a new container image to GHCR; publishing is not a
-production deployment.
+container verification job. The `test` and `strict-types` jobs run independently;
+`container` requires both to succeed. The `publish-image` job explicitly
+requires all three to succeed, so a failed or skipped check prevents an image
+from being pushed. Pull requests only verify; they never publish. A successful
+push to `main` (or a `v*` version tag) publishes a new container image to GHCR;
+publishing is not a production deployment.
 
 Update the production `BEACON_MCP_IMAGE` digest only after reviewing the
 published image and the target environment. Keep a known-good image digest
