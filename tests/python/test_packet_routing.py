@@ -3,9 +3,9 @@ from pathlib import Path
 
 import httpx
 import pytest
-from conftest import gateway, rpc
 
 from beacon_mcp.handlers import packet, routing
+from tests.python.conftest import gateway, rpc
 
 CASES = [
     (
