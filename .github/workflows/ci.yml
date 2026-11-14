@@ -86,21 +86,6 @@ jobs:
       - name: Install pinned uv
         run: pipx install uv==0.11.29
       - run: uv sync --locked
-      - name: TEMPORARY produce transitive-locked BasedPyright dev dependency
-        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 95 }}
-        shell: bash
-        run: |
-          uv add --dev --no-sync 'basedpyright==1.39.8'
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          for filename, key in (("pyproject.toml", "project"), ("uv.lock", "lock")):
-              data = Path(filename).read_text()
-              print("LOCK_BEGIN:" + key)
-              for i in range(0, len(data), 1200):
-                  print("LOCK_CHUNK:" + key + ":" + str(i) + ":" + json.dumps(data[i:i+1200]))
-              print("LOCK_END:" + key)
-          PY
       - name: Normalize import blocks after ephemeral test-file merges
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 95 }}
         run: |
@@ -113,7 +98,7 @@ jobs:
       - name: Validate integration tests and SDK contracts
         run: uv run --locked pytest
       - name: Analyze all project Python files with BasedPyright strict
-        run: uvx --from basedpyright==1.39.8 basedpyright --project basedpyright-config.json
+        run: uv run --locked basedpyright --project basedpyright-config.json
 
   container:
     name: Container verification
