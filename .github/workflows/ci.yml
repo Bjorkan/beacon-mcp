@@ -80,9 +80,15 @@ jobs:
           for pr in 80 81 82 83 84 85 86 87 88 89 90 94; do
             echo "::group::Merge PR $pr into temporary runner checkout"
             git fetch --no-tags origin "refs/pull/$pr/head:refs/remotes/origin/typing-$pr"
-            git merge --no-ff --no-edit "refs/remotes/origin/typing-$pr"
+            # Prefer each PR's dedicated test edits if a conflict touches
+            # the package-qualified fixture imports installed by PR 95.
+            git merge --no-ff --no-edit -X theirs "refs/remotes/origin/typing-$pr"
             echo "::endgroup::"
           done
+          # Retain the explicit test-package import resolution from PR 95
+          # after merging each independently developed test PR.
+          sed -i 's/^from conftest import /from tests.python.conftest import /' tests/python/test_*.py
+          sed -i 's/^from test_subscriptions import /from tests.python.test_subscriptions import /' tests/python/test_*.py
       - name: Install pinned uv
         run: pipx install uv==0.11.29
       - run: uv sync --locked
