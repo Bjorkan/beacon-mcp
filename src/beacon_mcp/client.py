@@ -265,10 +265,12 @@ class BeaconClient:
         timeout = (
             self.config.stats_timeout_ms if operation.value[2] else self.config.timeout_ms
         ) / 1000
+        # One end-to-end request budget, including jitter and an optional retry.
+        deadline = asyncio.get_running_loop().time() + timeout
         for attempt in range(2):
             try:
                 # HTTPX's inactivity timeout alone doesn't bound a slow-drip body.
-                async with asyncio.timeout(timeout):
+                async with asyncio.timeout_at(deadline):
                     async with self.http.stream("GET", url, timeout=timeout) as response:
                         if response.status_code == 204 and max_items is None:
                             return None
@@ -308,7 +310,13 @@ class BeaconClient:
             except httpx.TransportError:
                 if attempt:
                     raise GatewayError("UNAVAILABLE", "Beacon is temporarily unavailable") from None
-            await asyncio.sleep((25 + secrets.randbelow(50)) / 1000)
+            try:
+                # Include retry backoff in the same deadline; otherwise a slow
+                # first attempt could double the configured request budget.
+                async with asyncio.timeout_at(deadline):
+                    await asyncio.sleep((25 + secrets.randbelow(50)) / 1000)
+            except TimeoutError:
+                raise GatewayError("DEADLINE_EXCEEDED", "Beacon request timed out") from None
         raise GatewayError("UNAVAILABLE", "Beacon retry attempts exhausted")
 
 
