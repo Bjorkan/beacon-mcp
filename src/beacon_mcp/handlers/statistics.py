@@ -1,7 +1,7 @@
 """Eleven public statistics tools using the analytics timeout and array bounds."""
 
-from beacon_mcp.client import Operation
 from beacon_mcp.extra_support import register_operations
+from beacon_mcp.operations import Operation
 from beacon_mcp.runtime import Registry
 
 OPERATIONS = {

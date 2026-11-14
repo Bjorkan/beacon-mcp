@@ -3,7 +3,9 @@
 from functools import partial
 from typing import Any
 
-from beacon_mcp.client import BeaconClient, Operation, invalid
+from beacon_mcp.client import BeaconClient
+from beacon_mcp.errors import invalid
+from beacon_mcp.operations import Operation
 from beacon_mcp.runtime import Registry
 from beacon_mcp.tool_support import location, page, query
 

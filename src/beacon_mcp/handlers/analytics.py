@@ -3,9 +3,12 @@
 from functools import partial
 from typing import Any
 
-from beacon_mcp.client import BeaconClient, Operation, identifier, invalid
+from beacon_mcp.client import BeaconClient
+from beacon_mcp.errors import invalid
+from beacon_mcp.operations import Operation
 from beacon_mcp.runtime import Registry
 from beacon_mcp.tool_support import array_result, location, query
+from beacon_mcp.validation import identifier
 
 OPERATIONS = {
     "beacon_get_top_advertisers": Operation.TopAdvertisers,

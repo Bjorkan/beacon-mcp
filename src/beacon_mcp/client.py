@@ -1,165 +1,23 @@
 """Allowlisted public GET operations, bounded streaming and classified failures."""
 
 import asyncio
-import json
 import re
 import secrets
-import uuid
-from collections.abc import Iterator
-from dataclasses import dataclass
-from enum import Enum
 from http import HTTPStatus
 from http.cookiejar import CookieJar, DefaultCookiePolicy
 from typing import Any, cast
 from urllib.parse import quote, urlencode
 
 import httpx
-import ijson
 
 from beacon_mcp.config import Config
+from beacon_mcp.errors import GatewayError, invalid
+from beacon_mcp.json_stream import MAX_BYTES as MAX_BYTES
+from beacon_mcp.json_stream import ArrayPage, decode_json, read_array, read_bounded
+from beacon_mcp.operations import ARRAY_OPERATIONS, Operation
+from beacon_mcp.validation import identifier, json_object
 
-MAX_BYTES = 5_242_880
 MAX_URL = 8_192
-
-
-class Operation(Enum):
-    ServerInfo = ("info", "", False)
-    WsTicket = ("ws-ticket", "", False)
-    Iatas = ("iatas", "", False)
-    Regions = ("regions", "", False)
-    Scopes = ("scopes", "", False)
-    Nodes = ("nodes", "", False)
-    Node = ("nodes", "uuid", False)
-    Observers = ("observers", "", False)
-    Observer = ("observers", "uuid", False)
-    ObserverActivity = ("observers", "uuid/activity", False)
-    Packets = ("packets", "", False)
-    Packet = ("packets", "hash", False)
-    Messages = ("messages", "", False)
-    Channels = ("channels", "", False)
-    ChannelMessages = ("channels", "number/messages", False)
-    Routes = ("routes", "", False)
-    RouteSearch = ("routes/search", "", False)
-    CrossRoutes = ("routes/cross", "", True)
-    Traces = ("traces", "", False)
-    Trace = ("traces", "tag", False)
-    TopAdvertisers = ("stats/top-advertisers", "", False)
-    Overview = ("stats/overview", "", True)
-    Series = ("stats/series", "", True)
-    ObserverComparison = ("stats/observer-comparison", "", True)
-    Brokers = ("brokers", "", False)
-    ChannelDetail = ("channels", "number", False)
-    IataDetail = ("iatas", "iata", False)
-    IataBorder = ("iatas", "iata/border", False)
-    MessagesBackfill = ("messages/backfill", "", False)
-    NodeActivity = ("nodes", "uuid/activity", True)
-    NodeNeighbors = ("nodes", "uuid/neighbors", False)
-    NodeObservations = ("nodes", "uuid/observations", False)
-    ObserverAdverts = ("observers", "uuid/adverts", False)
-    ObserverTelemetry = ("observers", "uuid/telemetry", False)
-    ObserverDirectory = ("observers/directory", "", True)
-    PacketsBackfill = ("packets/backfill", "", False)
-    RegionDetail = ("regions", "number", False)
-    RouteObservations = ("routes", "route", True)
-    ScopeDetail = ("scopes", "scope", False)
-    ClockDrift = ("stats/clock-drift", "", True)
-    NodeTypes = ("stats/node-types", "", True)
-    ObservationStats = ("stats/observations", "", True)
-    PathStats = ("stats/paths", "", True)
-    PayloadBreakdown = ("stats/payload-breakdown", "", True)
-    RadioPresets = ("stats/radio-presets", "", True)
-    ScopeStats = ("stats/scopes", "", True)
-    SignalStats = ("stats/signal", "", True)
-    TopNodes = ("stats/top-nodes", "", True)
-    TopObservers = ("stats/top-observers", "", True)
-    TopTalkers = ("stats/top-talkers", "", True)
-
-
-ARRAY_OPERATIONS = frozenset(
-    Operation[n]
-    for n in (
-        "Iatas",
-        "Regions",
-        "RouteSearch",
-        "CrossRoutes",
-        "TopAdvertisers",
-        "Brokers",
-        "MessagesBackfill",
-        "NodeNeighbors",
-        "PacketsBackfill",
-        "ClockDrift",
-        "NodeTypes",
-        "ObservationStats",
-        "PayloadBreakdown",
-        "RadioPresets",
-        "ScopeStats",
-        "TopNodes",
-        "TopObservers",
-        "TopTalkers",
-    )
-)
-
-
-class GatewayError(Exception):
-    def __init__(
-        self,
-        code: str,
-        message: str,
-        *,
-        status: int | None = None,
-        upstream_code: str | None = None,
-        retry_after: str | None = None,
-    ):
-        super().__init__(message)
-        self.code, self.message, self.status = code, message, status
-        self.upstream_code, self.retry_after = upstream_code, retry_after
-
-
-def invalid(message: str) -> GatewayError:
-    return GatewayError("INVALID_ARGUMENT", message)
-
-
-def identifier(kind: str, value: str) -> str:
-    if kind == "uuid":
-        try:
-            parsed = uuid.UUID(value)
-            if (
-                len(value) == 36
-                and parsed.variant == uuid.RFC_4122
-                and 1 <= (parsed.version or 0) <= 8
-            ):
-                return str(parsed)
-        except (ValueError, AttributeError):
-            pass
-        raise invalid("invalid UUID")
-    if kind in ("hash", "tag"):
-        if re.fullmatch(rf"[0-9a-fA-F]{{{16 if kind == 'hash' else 8}}}", value):
-            return value.lower()
-    elif kind == "number":
-        if re.fullmatch(r"\+?[0-9]+", value) and 0 < int(value) <= 2_147_483_647:
-            return value
-    elif kind == "iata":
-        if re.fullmatch(r"[A-Za-z0-9]{3}", value):
-            return value.upper()
-    elif kind == "scope":
-        if (
-            value.strip()
-            and len(value.encode()) <= 128
-            and value not in (".", "..")
-            and not re.search(r"[/\\%\x00-\x1f\x7f-\x9f]", value)
-        ):
-            return value
-    raise invalid("invalid identifier")
-
-
-def json_object(value: object) -> dict[str, object] | None:
-    """Narrow an untrusted JSON object to string keys and opaque values."""
-    if not isinstance(value, dict):
-        return None
-    if any(not isinstance(key, str) for key in cast(dict[object, object], value)):
-        return None
-    # JSON object keys were checked before the cast; their values stay untrusted.
-    return cast(dict[str, object], value)
 
 
 def classify(response: httpx.Response, body: Any) -> GatewayError:
@@ -189,12 +47,6 @@ def classify(response: httpx.Response, body: Any) -> GatewayError:
         upstream_code=upstream,
         retry_after=response.headers.get("retry-after"),
     )
-
-
-@dataclass
-class ArrayPage:
-    items: list[Any]
-    complete: bool
 
 
 class NoCookies(DefaultCookiePolicy):
@@ -288,38 +140,15 @@ class BeaconClient:
                 # HTTPX's inactivity timeout alone doesn't bound a slow-drip body.
                 async with asyncio.timeout_at(deadline):
                     async with self.http.stream("GET", url, timeout=timeout) as response:
-                        if response.status_code == 204 and max_items is None:
-                            return None
-                        # HTTPX otherwise inflates a chunk before applying our byte cap.
-                        # Match the reference client's uncompressed public GET transport.
-                        encoded = response.headers.get("content-encoding", "").strip().lower()
-                        if encoded not in ("", "identity"):
-                            if response.is_success:
-                                raise GatewayError(
-                                    "UNAVAILABLE", "Beacon returned unsupported content encoding"
-                                )
-                            body = None
-                        else:
-                            if response.is_success and max_items is not None:
-                                return await read_array(response, max_items)
-                            data = await read_bounded(response)
-                            try:
-                                body = decode_json(data)
-                            except (ValueError, RecursionError):
-                                if response.is_success:
-                                    raise GatewayError(
-                                        "UNAVAILABLE", "Beacon returned invalid JSON"
-                                    ) from None
-                                body = None
+                        body = await read_response(response, max_items)
                         if response.is_success:
                             return body
-                        if (
+                        can_retry = (
                             attempt == 0
                             and response.status_code in (502, 503, 504)
                             and "retry-after" not in response.headers
-                        ):
-                            pass
-                        else:
+                        )
+                        if not can_retry:
                             raise classify(response, body)
             except (TimeoutError, httpx.TimeoutException):
                 raise GatewayError("DEADLINE_EXCEEDED", "Beacon request timed out") from None
@@ -336,115 +165,23 @@ class BeaconClient:
         raise GatewayError("UNAVAILABLE", "Beacon retry attempts exhausted")
 
 
-async def read_bounded(response: httpx.Response) -> bytes:
-    length = response.headers.get("content-length", "")
-    if length.isdigit() and int(length) > MAX_BYTES:
-        raise GatewayError("RESPONSE_TOO_LARGE", "Beacon response exceeded 5 MiB")
-    data = bytearray()
-    async for chunk in response.aiter_bytes(chunk_size=8192):
-        if len(data) + len(chunk) > MAX_BYTES:
-            raise GatewayError("RESPONSE_TOO_LARGE", "Beacon response exceeded 5 MiB")
-        data.extend(chunk)
-    return bytes(data)
-
-
-async def read_array(response: httpx.Response, max_items: int) -> ArrayPage:
-    items: list[Any] = []
-    pending: list[object] = ijson.sendable_list()
-    parser = ijson.items_coro(pending, "item", use_float=True)
-    mode: str | None = None
-    consumed = 0
-    envelope = bytearray()
-    guard = JsonDepthGuard()
+async def read_response(response: httpx.Response, max_items: int | None) -> Any:
+    """Decode a response within the caller's deadline, without inflating it."""
+    if response.status_code == 204 and max_items is None:
+        return None
+    # HTTPX otherwise inflates a chunk before applying our byte cap.
+    # Match the reference client's uncompressed public GET transport.
+    encoded = response.headers.get("content-encoding", "").strip().lower()
+    if encoded not in ("", "identity"):
+        if response.is_success:
+            raise GatewayError("UNAVAILABLE", "Beacon returned unsupported content encoding")
+        return None
+    if response.is_success and max_items is not None:
+        return await read_array(response, max_items)
+    data = await read_bounded(response)
     try:
-        async for chunk in response.aiter_bytes(chunk_size=8192):
-            consumed += len(chunk)
-            if consumed > MAX_BYTES:
-                if items and mode == "array":
-                    return ArrayPage(items, False)
-                raise GatewayError("RESPONSE_TOO_LARGE", "Beacon response exceeded 5 MiB")
-            if mode is None:
-                stripped = chunk.lstrip()
-                if not stripped:
-                    continue
-                mode = "array" if stripped.startswith(b"[") else "envelope"
-            if mode == "envelope":
-                envelope.extend(chunk)
-                continue
-            guard.feed(chunk)
-            parser.send(chunk)
-            items.extend(pending[: max_items - len(items)])
-            del pending[:]
-            if len(items) >= max_items:
-                return ArrayPage(items, False)
-        if mode == "envelope":
-            value: object = decode_json(envelope)
-            document = json_object(value)
-            source = document.get("items") if document is not None else value
-            if not isinstance(source, list):
-                raise ValueError
-            elements = cast(list[object], source)
-            return ArrayPage(elements[:max_items], len(elements) <= max_items)
-        try:
-            parser.close()
-        except ijson.IncompleteJSONError:
-            if items:
-                return ArrayPage(items, False)
-            raise
-        if mode != "array":
-            raise ValueError
-        return ArrayPage(items, True)
-    except (ValueError, ijson.JSONError, RecursionError):
-        raise GatewayError("UNAVAILABLE", "Beacon returned an invalid JSON array") from None
-
-
-class JsonDepthGuard:
-    """Reject excessive nesting before the streaming parser allocates a tree."""
-
-    def __init__(self) -> None:
-        self.depth = 0
-        self.quoted = False
-        self.escaped = False
-
-    def feed(self, chunk: bytes) -> None:
-        for byte in chunk:
-            if self.quoted:
-                if self.escaped:
-                    self.escaped = False
-                elif byte == 92:
-                    self.escaped = True
-                elif byte == 34:
-                    self.quoted = False
-            elif byte == 34:
-                self.quoted = True
-            elif byte in (91, 123):
-                self.depth += 1
-                if self.depth > 128:
-                    raise ValueError("excessive JSON nesting")
-            elif byte in (93, 125):
-                self.depth -= 1
-
-
-def decode_json(data: bytes | bytearray) -> Any:
-    def nonfinite(_value: str) -> None:
-        raise ValueError("invalid JSON number")
-
-    value: object = json.loads(data, parse_constant=nonfinite)
-    pending: list[tuple[Iterator[object], int]] = [(iter([value]), 0)]
-    while pending:
-        iterator, depth = pending[-1]
-        try:
-            item = next(iterator)
-        except StopIteration:
-            pending.pop()
-            continue
-        if isinstance(item, (dict, list)):
-            if depth >= 128:
-                raise ValueError("excessive JSON nesting")
-            nested: Iterator[object]
-            if isinstance(item, dict):
-                nested = iter(cast(dict[str, object], item).values())
-            else:
-                nested = iter(cast(list[object], item))
-            pending.append((nested, depth + 1))
-    return value
+        return decode_json(data)
+    except (ValueError, RecursionError):
+        if response.is_success:
+            raise GatewayError("UNAVAILABLE", "Beacon returned invalid JSON") from None
+        return None

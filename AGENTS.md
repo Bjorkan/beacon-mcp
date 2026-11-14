@@ -90,7 +90,7 @@ No custom protocol adapters are maintained. Health routes are `/healthz`
 and `/readyz`; they do not probe the upstream server. The binary supports
 `--healthcheck` for the Docker and Compose health checks.
 
-Only the fixed public GET `Operation` enum in `src/beacon_mcp/client.py` may contact
+Only the fixed public GET `Operation` enum in `src/beacon_mcp/operations.py` may contact
 upstream; never accept a caller-controlled host, path, credentials, headers or
 admin route. URL and body lengths are bounded. One jittered retry is allowed
 only for transient network failures or HTTP 502/503/504 **without**

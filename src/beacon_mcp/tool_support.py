@@ -2,8 +2,9 @@
 
 from typing import Any, cast
 
-from beacon_mcp.client import ArrayPage, GatewayError, invalid, json_object
-from beacon_mcp.validation import timestamp
+from beacon_mcp.errors import GatewayError, invalid
+from beacon_mcp.json_stream import ArrayPage
+from beacon_mcp.validation import json_object, timestamp
 
 
 def location(

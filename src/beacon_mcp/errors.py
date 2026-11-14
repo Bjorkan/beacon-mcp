@@ -1,0 +1,23 @@
+"""Application failures shared by validation, HTTP reads and MCP results."""
+
+
+class GatewayError(Exception):
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        *,
+        status: int | None = None,
+        upstream_code: str | None = None,
+        retry_after: str | None = None,
+    ):
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.status = status
+        self.upstream_code = upstream_code
+        self.retry_after = retry_after
+
+
+def invalid(message: str) -> GatewayError:
+    return GatewayError("INVALID_ARGUMENT", message)

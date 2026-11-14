@@ -4,10 +4,12 @@ import re
 from functools import partial
 from typing import Any, cast
 
-from beacon_mcp.client import BeaconClient, GatewayError, Operation, invalid, json_object
+from beacon_mcp.client import BeaconClient
+from beacon_mcp.errors import GatewayError, invalid
+from beacon_mcp.operations import Operation
 from beacon_mcp.runtime import CONTRACTS, Registry
 from beacon_mcp.tool_support import array_result, location, page, query
-from beacon_mcp.validation import duration
+from beacon_mcp.validation import duration, json_object
 
 # These array endpoints ignore a query limit; the client still bounds reading.
 NO_LIMIT = frozenset(

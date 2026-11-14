@@ -7,7 +7,8 @@ from mcp.server.context import ServerRequestContext
 from mcp.server.lowlevel import Server
 from mcp.shared.exceptions import MCPError
 
-from beacon_mcp.client import GatewayError, identifier
+from beacon_mcp.errors import GatewayError
+from beacon_mcp.validation import identifier
 
 PROMPTS = [
     {

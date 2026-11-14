@@ -14,7 +14,9 @@ from mcp.server.subscriptions import ListenHandler
 from pydantic import TypeAdapter
 
 from beacon_mcp import __version__
-from beacon_mcp.client import BeaconClient, GatewayError, json_object
+from beacon_mcp.client import BeaconClient
+from beacon_mcp.errors import GatewayError
+from beacon_mcp.validation import json_object
 
 INTEGER = TypeAdapter(int)
 INTEGERS = TypeAdapter(list[int])

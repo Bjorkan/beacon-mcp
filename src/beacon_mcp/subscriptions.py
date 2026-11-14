@@ -8,9 +8,12 @@ import re
 from mcp.server.subscriptions import InMemorySubscriptionBus, ResourceUpdated
 from websockets.asyncio.client import connect
 
-from beacon_mcp.client import BeaconClient, GatewayError, Operation, json_object
+from beacon_mcp.client import BeaconClient
 from beacon_mcp.config import Config
+from beacon_mcp.errors import GatewayError
+from beacon_mcp.operations import Operation
 from beacon_mcp.resources import parse_uri
+from beacon_mcp.validation import json_object
 
 logger = logging.getLogger("beacon_mcp.subscriptions")
 

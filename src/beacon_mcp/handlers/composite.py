@@ -4,8 +4,11 @@ import asyncio
 from collections.abc import Coroutine
 from typing import Any
 
-from beacon_mcp.client import BeaconClient, Operation, identifier, invalid
+from beacon_mcp.client import BeaconClient
+from beacon_mcp.errors import invalid
+from beacon_mcp.operations import Operation
 from beacon_mcp.runtime import Registry
+from beacon_mcp.validation import identifier
 
 
 def register(registry: Registry) -> None:
