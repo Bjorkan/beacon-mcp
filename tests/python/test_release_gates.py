@@ -6,12 +6,12 @@ from pathlib import Path
 
 import httpx
 import pytest
-from conftest import gateway, rpc
 
 from beacon_mcp.__main__ import SafeDiagnostics
 from beacon_mcp.client import BeaconClient
 from beacon_mcp.config import Config
 from beacon_mcp.handlers.composite import diagnose_node
+from tests.python.conftest import gateway, rpc
 
 EXPECTED_NAMES = json.loads(Path("tests/fixtures/tool-names.json").read_text())
 ID = "123e4567-e89b-42d3-a456-426614174000"
