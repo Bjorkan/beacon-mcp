@@ -25,8 +25,7 @@ def query(args: dict[str, Any], exclude: tuple[str, ...] = ()) -> list[tuple[str
         elif isinstance(value, list):
             elements = cast(list[object], value)
             converted = ",".join(
-                str(item).strip().upper() if key == "iatas" else str(item)
-                for item in elements
+                str(item).strip().upper() if key == "iatas" else str(item) for item in elements
             )
         elif key in ("iata", "fromIata", "toIata"):
             converted = value.strip().upper()
