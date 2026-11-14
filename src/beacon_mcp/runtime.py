@@ -40,10 +40,12 @@ TOOL_ORDER = json.loads(files("beacon_mcp").joinpath("contracts/tool-order.json"
 
 
 def success(value: Any) -> types.CallToolResult:
-    document = cast(dict[str, object], value) if isinstance(value, dict) else None
-    item_list: object = document.get("items") if document is not None else None
-    count = len(cast(list[object], item_list)) if isinstance(item_list, list) else None
-    text = f"Beacon returned {count} item(s)." if count is not None else "Beacon request succeeded."
+    text = "Beacon request succeeded."
+    if isinstance(value, dict):
+        document = cast(dict[str, object], value)
+        items = document.get("items")
+        if isinstance(items, list):
+            text = f"Beacon returned {len(cast(list[object], items))} item(s)."
     return types.CallToolResult(
         content=[types.TextContent(type="text", text=text)],
         structured_content=value,
@@ -81,6 +83,8 @@ def upstream_error(error: GatewayError) -> types.CallToolResult:
 
 
 class Registry:
+    """Connect frozen public tool schemas to their application handlers."""
+
     def __init__(self) -> None:
         self.handlers: dict[str, Handler] = {}
         self.validators: dict[str, Draft202012Validator] = {}
@@ -112,18 +116,31 @@ class Registry:
         except ValidationError as error:
             return tool_error(f"Invalid arguments: {error.message}")
         try:
-            rules = CONTRACTS[name]["inputSchema"]["properties"]
-            arguments = {
-                key: INTEGER.validate_python(value)
-                if rules[key].get("type") == "integer"
-                else INTEGERS.validate_python(value)
-                if rules[key].get("items", {}).get("type") == "integer"
-                else value
-                for key, value in arguments.items()
-            }
-            return success(await self.handlers[name](client, arguments))
+            normalized = normalize_arguments(name, arguments)
+            result = await self.handlers[name](client, normalized)
+            return success(result)
         except GatewayError as error:
             return upstream_error(error)
+
+
+def normalize_arguments(name: str, arguments: dict[str, Any]) -> dict[str, Any]:
+    """Convert JSON Schema integer-valued numbers after schema validation.
+
+    JSON Schema accepts 1.0 as an integer. Handlers need Python integers for
+    slicing and cursors, so normalize both scalar and array arguments here.
+    Keep a separate dictionary because some handlers rewrite filter names.
+    """
+    rules = CONTRACTS[name]["inputSchema"]["properties"]
+    normalized: dict[str, Any] = {}
+    for key, value in arguments.items():
+        rule = rules[key]
+        if rule.get("type") == "integer":
+            normalized[key] = INTEGER.validate_python(value)
+        elif rule.get("items", {}).get("type") == "integer":
+            normalized[key] = INTEGERS.validate_python(value)
+        else:
+            normalized[key] = value
+    return normalized
 
 
 def default_registry() -> Registry:
