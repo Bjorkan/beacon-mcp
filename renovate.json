@@ -1,7 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:best-practices"],
+  "extends": [
+    "config:best-practices"
+  ],
   "minimumReleaseAge": "14 days",
   "internalChecksFilter": "strict",
-  "timezone": "Europe/Stockholm"
+  "timezone": "Europe/Stockholm",
+  "automerge": true,
+  "automergeType": "pr",
+  "platformAutomerge": true,
+  "ignoreTests": false
 }
