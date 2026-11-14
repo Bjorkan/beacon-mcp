@@ -74,7 +74,7 @@ async def test_injected_uris_rejected(uri: str) -> None:
     ],
 )
 async def test_all_three_prompts(name: str, args: dict[str, str], contains: str) -> None:
-    def forbidden(_):
+    def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("prompts must not contact Beacon")
 
     async with gateway(forbidden) as http:
