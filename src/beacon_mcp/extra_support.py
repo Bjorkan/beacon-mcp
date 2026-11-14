@@ -23,25 +23,25 @@ NO_LIMIT = frozenset(
 
 
 def register_operations(registry: Registry, operations: dict[str, tuple[Operation, str]]) -> None:
-    for name, (op, shape) in operations.items():
-        registry.register(name, partial(execute_extra, name, op, shape))
+    for name, (operation, shape) in operations.items():
+        registry.register(name, partial(execute_extra, name, operation, shape))
 
 
 async def execute_extra(
-    name: str, op: Operation, shape: str, client: BeaconClient, args: dict[str, Any]
+    name: str, operation: Operation, shape: str, client: BeaconClient, arguments: dict[str, Any]
 ) -> Any:
-    location(args, region_message="mutually exclusive location filters")
-    if op == Operation.RouteObservations and (
-        "range" in args
-        and any(key in args for key in ("since", "until", "pageCursor"))
-        or ("since" in args) != ("until" in args)
+    location(arguments, region_message="mutually exclusive location filters")
+    if operation == Operation.RouteObservations and (
+        "range" in arguments
+        and any(key in arguments for key in ("since", "until", "pageCursor"))
+        or ("since" in arguments) != ("until" in arguments)
     ):
         raise invalid(
             "range is exclusive with the explicit window and cursor; since and until must be paired"
         )
-    if "range" in args:
-        duration(args["range"])
-    for key, value in args.items():
+    if "range" in arguments:
+        duration(arguments["range"])
+    for key, value in arguments.items():
         if key not in ("id", "pathKey", "range", "since", "until", "iata") and isinstance(
             value, str
         ):
@@ -51,21 +51,23 @@ async def execute_extra(
                 or re.search(r"[\x00-\x1f\x7f-\x9f]", value)
             ):
                 raise invalid("invalid text filter")
-    id = args.get("id")
+    id = arguments.get("id")
     exclude = ("id", "pathKey", "limit")
-    if op == Operation.RouteObservations:
-        id = f"{args['iata'].upper()}:{args['pathKey']}"
+    if operation == Operation.RouteObservations:
+        id = f"{arguments['iata'].upper()}:{arguments['pathKey']}"
         exclude += ("iata",)
-    filters = query(args, exclude)
-    limit = args.get("limit", 20)
-    if "limit" in CONTRACTS[name]["inputSchema"]["properties"] and op not in NO_LIMIT:
+    filters = query(arguments, exclude)
+    limit = arguments.get("limit", 20)
+    if "limit" in CONTRACTS[name]["inputSchema"]["properties"] and operation not in NO_LIMIT:
         filters.append(("limit", str(limit)))
     if shape == "array":
-        return array_result(await client.array_page(op, id, filters, max_items=limit + 1), limit)
-    response = await client.request(op, id, filters)
+        return array_result(
+            await client.array_page(operation, id, filters, max_items=limit + 1), limit
+        )
+    response = await client.request(operation, id, filters)
     if shape == "page":
         result = page(response, limit)
-        if op == Operation.ObserverDirectory and isinstance(response, dict):
+        if operation == Operation.ObserverDirectory and isinstance(response, dict):
             result.update(
                 {
                     key: response[key]

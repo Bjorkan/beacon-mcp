@@ -26,40 +26,48 @@ def register(registry: Registry) -> None:
         registry.register(name, partial(execute, name))
 
 
-async def execute(name: str, client: BeaconClient, args: dict[str, Any]) -> Any:
-    location(args)
-    if "type" in args and "typeName" in args:
+async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) -> Any:
+    location(arguments)
+    if "type" in arguments and "typeName" in arguments:
         raise invalid("type and typeName are mutually exclusive")
-    if args.get("cursor", 0) and (
-        args.get("sort", "lastSeen") != "lastSeen" or args.get("order", "desc") != "desc"
+    if arguments.get("cursor", 0) and (
+        arguments.get("sort", "lastSeen") != "lastSeen" or arguments.get("order", "desc") != "desc"
     ):
         raise invalid("numeric cursor works only with default lastSeen descending order")
     for key in ("region", "scope", "broker", "name"):
-        if key in args and (
-            not args[key].strip() or len(args[key].encode()) > (256 if key == "name" else 128)
+        if key in arguments and (
+            not arguments[key].strip()
+            or len(arguments[key].encode()) > (256 if key == "name" else 128)
         ):
             raise invalid("invalid text filter")
     if (
         name == "beacon_search_observers"
-        and "type" in args
-        and (not args["type"].strip() or len(args["type"].encode()) > 128)
+        and "type" in arguments
+        and (not arguments["type"].strip() or len(arguments["type"].encode()) > 128)
     ):
         raise invalid("invalid type filter")
-    if name == "beacon_get_observer_activity" and "range" in args:
-        if duration(args["range"]) > 2880 and args.get("interval", "15m") in ("5m", "15m"):
+    if name == "beacon_get_observer_activity" and "range" in arguments:
+        if duration(arguments["range"]) > 2880 and arguments.get("interval", "15m") in (
+            "5m",
+            "15m",
+        ):
             raise invalid("range must be 48h or less for intervals under 1h")
-    if "pageCursor" in args and len(args["pageCursor"].encode()) > 512:
+    if "pageCursor" in arguments and len(arguments["pageCursor"].encode()) > 512:
         raise invalid("invalid pageCursor")
-    op = OPERATIONS[name]
-    limit = args.get("limit", 20)
-    filters = query(args, ("id", "limit"))
-    if op in (Operation.Iatas, Operation.Regions):
-        return array_result(await client.array_page(op, query=filters, max_items=limit + 1), limit)
-    if op == Operation.Scopes:
-        source = await client.request(op, query=[(k, v) for k, v in filters if k != "cursor"])
+    operation = OPERATIONS[name]
+    limit = arguments.get("limit", 20)
+    filters = query(arguments, ("id", "limit"))
+    if operation in (Operation.Iatas, Operation.Regions):
+        return array_result(
+            await client.array_page(operation, query=filters, max_items=limit + 1), limit
+        )
+    if operation == Operation.Scopes:
+        source = await client.request(
+            operation, query=[(k, v) for k, v in filters if k != "cursor"]
+        )
         if not isinstance(source, list):
             raise GatewayError("UNAVAILABLE", "Beacon returned invalid scopes")
-        offset = args.get("cursor", 0)
+        offset = arguments.get("cursor", 0)
         scopes = cast(list[object], source)
         items = scopes[offset : offset + limit]
         next_offset = offset + len(items)
@@ -69,10 +77,10 @@ async def execute(name: str, client: BeaconClient, args: dict[str, Any]) -> Any:
             else {"hasMore": False}
         )
         return {"items": items, "pagination": pagination}
-    if op in (Operation.Nodes, Operation.Observers):
+    if operation in (Operation.Nodes, Operation.Observers):
         return page(
-            await client.request(op, query=[*filters, ("limit", str(limit))]),
+            await client.request(operation, query=[*filters, ("limit", str(limit))]),
             limit,
-            op == Operation.Nodes,
+            operation == Operation.Nodes,
         )
-    return await client.request(op, args.get("id"), filters)
+    return await client.request(operation, arguments.get("id"), filters)

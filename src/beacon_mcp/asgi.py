@@ -26,11 +26,9 @@ class AccessLog:
 
         def safe(key: bytes) -> str:
             raw = headers.get(key, b"")
-            return (
-                raw.decode("ascii")
-                if re.fullmatch(rb"[A-Za-z0-9_./-]{1,80}", raw)
-                else "unspecified"
-            )
+            if re.fullmatch(rb"[A-Za-z0-9_./-]{1,80}", raw):
+                return raw.decode("ascii")
+            return "unspecified"
 
         method = safe(b"mcp-method")
         tool = safe(b"mcp-name") if method == "tools/call" else "-"

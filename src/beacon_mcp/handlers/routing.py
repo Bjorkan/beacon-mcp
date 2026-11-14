@@ -21,38 +21,40 @@ def register(registry: Registry) -> None:
         registry.register(name, partial(execute, name))
 
 
-async def execute(name: str, client: BeaconClient, args: dict[str, Any]) -> Any:
-    args = dict(args)
-    location(args, region_message="mutually exclusive or incomplete filters")
-    if ("fromIata" in args) != ("toIata" in args):
+async def execute(name: str, client: BeaconClient, arguments: dict[str, Any]) -> Any:
+    arguments = dict(arguments)
+    location(arguments, region_message="mutually exclusive or incomplete filters")
+    if ("fromIata" in arguments) != ("toIata" in arguments):
         raise invalid("fromIata and toIata must be given together")
-    if ("fromIata" in args and "iatas" in args) or any(
-        key in args and "cursor" not in args for key in ("cursorId", "cursorTag")
+    if ("fromIata" in arguments and "iatas" in arguments) or any(
+        key in arguments and "cursor" not in arguments for key in ("cursorId", "cursorTag")
     ):
         raise invalid("mutually exclusive or incomplete filters")
     if any(
-        (not args[key].strip() or len(args[key].encode()) > 128)
+        (not arguments[key].strip() or len(arguments[key].encode()) > 128)
         for key in ("region", "scope")
-        if key in args
+        if key in arguments
     ):
         raise invalid("invalid text filter")
     if (
         name == "beacon_find_cross_iata_routes"
-        and "iatas" in args
-        and len({value.upper() for value in args["iatas"]}) < 2
+        and "iatas" in arguments
+        and len({value.upper() for value in arguments["iatas"]}) < 2
     ):
         raise invalid("cross-IATA search requires two distinct codes")
     for key in ("from", "to", "fromHash", "toHash"):
-        if key in args:
-            args[key] = args[key].lower()
-    op = OPERATIONS[name]
-    if op == Operation.Trace:
-        return await client.request(op, args["tag"])
-    limit = args.get("limit", 20)
-    filters = query(args, ("limit",))
-    if op in (Operation.RouteSearch, Operation.CrossRoutes):
-        return array_result(await client.array_page(op, query=filters, max_items=limit + 1), limit)
-    response = await client.request(op, query=[*filters, ("limit", str(limit))])
+        if key in arguments:
+            arguments[key] = arguments[key].lower()
+    operation = OPERATIONS[name]
+    if operation == Operation.Trace:
+        return await client.request(operation, arguments["tag"])
+    limit = arguments.get("limit", 20)
+    filters = query(arguments, ("limit",))
+    if operation in (Operation.RouteSearch, Operation.CrossRoutes):
+        return array_result(
+            await client.array_page(operation, query=filters, max_items=limit + 1), limit
+        )
+    response = await client.request(operation, query=[*filters, ("limit", str(limit))])
     if not isinstance(response, list):
         raise GatewayError("UNAVAILABLE", "Beacon returned invalid route or trace list")
     items = cast(list[object], response)[:limit]
@@ -61,7 +63,7 @@ async def execute(name: str, client: BeaconClient, args: dict[str, Any]) -> Any:
     if last is not None:
         cursor: dict[str, object] = (
             {"cursor": last.get("lastSeen"), "cursorId": last.get("id")}
-            if op == Operation.Routes
+            if operation == Operation.Routes
             else {"cursor": last.get("lastHeardAt"), "cursorTag": last.get("traceTag")}
         )
         if isinstance(cursor["cursor"], (int, float)) and all(

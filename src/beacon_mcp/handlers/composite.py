@@ -13,9 +13,9 @@ def register(registry: Registry) -> None:
     registry.register("beacon_compare_regions", compare_regions)
 
 
-async def diagnose_node(client: BeaconClient, args: dict[str, Any]) -> Any:
-    id = identifier("uuid", args["id"])
-    range_value, limit = args.get("range", "24h"), args.get("neighborLimit", 10)
+async def diagnose_node(client: BeaconClient, arguments: dict[str, Any]) -> Any:
+    id = identifier("uuid", arguments["id"])
+    range_value, limit = arguments.get("range", "24h"), arguments.get("neighborLimit", 10)
     node, activity, result = await together(
         client.request(Operation.Node, id),
         client.request(Operation.NodeActivity, id, [("range", range_value)]),
@@ -31,8 +31,8 @@ async def diagnose_node(client: BeaconClient, args: dict[str, Any]) -> Any:
     }
 
 
-async def compare_regions(client: BeaconClient, args: dict[str, Any]) -> Any:
-    a, b = args["iataA"].strip().upper(), args["iataB"].strip().upper()
+async def compare_regions(client: BeaconClient, arguments: dict[str, Any]) -> Any:
+    a, b = arguments["iataA"].strip().upper(), arguments["iataB"].strip().upper()
     if a == b:
         raise invalid("iataA and iataB must be different")
     left, right = await together(

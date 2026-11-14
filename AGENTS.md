@@ -70,7 +70,7 @@ uv build --no-sources
 tests/container/run.sh
 ```
 
-The **BasedPyright 1.39.8 strict** CI job reads its single
+The **BasedPyright strict** CI job reads its single
 `[tool.basedpyright]` configuration from `pyproject.toml`.
 The redundant standard-mode Pyright dependency and check have been removed. It checks all Python sources,
 tests, container helpers, and scripts in strict mode. All twelve categories
@@ -78,7 +78,7 @@ from the supplied original 591-error report remain configured as **errors**.
 `failOnWarnings=true` is retained, so any strict warning also blocks CI.
 The integrated verification passed with **0 errors and 0 warnings**.
 
-BasedPyright 1.39.8 and its transitive dependencies are pinned in the
+BasedPyright and its transitive dependencies are pinned in the
 committed `uv.lock`. CI checks the checked-out repository directly; no
 historical PR branches or generated import rewrites are involved.
 

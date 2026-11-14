@@ -7,17 +7,17 @@ from beacon_mcp.validation import timestamp
 
 
 def location(
-    args: dict[str, Any], *, region_message: str = "region and regionId are mutually exclusive"
+    arguments: dict[str, Any], *, region_message: str = "region and regionId are mutually exclusive"
 ) -> None:
-    if "region" in args and "regionId" in args:
+    if "region" in arguments and "regionId" in arguments:
         raise invalid(region_message)
-    if "iata" in args and "iatas" in args:
+    if "iata" in arguments and "iatas" in arguments:
         raise invalid("iata and iatas are mutually exclusive")
 
 
-def query(args: dict[str, Any], exclude: tuple[str, ...] = ()) -> list[tuple[str, str]]:
+def query(arguments: dict[str, Any], exclude: tuple[str, ...] = ()) -> list[tuple[str, str]]:
     result: list[tuple[str, str]] = []
-    for key, value in args.items():
+    for key, value in arguments.items():
         if key in exclude:
             continue
         if key in ("since", "until"):
@@ -34,7 +34,11 @@ def query(args: dict[str, Any], exclude: tuple[str, ...] = ()) -> list[tuple[str
         else:
             converted = str(value)
         result.append((key, converted))
-    if "since" in args and "until" in args and timestamp(args["since"]) >= timestamp(args["until"]):
+    if (
+        "since" in arguments
+        and "until" in arguments
+        and timestamp(arguments["since"]) >= timestamp(arguments["until"])
+    ):
         raise invalid("since must be before until")
     return result
 
