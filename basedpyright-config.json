@@ -1,0 +1,29 @@
+{
+  "include": [
+    "src/beacon_mcp",
+    "tests/python",
+    "tests/container",
+    "scripts"
+  ],
+  "extraPaths": [
+    "src",
+    "tests/python"
+  ],
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "strict",
+  "failOnWarnings": false,
+  "reportUnknownMemberType": "error",
+  "reportUnknownVariableType": "error",
+  "reportUnknownArgumentType": "error",
+  "reportUnknownParameterType": "error",
+  "reportMissingParameterType": "error",
+  "reportArgumentType": "error",
+  "reportUnknownLambdaType": "error",
+  "reportDeprecated": "error",
+  "reportOptionalMemberAccess": "error",
+  "reportMissingTypeStubs": "error",
+  "reportUnnecessaryIsInstance": "error",
+  "reportIncompatibleMethodOverride": "error",
+  "venvPath": ".",
+  "venv": ".venv"
+}
