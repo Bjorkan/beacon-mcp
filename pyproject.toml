@@ -2,7 +2,7 @@
 name = "beacon-mcp"
 version = "2.2.0"
 description = "Unofficial read-only MCP gateway to public MeshCore Beacon data"
-requires-python = ">=3.13,<3.14"
+requires-python = ">=3.15,<3.16"
 dependencies = [
   "mcp==2.3.0",
   "httpx>=0.28.1,<1",
