@@ -1,5 +1,6 @@
 import asyncio
 import json
+from typing import cast
 
 import httpx
 import pytest
@@ -67,9 +68,12 @@ async def test_ticket_handshake_and_reconnect(legacy: bool, traffic: bool) -> No
             )
         )
         await socket.send(json.dumps({"v": 1, "type": "hello"}))
-        request = json.loads(await socket.recv())
-        assert isinstance(request, dict) and isinstance(request.get("scope"), dict)
-        assert request["scope"]["events"] == ["nodeUpdate", "observerStatus"] + (
+        decoded: object = json.loads(await socket.recv())
+        assert isinstance(decoded, dict)
+        request = cast(dict[str, object], decoded)
+        scope = request.get("scope")
+        assert isinstance(scope, dict)
+        assert cast(dict[str, object], scope).get("events") == ["nodeUpdate", "observerStatus"] + (
             ["packetObservation", "channelMessage"] if traffic else []
         )
         await socket.send(json.dumps({"v": 1, "type": "subscribed", "id": "mcp-changes"}))
