@@ -1,3 +1,5 @@
+from typing import Never
+
 import httpx
 import pytest
 
@@ -6,7 +8,7 @@ from tests.python.conftest import gateway, rpc
 
 ID = "123e4567-e89b-42d3-a456-426614174000"
 KEY = "0123456789abcdef0123456789abcdef"
-CASES = [
+CASES: list[tuple[str, dict[str, object], str]] = [
     (
         "beacon_backfill_messages",
         {"afterId": 2147483649, "region": "sverige"},
@@ -39,10 +41,10 @@ CASES = [
 
 
 @pytest.mark.parametrize("name,args,path", CASES)
-async def test_all_eight_activity_tools(name, args, path):
-    seen = []
+async def test_all_eight_activity_tools(name: str, args: dict[str, object], path: str) -> None:
+    seen: list[httpx.Request] = []
 
-    def upstream(request):
+    def upstream(request: httpx.Request) -> httpx.Response:
         seen.append(request)
         assert request.url.path == path
         shape = OPERATIONS[name][1]
@@ -80,8 +82,8 @@ async def test_all_eight_activity_tools(name, args, path):
         {"range": "721h"},
     ],
 )
-async def test_route_window_restrictions(args):
-    def forbidden(_):
+async def test_route_window_restrictions(args: dict[str, object]) -> None:
+    def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("invalid route evidence window")
 
     async with gateway(forbidden) as http:

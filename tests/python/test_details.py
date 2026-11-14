@@ -1,9 +1,11 @@
+from typing import Never
+
 import httpx
-import pytest
 
 from tests.python.conftest import gateway, rpc
+import pytest
 
-DETAIL_CASES = [
+DETAIL_CASES: list[tuple[str, dict[str, object], str]] = [
     ("beacon_list_brokers", {}, "/api/v1/brokers"),
     ("beacon_get_channel", {"id": "7"}, "/api/v1/channels/7"),
     ("beacon_get_iata", {"id": "arn"}, "/api/v1/iatas/ARN"),
@@ -19,8 +21,8 @@ DETAIL_CASES = [
 
 
 @pytest.mark.parametrize("name,args,path", DETAIL_CASES)
-async def test_all_seven_detail_reads(name, args, path):
-    def upstream(request):
+async def test_all_seven_detail_reads(name: str, args: dict[str, object], path: str) -> None:
+    def upstream(request: httpx.Request) -> httpx.Response:
         assert request.url.path == path
         if name == "beacon_list_brokers":
             return httpx.Response(200, json=[{"id": 1}])
@@ -47,8 +49,8 @@ async def test_all_seven_detail_reads(name, args, path):
 
 
 @pytest.mark.parametrize("id", ["..", ".", "../admin", "%23scope", "foo/bar", "foo\\bar"])
-async def test_scope_path_restrictions(id):
-    def forbidden(_):
+async def test_scope_path_restrictions(id: str) -> None:
+    def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("path injection reached upstream")
 
     async with gateway(forbidden) as http:
@@ -57,11 +59,11 @@ async def test_scope_path_restrictions(id):
 
 
 @pytest.mark.parametrize("sort", ["traffic", "name"])
-async def test_directory_continuation_preserves_returned_window(sort):
-    requests = []
+async def test_directory_continuation_preserves_returned_window(sort: str) -> None:
+    requests: list[dict[str, str]] = []
     start_ms, end_ms = 1794009600123, 1794096000987
 
-    def upstream(request):
+    def upstream(request: httpx.Request) -> httpx.Response:
         params = dict(request.url.params)
         requests.append(params)
         assert params["iatas"] == "ARN" and params["sort"] == sort
