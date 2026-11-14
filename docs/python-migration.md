@@ -126,5 +126,6 @@ Tests deliberately changed for SDK ownership:
 REST/WebSocket safety, heartbeat/tickets/reconnect, resources/prompts, bounded
 transfer, contract hashes, image hardening and rollback remain covered. Checks
 use synthetic local data; they do not claim delivery of real production Beacon
-notifications. All fourteen PRs remain in native stack 49, unmerged; layer 14
-continues to contain only Rust retirement and related cleanup.
+notifications. The migration is merged into `main`; all MCP transport/version negotiation
+remains owned by the official Python SDK v2. The historical review stack is
+retained on GitHub for reference only.
