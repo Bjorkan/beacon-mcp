@@ -32,7 +32,7 @@ def create_app(
     )
 
     @asynccontextmanager
-    async def beacon_lifespan(_server: Server) -> AsyncGenerator[dict[str, Any], None]:
+    async def beacon_lifespan(_server: Server) -> AsyncGenerator[dict[str, Any]]:
         task = asyncio.create_task(bridge(beacon, live)) if live is not None else None
         app.state.bridge_task = task
         try:
@@ -60,7 +60,7 @@ def create_app(
     )
 
     @asynccontextmanager
-    async def lifespan(_application: Starlette) -> AsyncGenerator[None, None]:
+    async def lifespan(_application: Starlette) -> AsyncGenerator[None]:
         # Documented SDK composition for a mounted ASGI application.
         async with server.session_manager.run():
             yield
