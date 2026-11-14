@@ -1,4 +1,4 @@
-from typing import Never
+from typing import Any, Never
 
 import httpx
 import pytest
@@ -7,16 +7,17 @@ from beacon_mcp.handlers.core import OPERATIONS
 from beacon_mcp.runtime import CONTRACTS
 from tests.python.helpers import gateway, rpc
 
-ID = "123e4567-e89b-42d3-a456-426614174000"
+ID: str = "123e4567-e89b-42d3-a456-426614174000"
 
 
 @pytest.mark.parametrize("name", OPERATIONS)
 async def test_all_nine_core_tools(name: str) -> None:
+    http: httpx.AsyncClient
     seen: list[httpx.Request] = []
 
     def upstream(request: httpx.Request) -> httpx.Response:
         seen.append(request)
-        path = request.url.path
+        path: str = request.url.path
         if path in ("/api/v1/iatas", "/api/v1/regions", "/api/v1/scopes"):
             return httpx.Response(200, json=[{"value": 1}, {"value": 2}])
         if path in ("/api/v1/nodes", "/api/v1/observers"):
@@ -31,14 +32,19 @@ async def test_all_nine_core_tools(name: str) -> None:
             )
         return httpx.Response(200, json={"id": ID, "points": [], "serverVersion": "2.2.0"})
 
-    args = {"id": ID} if "id" in CONTRACTS[name]["inputSchema"]["properties"] else {}
+    args: dict[str, str] = (
+        {"id": ID} if "id" in CONTRACTS[name]["inputSchema"]["properties"] else {}
+    )
     async with gateway(upstream) as http:
-        result = (await rpc(http, "tools/call", name=name, arguments=args))["result"]
+        result: dict[str, Any] = (await rpc(http, "tools/call", name=name, arguments=args))[
+            "result"
+        ]
     assert result["isError"] is False and len(seen) == 1
     assert result["content"][0]["text"].startswith("Beacon")
 
 
 async def test_cursors_normalization_and_scope_offset() -> None:
+    http: httpx.AsyncClient
     seen: list[httpx.Request] = []
 
     def upstream(request: httpx.Request) -> httpx.Response:
@@ -58,7 +64,7 @@ async def test_cursors_normalization_and_scope_offset() -> None:
         )
 
     async with gateway(upstream) as http:
-        node = (
+        node: dict[str, Any] = (
             await rpc(
                 http,
                 "tools/call",
@@ -66,7 +72,7 @@ async def test_cursors_normalization_and_scope_offset() -> None:
                 arguments={"iatas": ["arn"], "limit": 1},
             )
         )["result"]["structuredContent"]
-        scope = (
+        scope: dict[str, Any] = (
             await rpc(
                 http, "tools/call", name="beacon_list_scopes", arguments={"cursor": 2, "limit": 2}
             )
@@ -87,6 +93,8 @@ async def test_cursors_normalization_and_scope_offset() -> None:
     ],
 )
 async def test_invalid_core_never_contacts_beacon(name: str, args: dict[str, object]) -> None:
+    http: httpx.AsyncClient
+
     def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("invalid input reached upstream")
 
@@ -103,6 +111,8 @@ async def test_invalid_core_never_contacts_beacon(name: str, args: dict[str, obj
     ],
 )
 async def test_utf8_byte_bounds_match_reference(name: str, args: dict[str, object]) -> None:
+    http: httpx.AsyncClient
+
     def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("oversized UTF-8 filter reached Beacon")
 

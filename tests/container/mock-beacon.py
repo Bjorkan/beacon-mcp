@@ -7,13 +7,13 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path.startswith("/api/v1/nodes"):
-            body = {
+            body: dict[str, object] | list[object] = {
                 "items": [{"id": "container-node", "name": "Container test"}],
                 "hasMore": False,
             }
         else:
             body = []
-        data = json.dumps(body).encode()
+        data: bytes = json.dumps(body).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))

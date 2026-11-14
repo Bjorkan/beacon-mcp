@@ -1,10 +1,15 @@
 import asyncio
 import json
+from collections.abc import AsyncIterator
+from typing import Any
 
+import httpx
+import mcp.types as mcp_types
 import pytest
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.server.subscriptions import ListenHandler
+from starlette.applications import Starlette
 
 from beacon_mcp.app import MAX_MCP_REQUEST_BYTES
 from tests.python.helpers import gateway, rpc
@@ -12,15 +17,18 @@ from tests.python.subscription_helpers import ID, SUBSCRIPTION_ID, event, listen
 
 
 async def test_direct_sdk_handler_ack_and_exact_canonical_uri_delivery() -> None:
-    canonical = f"beacon://nodes/{ID}"
-    different_case = f"beacon://nodes/{ID.upper()}"
-    unknown = "beacon://regions/3"
+    http: httpx.AsyncClient
+    app: Starlette
+    response: httpx.Response
+    canonical: str = f"beacon://nodes/{ID}"
+    different_case: str = f"beacon://nodes/{ID.upper()}"
+    unknown: str = "beacon://regions/3"
     async with running_gateway() as (http, app):
-        handler = app.state.server.get_request_handler("subscriptions/listen")
+        handler: Any = app.state.server.get_request_handler("subscriptions/listen")
         assert isinstance(handler.handler, ListenHandler)
         async with listen(http, [different_case, unknown, canonical]) as response:
-            lines = response.aiter_lines()
-            ack = await event(lines, "notifications/subscriptions/acknowledged")
+            lines: AsyncIterator[str] = response.aiter_lines()
+            ack: dict[str, Any] = await event(lines, "notifications/subscriptions/acknowledged")
             assert ack["params"]["notifications"]["resourceSubscriptions"] == [
                 different_case,
                 unknown,
@@ -29,18 +37,24 @@ async def test_direct_sdk_handler_ack_and_exact_canonical_uri_delivery() -> None
             assert ack["params"]["_meta"][SUBSCRIPTION_ID] == "listen-1"
             app.state.live.received("observerStatus", {"observerId": ID})
             app.state.live.received("nodeUpdate", {"nodeId": ID, "content": "discarded"})
-            update = await event(lines, "notifications/resources/updated")
+            update: dict[str, Any] = await event(lines, "notifications/resources/updated")
             assert update["params"]["uri"] == canonical
             assert update["params"]["_meta"][SUBSCRIPTION_ID] == "listen-1"
             assert "discarded" not in json.dumps(update)
             # Close using the SDK public API, then verify no alias/observer event arrived.
             app.state.listener.close()
-            remaining = [line async for line in lines if line.startswith("data:")]
+            remaining: list[str] = [line async for line in lines if line.startswith("data:")]
             assert all('"notifications/resources/updated"' not in line for line in remaining)
 
 
 async def test_sdk_stream_limit_releases_on_disconnect_and_closes_gracefully() -> None:
-    uri = f"beacon://nodes/{ID}"
+    http: httpx.AsyncClient
+    app: Starlette
+    first: httpx.Response
+    overflow: httpx.Response
+    _: int
+    next_stream: httpx.Response
+    uri: str = f"beacon://nodes/{ID}"
     async with running_gateway(max_streams=1) as (http, app):
         async with listen(http, [uri]) as first:
             await event(first.aiter_lines(), "notifications/subscriptions/acknowledged")
@@ -55,11 +69,13 @@ async def test_sdk_stream_limit_releases_on_disconnect_and_closes_gracefully() -
                 if next_stream.status_code != 200:
                     await next_stream.aread()
                 else:
-                    lines = next_stream.aiter_lines()
-                    ack = await event(lines, "notifications/subscriptions/acknowledged")
+                    lines: AsyncIterator[str] = next_stream.aiter_lines()
+                    ack: dict[str, Any] = await event(
+                        lines, "notifications/subscriptions/acknowledged"
+                    )
                     assert ack["params"]["_meta"][SUBSCRIPTION_ID] == 42
                     app.state.listener.close()
-                    tail = [
+                    tail: list[dict[str, Any]] = [
                         json.loads(line[5:]) async for line in lines if line.startswith("data:")
                     ]
                     assert tail[-1]["result"]["_meta"][SUBSCRIPTION_ID] == 42
@@ -71,11 +87,17 @@ async def test_sdk_stream_limit_releases_on_disconnect_and_closes_gracefully() -
 
 @pytest.mark.parametrize("traffic", [False, True])
 async def test_sdk_honors_more_than_twenty_uris_but_publication_is_opt_in(traffic: bool) -> None:
-    uris = ["beacon://packets/aabbccddeeff0011", *[f"beacon://channels/{i}" for i in range(1, 30)]]
+    http: httpx.AsyncClient
+    app: Starlette
+    response: httpx.Response
+    uris: list[str] = [
+        "beacon://packets/aabbccddeeff0011",
+        *[f"beacon://channels/{i}" for i in range(1, 30)],
+    ]
     async with running_gateway(traffic=traffic) as (http, app):
         async with listen(http, uris) as response:
-            lines = response.aiter_lines()
-            ack = await event(lines, "notifications/subscriptions/acknowledged")
+            lines: AsyncIterator[str] = response.aiter_lines()
+            ack: dict[str, Any] = await event(lines, "notifications/subscriptions/acknowledged")
             assert ack["params"]["notifications"]["resourceSubscriptions"] == uris
             app.state.live.received("packetObservation", {"packetHash": "AABBCCDDEEFF0011"})
             if traffic:
@@ -83,14 +105,15 @@ async def test_sdk_honors_more_than_twenty_uris_but_publication_is_opt_in(traffi
                     "uri"
                 ] == uris[0]
             app.state.listener.close()
-            remaining = [line async for line in lines if line.startswith("data:")]
+            remaining: list[str] = [line async for line in lines if line.startswith("data:")]
             assert all('"notifications/resources/updated"' not in line for line in remaining)
 
 
 @pytest.mark.parametrize("version", ["2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25"])
 async def test_sdk_native_legacy_initialize(version: str) -> None:
+    http: httpx.AsyncClient
     async with gateway() as http:
-        response = await http.post(
+        response: httpx.Response = await http.post(
             "/",
             headers={
                 "Accept": "application/json, text/event-stream",
@@ -113,20 +136,23 @@ async def test_sdk_native_legacy_initialize(version: str) -> None:
 
 
 async def test_disabled_and_invalid_protocol_requests() -> None:
+    http: httpx.AsyncClient
+    method: str
     async with gateway() as http:
-        discovered = (await rpc(http, "server/discover"))["result"]
+        discovered: dict[str, Any] = (await rpc(http, "server/discover"))["result"]
         assert not discovered["capabilities"]["resources"].get("subscribe")
         for method in ("resources/subscribe", "subscriptions/listen", "invented/method"):
             assert "error" in await rpc(http, method)
-        malformed = await http.post(
+        malformed: httpx.Response = await http.post(
             "/", headers={"Accept": "application/json, text/event-stream"}, content="{"
         )
         assert malformed.status_code >= 400
 
 
 async def test_sdk_request_body_limit_bounds_subscription_filters() -> None:
+    http: httpx.AsyncClient
     async with gateway() as http:
-        response = await http.post(
+        response: httpx.Response = await http.post(
             "/",
             headers={
                 "Accept": "application/json, text/event-stream",
@@ -139,10 +165,13 @@ async def test_sdk_request_body_limit_bounds_subscription_filters() -> None:
 
 
 async def test_sdk_native_http_methods_and_client_disconnect() -> None:
+    http: httpx.AsyncClient
+    app: Starlette
+    method: str
     async with running_gateway() as (http, app):
         # Modern transport rejects standalone GET and DELETE itself.
         for method in ("GET", "DELETE"):
-            response = await http.request(
+            response: httpx.Response = await http.request(
                 method, "/", headers={"MCP-Protocol-Version": "2026-07-28"}
             )
             assert response.status_code == 405
@@ -160,21 +189,30 @@ async def test_sdk_native_http_methods_and_client_disconnect() -> None:
 
 
 async def test_official_sdk_client_discovers_and_calls_gateway() -> None:
+    http: httpx.AsyncClient
+    _app: Starlette
+    session: ClientSession
     async with running_gateway() as (http, _app):
         async with streamable_http_client(str(http.base_url)) as streams:
             async with ClientSession(*streams, read_timeout_seconds=3) as session:
                 await session.discover()
                 assert session.server_info is not None
                 assert session.server_info.name == "beacon-mcp"
-                tools = await session.list_tools()
+                tools: mcp_types.ListToolsResult = await session.list_tools()
                 assert len(tools.tools) == 51
                 # The local mock backend returns 404; SDK results retain Beacon metadata.
-                result = await session.call_tool("beacon_get_node", {"id": ID})
+                result: mcp_types.CallToolResult = await session.call_tool(
+                    "beacon_get_node", {"id": ID}
+                )
                 assert result.is_error
                 assert result.structured_content["error"]["code"] == "NOT_FOUND"
-                templates = await session.list_resource_templates()
+                templates: mcp_types.ListResourceTemplatesResult = (
+                    await session.list_resource_templates()
+                )
                 assert len(templates.resource_templates) == 7
-                prompts = await session.list_prompts()
+                prompts: mcp_types.ListPromptsResult = await session.list_prompts()
                 assert len(prompts.prompts) == 3
-                prompt = await session.get_prompt("beacon_node_diagnostics", {"id": ID})
+                prompt: mcp_types.GetPromptResult = await session.get_prompt(
+                    "beacon_node_diagnostics", {"id": ID}
+                )
                 assert prompt.messages

@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Never, TypedDict
+from typing import Any, Never, TypedDict
 
 import httpx
 import pytest
@@ -33,13 +33,19 @@ CASES: list[tuple[str, dict[str, object], str]] = [
 
 @pytest.mark.parametrize("name,args,path", CASES)
 async def test_all_ten_and_cursors(name: str, args: dict[str, object], path: str) -> None:
+    http: httpx.AsyncClient
     seen: list[httpx.Request] = []
 
     def upstream(request: httpx.Request) -> httpx.Response:
         seen.append(request)
         assert request.url.path == path
         if name in ("beacon_list_routes", "beacon_search_traces"):
-            data = [{"lastSeen": 1000, "id": 7, "lastHeardAt": 123, "traceTag": "aabbccdd"}]
+            data: (
+                list[dict[str, int | str]]
+                | list[dict[str, list[str]]]
+                | dict[str, bool]
+                | dict[str, list[int] | bool | int | str]
+            ) = [{"lastSeen": 1000, "id": 7, "lastHeardAt": 123, "traceTag": "aabbccdd"}]
         elif name in ("beacon_search_routes", "beacon_find_cross_iata_routes"):
             data = [{"hops": ["ab", "abcdef"]}]
         elif name in ("beacon_get_packet", "beacon_get_trace"):
@@ -49,9 +55,11 @@ async def test_all_ten_and_cursors(name: str, args: dict[str, object], path: str
         return httpx.Response(200, json=data)
 
     async with gateway(upstream) as http:
-        result = (await rpc(http, "tools/call", name=name, arguments=args))["result"]
+        result: dict[str, Any] = (await rpc(http, "tools/call", name=name, arguments=args))[
+            "result"
+        ]
     assert result["isError"] is False and len(seen) == 1
-    data = result["structuredContent"]
+    data: dict[str, Any] = result["structuredContent"]
     if name == "beacon_search_packets":
         assert data["pagination"]["nextCursor"] == {"cursor": 42}
         assert seen[0].url.params["payloadTypes"] == "12,13,14"
@@ -71,7 +79,7 @@ class NegativeCase(TypedDict):
 
 
 # Validate fixture records before selecting tool-specific negative tests.
-_negative_cases = TypeAdapter(list[NegativeCase]).validate_python(
+_negative_cases: list[NegativeCase] = TypeAdapter(list[NegativeCase]).validate_python(
     json.loads(Path("tests/fixtures/invalid-tool-cases.json").read_text())
 )
 NEGATIVE: list[NegativeCase] = [
@@ -81,16 +89,18 @@ NEGATIVE: list[NegativeCase] = [
 
 @pytest.mark.parametrize("case", NEGATIVE)
 async def test_packet_routing_negative_arguments_rejected(case: NegativeCase) -> None:
+    http: httpx.AsyncClient
+
     def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("invalid request reached upstream")
 
     async with gateway(forbidden) as http:
-        result = (await rpc(http, "tools/call", name=case["name"], arguments=case["arguments"]))[
-            "result"
-        ]
+        result: dict[str, Any] = (
+            await rpc(http, "tools/call", name=case["name"], arguments=case["arguments"])
+        )["result"]
     assert result["isError"] is True
     assert result["content"][0]["text"]
-    error = result.get("structuredContent", {}).get("error")
+    error: dict[str, Any] | None = result.get("structuredContent", {}).get("error")
     if error is not None:
         assert error["code"] == "INVALID_ARGUMENT"
 
@@ -104,6 +114,8 @@ async def test_packet_routing_negative_arguments_rejected(case: NegativeCase) ->
     ],
 )
 async def test_utf8_packet_routing_bounds(name: str, args: dict[str, object]) -> None:
+    http: httpx.AsyncClient
+
     def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("oversized UTF-8 filter reached Beacon")
 

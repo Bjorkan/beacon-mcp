@@ -3,13 +3,14 @@ import logging
 import httpx
 import pytest
 from asgi_lifespan import LifespanManager
+from starlette.applications import Starlette
 
 from beacon_mcp.app import create_app
 from beacon_mcp.config import Config
 
 
 def test_defaults() -> None:
-    config = Config.from_env({"BEACON_BASE_URL": "https://beacon.example/prefix"})
+    config: Config = Config.from_env({"BEACON_BASE_URL": "https://beacon.example/prefix"})
     assert config.base_url == "https://beacon.example/prefix/"
     assert config.ws_url == "wss://beacon.example/ws"
     assert config.port == 3000 and config.timeout_ms == 10000
@@ -36,20 +37,23 @@ def test_defaults() -> None:
     ],
 )
 def test_invalid_config_redacts_values(key: str, value: str) -> None:
+    error: pytest.ExceptionInfo[ValueError]
     with pytest.raises(ValueError) as error:
         Config.from_env({"BEACON_BASE_URL": "https://beacon.example", key: value})
     assert "u:p" not in str(error.value)
 
 
 async def test_health_without_upstream(caplog: pytest.LogCaptureFixture) -> None:
-    config = Config.from_env({"BEACON_BASE_URL": "http://unreachable.invalid"})
-    app = create_app(config)
+    client: httpx.AsyncClient
+    path: str
+    config: Config = Config.from_env({"BEACON_BASE_URL": "http://unreachable.invalid"})
+    app: Starlette = create_app(config)
     async with (
         LifespanManager(app),
         httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test") as client,
     ):
         for path in ("/healthz", "/readyz"):
-            response = await client.get(path)
+            response: httpx.Response = await client.get(path)
             assert response.json() == {"status": "ok"}
         with caplog.at_level(logging.INFO, logger="beacon_mcp.access"):
             await client.post(

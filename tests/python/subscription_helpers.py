@@ -16,15 +16,16 @@ from beacon_mcp.client import BeaconClient
 from beacon_mcp.config import Config
 from tests.python.helpers import META
 
-ID = "123e4567-e89b-42d3-a456-426614174000"
-SUBSCRIPTION_ID = "io.modelcontextprotocol/subscriptionId"
+ID: str = "123e4567-e89b-42d3-a456-426614174000"
+SUBSCRIPTION_ID: str = "io.modelcontextprotocol/subscriptionId"
 
 
 @asynccontextmanager
 async def running_gateway(
     max_streams: int = 2, traffic: bool = False
 ) -> AsyncGenerator[tuple[httpx.AsyncClient, Starlette]]:
-    config = Config.from_env(
+    http: httpx.AsyncClient
+    config: Config = Config.from_env(
         {
             "BEACON_BASE_URL": "http://127.0.0.1:9",
             "BEACON_SUBSCRIPTIONS_MAX_STREAMS": str(max_streams),
@@ -32,18 +33,20 @@ async def running_gateway(
             "BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED": str(traffic).lower(),
         }
     )
-    beacon = BeaconClient(config, transport=httpx.MockTransport(lambda _: httpx.Response(404)))
-    app = create_app(config, client=beacon)
-    sock = socket.socket()
+    beacon: BeaconClient = BeaconClient(
+        config, transport=httpx.MockTransport(lambda _: httpx.Response(404))
+    )
+    app: Starlette = create_app(config, client=beacon)
+    sock: socket.socket = socket.socket()
     sock.bind(("127.0.0.1", 0))
-    port = sock.getsockname()[1]
+    port: int = sock.getsockname()[1]
     sock.setblocking(False)
-    server = uvicorn.Server(
+    server: uvicorn.Server = uvicorn.Server(
         uvicorn.Config(
             app, log_config=None, access_log=False, proxy_headers=False, timeout_graceful_shutdown=1
         )
     )
-    task = asyncio.create_task(server.serve(sockets=[sock]))
+    task: asyncio.Task[None] = asyncio.create_task(server.serve(sockets=[sock]))
     try:
         async with asyncio.timeout(3):
             while not server.started:  # noqa: ASYNC110 - Uvicorn exposes a readiness flag
@@ -83,6 +86,7 @@ def listen(
 
 
 async def event(lines: AsyncIterator[str], method: str) -> dict[str, Any]:
+    line: str
     async with asyncio.timeout(2):
         async for line in lines:
             if line.startswith("data:"):
@@ -90,7 +94,7 @@ async def event(lines: AsyncIterator[str], method: str) -> dict[str, Any]:
                 if isinstance(decoded, dict) and all(
                     isinstance(key, str) for key in cast(dict[object, object], decoded)
                 ):
-                    value = cast(dict[str, Any], decoded)
+                    value: dict[str, Any] = cast(dict[str, Any], decoded)
                     if value.get("method") == method:
                         return value
     raise AssertionError("stream ended before notification")

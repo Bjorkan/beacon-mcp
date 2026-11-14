@@ -8,6 +8,7 @@ import pytest
 
 from beacon_mcp.client import MAX_BYTES, BeaconClient, GatewayError, Operation
 from beacon_mcp.config import Config
+from beacon_mcp.json_stream import ArrayPage
 from tests.python.helpers import MockHandler
 
 
@@ -26,7 +27,7 @@ async def test_fixed_encoded_get() -> None:
         assert request.headers["user-agent"] == "beacon-mcp/2.2.0"
         return httpx.Response(200, json={"items": []})
 
-    c = client(handler)
+    c: BeaconClient = client(handler)
     try:
         assert await c.request(
             Operation.Nodes, query=[("iatas", "ARN,MMX"), ("scope", "#se13")]
@@ -52,7 +53,7 @@ async def test_reject_before_network(op: Operation, id: str) -> None:
     def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("unsafe upstream request")
 
-    c = client(forbidden)
+    c: BeaconClient = client(forbidden)
     try:
         with pytest.raises(GatewayError, match="invalid"):
             await c.request(op, id)
@@ -70,7 +71,8 @@ async def test_reject_before_network(op: Operation, id: str) -> None:
     ],
 )
 async def test_status_and_retry_after(status: int, code: str) -> None:
-    calls = 0
+    caught: pytest.ExceptionInfo[GatewayError]
+    calls: int = 0
 
     def handler(_request: httpx.Request) -> httpx.Response:
         nonlocal calls
@@ -81,7 +83,7 @@ async def test_status_and_retry_after(status: int, code: str) -> None:
             json={"error": {"code": "deadline_exceeded", "message": "secret SQL"}},
         )
 
-    c = client(handler)
+    c: BeaconClient = client(handler)
     try:
         with pytest.raises(GatewayError) as caught:
             await c.request(Operation.Nodes)
@@ -94,14 +96,14 @@ async def test_status_and_retry_after(status: int, code: str) -> None:
 
 
 async def test_retry_exactly_once() -> None:
-    calls = 0
+    calls: int = 0
 
     def handler(_request: httpx.Request) -> httpx.Response:
         nonlocal calls
         calls += 1
         return httpx.Response(503, json={})
 
-    c = client(handler)
+    c: BeaconClient = client(handler)
     try:
         with pytest.raises(GatewayError):
             await c.request(Operation.ServerInfo)
@@ -117,6 +119,7 @@ class Chunks(httpx.AsyncByteStream):
         self.closed: bool = False
 
     async def __aiter__(self) -> AsyncIterator[bytes]:
+        piece: bytes
         for piece in self.pieces:
             self.count += 1
             yield piece
@@ -135,11 +138,14 @@ def fixed_response(response: httpx.Response) -> MockHandler:
 
 
 async def test_incremental_early_close_and_nested_json() -> None:
-    item = {"name": 'a,\\"b', "nested": [1, {"k": "v"}]}
-    stream = Chunks([b"[" + (json.dumps(item).encode() + b",") * 200] * 1000)
-    c = client(fixed_response(httpx.Response(200, stream=stream)))
+    item: dict[str, str | list[int | dict[str, str]]] = {
+        "name": 'a,\\"b',
+        "nested": [1, {"k": "v"}],
+    }
+    stream: Chunks = Chunks([b"[" + (json.dumps(item).encode() + b",") * 200] * 1000)
+    c: BeaconClient = client(fixed_response(httpx.Response(200, stream=stream)))
     try:
-        page = await c.array_page(Operation.RouteSearch, max_items=3)
+        page: ArrayPage = await c.array_page(Operation.RouteSearch, max_items=3)
         assert page.items == [item] * 3 and not page.complete
         assert stream.count == 1 and stream.closed
     finally:
@@ -151,9 +157,9 @@ async def test_incremental_early_close_and_nested_json() -> None:
     [(b'["ARN","MMX"]', ["ARN", "MMX"], True), (b'{"items":[1,2,3]}', [1, 2], False)],
 )
 async def test_array_and_envelope(body: bytes, expected: list[str | int], complete: bool) -> None:
-    c = client(fixed_response(httpx.Response(200, content=body)))
+    c: BeaconClient = client(fixed_response(httpx.Response(200, content=body)))
     try:
-        page = await c.array_page(Operation.Iatas, max_items=2 if not complete else 3)
+        page: ArrayPage = await c.array_page(Operation.Iatas, max_items=2 if not complete else 3)
         assert page.items == expected and page.complete == complete
     finally:
         await c.aclose()
@@ -163,7 +169,8 @@ async def test_array_and_envelope(body: bytes, expected: list[str | int], comple
     "body,code", [(b"invalid", "UNAVAILABLE"), (b"x" * (MAX_BYTES + 1), "RESPONSE_TOO_LARGE")]
 )
 async def test_bad_bodies(body: bytes, code: str) -> None:
-    c = client(fixed_response(httpx.Response(200, content=body)))
+    caught: pytest.ExceptionInfo[GatewayError]
+    c: BeaconClient = client(fixed_response(httpx.Response(200, content=body)))
     try:
         with pytest.raises(GatewayError) as caught:
             await c.request(Operation.ServerInfo)
@@ -173,11 +180,13 @@ async def test_bad_bodies(body: bytes, code: str) -> None:
 
 
 async def test_total_deadline_and_cancellation() -> None:
+    caught: pytest.ExceptionInfo[GatewayError]
+
     async def handler(_request: httpx.Request) -> httpx.Response:
         await asyncio.sleep(2)
         return httpx.Response(200, json={})
 
-    c = BeaconClient(
+    c: BeaconClient = BeaconClient(
         Config.from_env({"BEACON_BASE_URL": "https://x.test", "BEACON_TIMEOUT_MS": "100"}),
         transport=httpx.MockTransport(handler),
     )
@@ -185,7 +194,7 @@ async def test_total_deadline_and_cancellation() -> None:
         with pytest.raises(GatewayError) as caught:
             await c.request(Operation.ServerInfo)
         assert caught.value.code == "DEADLINE_EXCEEDED"
-        pending = asyncio.create_task(c.request(Operation.ServerInfo))
+        pending: asyncio.Task[object] = asyncio.create_task(c.request(Operation.ServerInfo))
         await asyncio.sleep(0)
         pending.cancel()
         with pytest.raises(asyncio.CancelledError):
@@ -203,7 +212,8 @@ async def test_total_deadline_and_cancellation() -> None:
     ],
 )
 async def test_nonfinite_and_excessively_nested_json(body: bytes, array: bool) -> None:
-    c = client(fixed_response(httpx.Response(200, content=body)))
+    caught: pytest.ExceptionInfo[GatewayError]
+    c: BeaconClient = client(fixed_response(httpx.Response(200, content=body)))
     try:
         with pytest.raises(GatewayError) as caught:
             if array:
@@ -216,9 +226,9 @@ async def test_nonfinite_and_excessively_nested_json(body: bytes, array: bool) -
 
 
 async def test_truncated_array_retains_complete_items_with_explicit_truncation() -> None:
-    c = client(fixed_response(httpx.Response(200, content=b'[{"id":1},')))
+    c: BeaconClient = client(fixed_response(httpx.Response(200, content=b'[{"id":1},')))
     try:
-        result = await c.array_page(Operation.Iatas, max_items=3)
+        result: ArrayPage = await c.array_page(Operation.Iatas, max_items=3)
         assert result.items == [{"id": 1}] and not result.complete
     finally:
         await c.aclose()
@@ -226,7 +236,8 @@ async def test_truncated_array_retains_complete_items_with_explicit_truncation()
 
 @pytest.mark.parametrize("status,code", [(200, "UNAVAILABLE"), (429, "RESOURCE_EXHAUSTED")])
 async def test_unexpected_compression_is_never_inflated_or_read(status: int, code: str) -> None:
-    stream = Chunks([b"compressed body must never be read"])
+    caught: pytest.ExceptionInfo[GatewayError]
+    stream: Chunks = Chunks([b"compressed body must never be read"])
 
     def upstream(request: httpx.Request) -> httpx.Response:
         assert request.headers["accept-encoding"] == "identity"
@@ -234,7 +245,7 @@ async def test_unexpected_compression_is_never_inflated_or_read(status: int, cod
             status, headers={"Content-Encoding": "gzip", "Retry-After": "10"}, stream=stream
         )
 
-    c = client(upstream)
+    c: BeaconClient = client(upstream)
     try:
         with pytest.raises(GatewayError) as caught:
             await c.request(Operation.ServerInfo)
@@ -247,7 +258,8 @@ async def test_unexpected_compression_is_never_inflated_or_read(status: int, cod
 
 
 async def test_public_reads_never_retain_or_resend_cookies() -> None:
-    calls = 0
+    _: int
+    calls: int = 0
 
     def upstream(request: httpx.Request) -> httpx.Response:
         nonlocal calls
@@ -257,7 +269,7 @@ async def test_public_reads_never_retain_or_resend_cookies() -> None:
             200, headers={"Set-Cookie": "tracking=synthetic-secret; Path=/"}, json={}
         )
 
-    c = client(upstream)
+    c: BeaconClient = client(upstream)
     try:
         for _ in range(3):
             await c.request(Operation.ServerInfo)

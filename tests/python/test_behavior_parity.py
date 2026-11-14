@@ -3,7 +3,7 @@
 import hashlib
 import json
 from pathlib import Path
-from typing import NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 import httpx
 import pytest
@@ -44,13 +44,15 @@ class BehaviorBaseline(TypedDict):
 
 # The immutable fixture is untrusted JSON to the type checker. Validate its
 # structure once rather than spreading Unknown or unsafe casts across assertions.
-BASELINE = TypeAdapter(BehaviorBaseline).validate_python(
+BASELINE: BehaviorBaseline = TypeAdapter(BehaviorBaseline).validate_python(
     json.loads(Path("tests/fixtures/behavior-baseline.json").read_text())
 )
-RESULT = TypeAdapter(dict[str, object])
+RESULT: TypeAdapter[dict[str, object]] = TypeAdapter(dict[str, object])
 
 
 def test_frozen_contract_bytes() -> None:
+    name: str
+    digest: str
     for name, digest in BASELINE["contractHashes"].items():
         assert (
             hashlib.sha256(Path("src/beacon_mcp/contracts", name).read_bytes()).hexdigest()
@@ -60,12 +62,13 @@ def test_frozen_contract_bytes() -> None:
 
 @pytest.mark.parametrize("case", BASELINE["cases"], ids=lambda case: case["name"])
 async def test_reference_result_and_upstream_requests(case: ReferenceCase) -> None:
+    http: httpx.AsyncClient
     seen: list[UpstreamRequest] = []
 
     def upstream(request: httpx.Request) -> httpx.Response:
         seen.append({"path": request.url.path, "query": dict(request.url.params)})
-        scenario = case.get("scenario", {})
-        status = scenario.get("status", 200)
+        scenario: Scenario = case.get("scenario", {})
+        status: int = scenario.get("status", 200)
         return httpx.Response(
             status,
             headers={"Retry-After": "10"} if status >= 400 else {},
@@ -73,10 +76,12 @@ async def test_reference_result_and_upstream_requests(case: ReferenceCase) -> No
         )
 
     async with gateway(upstream) as http:
-        raw = await rpc(http, "tools/call", name=case["name"], arguments=case["arguments"])
-    result = RESULT.validate_python(raw["result"])
+        raw: dict[str, Any] = await rpc(
+            http, "tools/call", name=case["name"], arguments=case["arguments"]
+        )
+    result: dict[str, object] = RESULT.validate_python(raw["result"])
     # SDK-owned resultType/serverInfo stamps deliberately follow SDK v2.
-    actual = {
+    actual: dict[str, object] = {
         key: result[key] for key in ("isError", "content", "structuredContent") if key in result
     }
     if case["expected"]["isError"] and "scenario" not in case:
@@ -85,8 +90,8 @@ async def test_reference_result_and_upstream_requests(case: ReferenceCase) -> No
         assert actual["isError"] is True and actual["content"]
         # Keep the original parity invariant: a present error field must
         # be a valid object with the expected classification; never skip it.
-        payload = RESULT.validate_python(actual.get("structuredContent", {}))
-        error = payload.get("error")
+        payload: dict[str, object] = RESULT.validate_python(actual.get("structuredContent", {}))
+        error: object = payload.get("error")
         if error is not None:
             assert RESULT.validate_python(error).get("code") == "INVALID_ARGUMENT"
     else:

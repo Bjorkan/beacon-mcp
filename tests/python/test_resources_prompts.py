@@ -1,5 +1,5 @@
 import json
-from typing import Never
+from typing import Any, Never
 
 import httpx
 import pytest
@@ -7,7 +7,7 @@ import pytest
 from beacon_mcp.resources import parse_uri
 from tests.python.helpers import gateway, rpc
 
-ID = "123e4567-e89b-42d3-a456-426614174000"
+ID: str = "123e4567-e89b-42d3-a456-426614174000"
 
 
 @pytest.mark.parametrize(
@@ -23,7 +23,9 @@ ID = "123e4567-e89b-42d3-a456-426614174000"
     ],
 )
 async def test_all_seven_resources_fresh_and_canonical(uri: str) -> None:
-    calls = 0
+    http: httpx.AsyncClient
+    sequence: int
+    calls: int = 0
 
     def upstream(request: httpx.Request) -> httpx.Response:
         nonlocal calls
@@ -31,11 +33,11 @@ async def test_all_seven_resources_fresh_and_canonical(uri: str) -> None:
         return httpx.Response(200, json={"path": request.url.path, "sequence": calls})
 
     async with gateway(upstream) as http:
-        templates = await rpc(http, "resources/templates/list")
+        templates: dict[str, Any] = await rpc(http, "resources/templates/list")
         assert len(templates["result"]["resourceTemplates"]) == 7
         for sequence in (1, 2):
-            result = await rpc(http, "resources/read", uri=uri)
-            content = result["result"]["contents"][0]
+            result: dict[str, Any] = await rpc(http, "resources/read", uri=uri)
+            content: dict[str, Any] = result["result"]["contents"][0]
             assert content["mimeType"] == "application/json"
             assert json.loads(content["text"])["sequence"] == sequence
             assert parse_uri(content["uri"]) == parse_uri(uri)
@@ -56,6 +58,7 @@ async def test_all_seven_resources_fresh_and_canonical(uri: str) -> None:
     ],
 )
 async def test_injected_uris_rejected(uri: str) -> None:
+    http: httpx.AsyncClient
     assert parse_uri(uri) is None
 
     def forbidden(_request: httpx.Request) -> Never:
@@ -74,11 +77,13 @@ async def test_injected_uris_rejected(uri: str) -> None:
     ],
 )
 async def test_all_three_prompts(name: str, args: dict[str, str], contains: str) -> None:
+    http: httpx.AsyncClient
+
     def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("prompts must not contact Beacon")
 
     async with gateway(forbidden) as http:
         assert len((await rpc(http, "prompts/list"))["result"]["prompts"]) == 3
-        result = await rpc(http, "prompts/get", name=name, arguments=args)
-    message = result["result"]["messages"][0]
+        result: dict[str, Any] = await rpc(http, "prompts/get", name=name, arguments=args)
+    message: dict[str, Any] = result["result"]["messages"][0]
     assert message["role"] == "user" and contains in message["content"]["text"]

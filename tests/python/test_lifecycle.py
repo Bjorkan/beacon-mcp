@@ -3,6 +3,7 @@ import os
 import signal
 import socket
 import sys
+from collections.abc import AsyncIterator
 from contextlib import suppress
 
 import httpx
@@ -11,10 +12,16 @@ from tests.python.subscription_helpers import ID, event, listen
 
 
 async def test_cli_uptime_healthcheck_silent_logs_and_sigterm_closes_sse() -> None:
+    reservation: socket.socket
+    http: httpx.AsyncClient
+    _: int | str
+    response: httpx.Response
+    stdout: bytes
+    stderr: bytes
     with socket.socket() as reservation:
         reservation.bind(("127.0.0.1", 0))
-        port = reservation.getsockname()[1]
-    env = {
+        port: int = reservation.getsockname()[1]
+    env: dict[str, str] = {
         **os.environ,
         "HOST": "127.0.0.1",
         "PORT": str(port),
@@ -22,7 +29,7 @@ async def test_cli_uptime_healthcheck_silent_logs_and_sigterm_closes_sse() -> No
         "SHUTDOWN_GRACE_MS": "100",
         "LOG_LEVEL": "silent",
     }
-    child = await asyncio.create_subprocess_exec(
+    child: asyncio.subprocess.Process = await asyncio.create_subprocess_exec(
         sys.executable,
         "-m",
         "beacon_mcp",
@@ -43,12 +50,12 @@ async def test_cli_uptime_healthcheck_silent_logs_and_sigterm_closes_sse() -> No
                 raise AssertionError("gateway failed to start")
             await asyncio.sleep(0.2)
             assert child.returncode is None
-            check = await asyncio.create_subprocess_exec(
+            check: asyncio.subprocess.Process = await asyncio.create_subprocess_exec(
                 sys.executable, "-m", "beacon_mcp", "--healthcheck", env=env
             )
             assert await check.wait() == 0
             async with listen(http, [f"beacon://nodes/{ID}"]) as response:
-                lines = response.aiter_lines()
+                lines: AsyncIterator[str] = response.aiter_lines()
                 await event(lines, "notifications/subscriptions/acknowledged")
                 child.terminate()
                 async with asyncio.timeout(4):

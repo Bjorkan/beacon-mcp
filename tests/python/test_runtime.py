@@ -2,6 +2,7 @@ import json
 from pathlib import Path
 from typing import Any, Never
 
+import httpx
 import pytest
 
 from beacon_mcp.client import BeaconClient, GatewayError
@@ -10,19 +11,22 @@ from tests.python.helpers import gateway, rpc
 
 
 async def test_sdk_discovery_and_frozen_tool_registration() -> None:
-    registry = Registry()
+    http: httpx.AsyncClient
+    registry: Registry = Registry()
 
     async def implementation(_client: BeaconClient, _args: dict[str, Any]) -> dict[str, object]:
         return {"items": ["not-duplicated-in-text"]}
 
     registry.register("beacon_list_iatas", implementation)
     async with gateway(registry=registry) as http:
-        discovered = await rpc(http, "server/discover")
+        discovered: dict[str, Any] = await rpc(http, "server/discover")
         assert "tools" in discovered["result"]["capabilities"]
         assert "extensions" not in discovered["result"]["capabilities"]
-        listed = await rpc(http, "tools/list")
+        listed: dict[str, Any] = await rpc(http, "tools/list")
         assert listed["result"]["tools"] == [CONTRACTS["beacon_list_iatas"]]
-        called = await rpc(http, "tools/call", name="beacon_list_iatas", arguments={})
+        called: dict[str, Any] = await rpc(
+            http, "tools/call", name="beacon_list_iatas", arguments={}
+        )
         assert called["result"]["structuredContent"] == {"items": ["not-duplicated-in-text"]}
         assert called["result"]["content"] == [
             {"type": "text", "text": "Beacon returned 1 item(s)."}
@@ -30,7 +34,7 @@ async def test_sdk_discovery_and_frozen_tool_registration() -> None:
 
 
 def test_contract_copies_and_unique_inventory() -> None:
-    frozen = json.loads(Path("tests/fixtures/tool-names.json").read_text())
+    frozen: list[str] = json.loads(Path("tests/fixtures/tool-names.json").read_text())
     assert len(CONTRACTS) == len(frozen) == 51
     assert set(CONTRACTS) == set(frozen)
 
@@ -44,14 +48,17 @@ def test_contract_copies_and_unique_inventory() -> None:
     ],
 )
 async def test_classified_errors(code: str, kind: str) -> None:
-    registry = Registry()
+    http: httpx.AsyncClient
+    registry: Registry = Registry()
 
     async def failure(_client: BeaconClient, _args: dict[str, Any]) -> Never:
         raise GatewayError(code, "redacted", status=503, retry_after="10")
 
     registry.register("beacon_get_server_info", failure)
     async with gateway(registry=registry) as http:
-        payload = await rpc(http, "tools/call", name="beacon_get_server_info", arguments={})
+        payload: dict[str, Any] = await rpc(
+            http, "tools/call", name="beacon_get_server_info", arguments={}
+        )
     assert payload["result"]["isError"] is True
     assert payload["result"]["structuredContent"]["error"] == {
         "code": code,
@@ -62,15 +69,19 @@ async def test_classified_errors(code: str, kind: str) -> None:
 
 
 async def test_sdk_owns_malformed_call_parameters() -> None:
+    http: httpx.AsyncClient
     async with gateway() as http:
-        missing_name = await rpc(http, "tools/call", arguments={})
-        wrong_arguments = await rpc(http, "tools/call", name="beacon_list_iatas", arguments=[])
+        missing_name: dict[str, Any] = await rpc(http, "tools/call", arguments={})
+        wrong_arguments: dict[str, Any] = await rpc(
+            http, "tools/call", name="beacon_list_iatas", arguments=[]
+        )
     assert missing_name["error"]["code"] == -32602
     assert wrong_arguments["error"]["code"] == -32602
 
 
 async def test_json_schema_validation_and_pydantic_integer_arguments() -> None:
-    registry = Registry()
+    http: httpx.AsyncClient
+    registry: Registry = Registry()
     seen: list[dict[str, Any]] = []
 
     async def implementation(
@@ -83,13 +94,13 @@ async def test_json_schema_validation_and_pydantic_integer_arguments() -> None:
 
     registry.register("beacon_search_packets", implementation)
     async with gateway(registry=registry) as http:
-        valid = await rpc(
+        valid: dict[str, Any] = await rpc(
             http,
             "tools/call",
             name="beacon_search_packets",
             arguments={"limit": 1.0, "routeTypes": [1.0, 2]},
         )
-        invalid = await rpc(
+        invalid: dict[str, Any] = await rpc(
             http, "tools/call", name="beacon_search_packets", arguments={"limit": 1.5}
         )
     assert not valid["result"]["isError"]
@@ -99,13 +110,16 @@ async def test_json_schema_validation_and_pydantic_integer_arguments() -> None:
 
 
 async def test_sdk_handles_unexpected_handler_exceptions() -> None:
-    registry = Registry()
+    http: httpx.AsyncClient
+    registry: Registry = Registry()
 
     async def failure(_client: BeaconClient, _args: dict[str, Any]) -> Never:
         raise RuntimeError("synthetic detail must stay off the wire")
 
     registry.register("beacon_get_server_info", failure)
     async with gateway(registry=registry) as http:
-        response = await rpc(http, "tools/call", name="beacon_get_server_info", arguments={})
+        response: dict[str, Any] = await rpc(
+            http, "tools/call", name="beacon_get_server_info", arguments={}
+        )
     assert response["error"]["code"] == -32603
     assert "synthetic detail" not in json.dumps(response)

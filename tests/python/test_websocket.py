@@ -1,10 +1,12 @@
 import asyncio
 import json
-from typing import cast
+from collections.abc import Callable
+from typing import Any, cast
 
 import httpx
 import pytest
 from mcp.server.subscriptions import ResourceUpdated, ServerEvent
+from websockets.asyncio.server import Server as WebSocketServer
 from websockets.asyncio.server import ServerConnection, serve
 from websockets.exceptions import ConnectionClosed
 
@@ -12,7 +14,7 @@ from beacon_mcp.client import BeaconClient
 from beacon_mcp.config import Config
 from beacon_mcp.subscriptions import Live, bridge, connect_once
 
-ID = "123e4567-e89b-42d3-a456-426614174000"
+ID: str = "123e4567-e89b-42d3-a456-426614174000"
 
 
 def config(**env: str) -> Config:
@@ -22,15 +24,16 @@ def config(**env: str) -> Config:
 
 
 async def test_debounce_validation_and_only_uri_retention() -> None:
-    live = Live(config(BEACON_SUBSCRIPTIONS_DEBOUNCE_MS="10"))
+    _: int
+    live: Live = Live(config(BEACON_SUBSCRIPTIONS_DEBOUNCE_MS="10"))
     queue: asyncio.Queue[ServerEvent] = asyncio.Queue()
-    unsubscribe = live.bus.subscribe(queue.put_nowait)
+    unsubscribe: Callable[[], None] = live.bus.subscribe(queue.put_nowait)
     for _ in range(5):
         live.received("nodeUpdate", {"nodeId": ID, "text": "never-store"})
     live.received("nodeUpdate", {"nodeId": "../admin"})
     live.received("packetObservation", {"packetHash": "AABBCCDDEEFF0011"})
     assert list(live.pending) == [f"beacon://nodes/{ID}"]
-    update = await asyncio.wait_for(queue.get(), 1)
+    update: ServerEvent = await asyncio.wait_for(queue.get(), 1)
     assert isinstance(update, ResourceUpdated)
     assert update.uri == f"beacon://nodes/{ID}"
     assert queue.empty()
@@ -39,7 +42,8 @@ async def test_debounce_validation_and_only_uri_retention() -> None:
 
 
 async def test_traffic_opt_in_and_pending_bound() -> None:
-    live = Live(
+    i: int
+    live: Live = Live(
         config(BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED="true", BEACON_SUBSCRIPTIONS_DEBOUNCE_MS="5000")
     )
     live.received("packetObservation", {"packetHash": "AABBCCDDEEFF0011", "content": "discard"})
@@ -56,6 +60,8 @@ async def test_traffic_opt_in_and_pending_bound() -> None:
 @pytest.mark.parametrize("legacy", [False, True])
 @pytest.mark.parametrize("traffic", [False, True])
 async def test_ticket_handshake_and_reconnect(legacy: bool, traffic: bool) -> None:
+    server: WebSocketServer
+    _: int
     tickets: list[str | None] = []
     events: asyncio.Queue[ServerEvent] = asyncio.Queue()
 
@@ -70,8 +76,8 @@ async def test_ticket_handshake_and_reconnect(legacy: bool, traffic: bool) -> No
         await socket.send(json.dumps({"v": 1, "type": "hello"}))
         decoded: object = json.loads(await socket.recv())
         assert isinstance(decoded, dict)
-        request = cast(dict[str, object], decoded)
-        scope = request.get("scope")
+        request: dict[str, object] = cast(dict[str, object], decoded)
+        scope: object = request.get("scope")
         assert isinstance(scope, dict)
         assert cast(dict[str, object], scope).get("events") == ["nodeUpdate", "observerStatus"] + (
             ["packetObservation", "channelMessage"] if traffic else []
@@ -86,25 +92,25 @@ async def test_ticket_handshake_and_reconnect(legacy: bool, traffic: bool) -> No
             await socket.wait_closed()
 
     async with serve(mock, "127.0.0.1", 0) as server:
-        port = server.sockets[0].getsockname()[1]
-        cfg = config(
+        port: int = server.sockets[0].getsockname()[1]
+        cfg: Config = config(
             BEACON_WS_URL=f"ws://127.0.0.1:{port}/ws",
             BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED=str(traffic).lower(),
         )
-        calls = 0
+        calls: int = 0
 
         def ticket(_request: httpx.Request) -> httpx.Response:
             nonlocal calls
             calls += 1
             return httpx.Response(404 if legacy else 200, json={"ticket": f"ticket-{calls}"})
 
-        client = BeaconClient(cfg, transport=httpx.MockTransport(ticket))
-        live = Live(cfg)
+        client: BeaconClient = BeaconClient(cfg, transport=httpx.MockTransport(ticket))
+        live: Live = Live(cfg)
         live.bus.subscribe(events.put_nowait)
-        task = asyncio.create_task(bridge(client, live))
+        task: asyncio.Task[None] = asyncio.create_task(bridge(client, live))
         try:
             for _ in range(2):
-                update = await asyncio.wait_for(events.get(), 4)
+                update: ServerEvent = await asyncio.wait_for(events.get(), 4)
                 assert isinstance(update, ResourceUpdated)
                 assert update.uri == f"beacon://nodes/{ID}"
             assert tickets == ([None, None] if legacy else ["ticket-1", "ticket-2"])
@@ -120,6 +126,8 @@ async def test_ticket_handshake_and_reconnect(legacy: bool, traffic: bool) -> No
     "scenario", ["no-hello", "bad-ack", "oversized", "missing-pong", "wrong-pong"]
 )
 async def test_handshake_frame_and_heartbeat_fail_closed(scenario: str) -> None:
+    server: WebSocketServer
+
     async def mock(socket: ServerConnection) -> None:
         if scenario == "oversized":
             await socket.send("x" * 131073)
@@ -144,9 +152,11 @@ async def test_handshake_frame_and_heartbeat_fail_closed(scenario: str) -> None:
         return httpx.Response(404)
 
     async with serve(mock, "127.0.0.1", 0) as server:
-        cfg = config(BEACON_WS_URL=f"ws://127.0.0.1:{server.sockets[0].getsockname()[1]}/ws")
-        client = BeaconClient(cfg, transport=httpx.MockTransport(not_found))
-        live = Live(cfg)
+        cfg: Config = config(
+            BEACON_WS_URL=f"ws://127.0.0.1:{server.sockets[0].getsockname()[1]}/ws"
+        )
+        client: BeaconClient = BeaconClient(cfg, transport=httpx.MockTransport(not_found))
+        live: Live = Live(cfg)
         events: asyncio.Queue[ServerEvent] = asyncio.Queue()
         live.bus.subscribe(events.put_nowait)
         try:
@@ -161,10 +171,13 @@ async def test_handshake_frame_and_heartbeat_fail_closed(scenario: str) -> None:
 
 
 async def test_valid_pongs_keep_connection_alive_after_ignored_malformed_frames() -> None:
+    server: WebSocketServer
     pings: list[str] = []
     events: asyncio.Queue[ServerEvent] = asyncio.Queue()
 
     async def upstream(socket: ServerConnection) -> None:
+        frame: bytes | str
+        expected_id: str
         for frame in (
             b'{"v":1,"type":"hello"}',
             "invalid JSON",
@@ -178,7 +191,7 @@ async def test_valid_pongs_keep_connection_alive_after_ignored_malformed_frames(
         assert json.loads(await socket.recv())["type"] == "subscribe"
         await socket.send(json.dumps({"v": 1, "type": "subscribed", "id": "mcp-changes"}))
         for expected_id in ("mcp-ping-1", "mcp-ping-2"):
-            ping = json.loads(await socket.recv())
+            ping: dict[str, Any] = json.loads(await socket.recv())
             assert ping == {"v": 1, "type": "ping", "id": expected_id}
             pings.append(expected_id)
             await socket.send(json.dumps({"v": 1, "type": "pong", "id": expected_id}))
@@ -188,17 +201,19 @@ async def test_valid_pongs_keep_connection_alive_after_ignored_malformed_frames(
         await socket.wait_closed()
 
     async with serve(upstream, "127.0.0.1", 0) as server:
-        port = server.sockets[0].getsockname()[1]
-        cfg = config(BEACON_WS_URL=f"ws://127.0.0.1:{port}/ws")
-        client = BeaconClient(
+        port: int = server.sockets[0].getsockname()[1]
+        cfg: Config = config(BEACON_WS_URL=f"ws://127.0.0.1:{port}/ws")
+        client: BeaconClient = BeaconClient(
             cfg,
             transport=httpx.MockTransport(lambda _: httpx.Response(200, json={"ticket": "test"})),
         )
-        live = Live(cfg)
+        live: Live = Live(cfg)
         live.bus.subscribe(events.put_nowait)
-        task = asyncio.create_task(connect_once(client, live, ping_interval=0.05))
+        task: asyncio.Task[None] = asyncio.create_task(
+            connect_once(client, live, ping_interval=0.05)
+        )
         try:
-            update = await asyncio.wait_for(events.get(), 2)
+            update: ServerEvent = await asyncio.wait_for(events.get(), 2)
             assert isinstance(update, ResourceUpdated)
             assert update.uri == f"beacon://nodes/{ID}"
             assert pings == ["mcp-ping-1", "mcp-ping-2"]

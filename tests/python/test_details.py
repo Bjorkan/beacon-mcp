@@ -1,4 +1,4 @@
-from typing import Never
+from typing import Any, Never
 
 import httpx
 import pytest
@@ -22,6 +22,8 @@ DETAIL_CASES: list[tuple[str, dict[str, object], str]] = [
 
 @pytest.mark.parametrize("name,args,path", DETAIL_CASES)
 async def test_all_seven_detail_reads(name: str, args: dict[str, object], path: str) -> None:
+    http: httpx.AsyncClient
+
     def upstream(request: httpx.Request) -> httpx.Response:
         assert request.url.path == path
         if name == "beacon_list_brokers":
@@ -40,31 +42,40 @@ async def test_all_seven_detail_reads(name: str, args: dict[str, object], path: 
         )
 
     async with gateway(upstream) as http:
-        result = (await rpc(http, "tools/call", name=name, arguments=args))["result"]
+        result: dict[str, Any] = (await rpc(http, "tools/call", name=name, arguments=args))[
+            "result"
+        ]
     assert not result["isError"]
     if name == "beacon_list_observer_directory":
-        data = result["structuredContent"]
+        data: dict[str, Any] = result["structuredContent"]
         assert data["pagination"]["nextCursor"] == {"cursor": 123}
         assert data["coverage"] == {"complete": True} and data["windowStart"] == 1000
 
 
 @pytest.mark.parametrize("id", ["..", ".", "../admin", "%23scope", "foo/bar", "foo\\bar"])
 async def test_scope_path_restrictions(id: str) -> None:
+    http: httpx.AsyncClient
+
     def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("path injection reached upstream")
 
     async with gateway(forbidden) as http:
-        result = await rpc(http, "tools/call", name="beacon_get_scope", arguments={"id": id})
+        result: dict[str, Any] = await rpc(
+            http, "tools/call", name="beacon_get_scope", arguments={"id": id}
+        )
     assert result["result"]["isError"]
 
 
 @pytest.mark.parametrize("sort", ["traffic", "name"])
 async def test_directory_continuation_preserves_returned_window(sort: str) -> None:
+    start_ms: int
+    end_ms: int
+    http: httpx.AsyncClient
     requests: list[dict[str, str]] = []
     start_ms, end_ms = 1794009600123, 1794096000987
 
     def upstream(request: httpx.Request) -> httpx.Response:
-        params = dict(request.url.params)
+        params: dict[str, str] = dict(request.url.params)
         requests.append(params)
         assert params["iatas"] == "ARN" and params["sort"] == sort
         assert params["limit"] == "2"
@@ -94,7 +105,7 @@ async def test_directory_continuation_preserves_returned_window(sort: str) -> No
         )
 
     async with gateway(upstream) as http:
-        first = (
+        first: dict[str, Any] = (
             await rpc(
                 http,
                 "tools/call",
@@ -102,7 +113,7 @@ async def test_directory_continuation_preserves_returned_window(sort: str) -> No
                 arguments={"iatas": ["arn"], "sort": sort, "limit": 2},
             )
         )["result"]["structuredContent"]
-        second = (
+        second: dict[str, Any] = (
             await rpc(
                 http,
                 "tools/call",

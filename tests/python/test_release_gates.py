@@ -2,7 +2,10 @@ import asyncio
 import importlib.util
 import json
 import logging
+from importlib.machinery import ModuleSpec
 from pathlib import Path
+from types import ModuleType
+from typing import Any
 
 import httpx
 import pytest
@@ -14,14 +17,14 @@ from beacon_mcp.config import Config
 from beacon_mcp.handlers.composite import diagnose_node
 from tests.python.helpers import gateway, rpc
 
-EXPECTED_NAMES = TypeAdapter(list[str]).validate_python(
+EXPECTED_NAMES: list[str] = TypeAdapter(list[str]).validate_python(
     json.loads(Path("tests/fixtures/tool-names.json").read_text())
 )
-ID = "123e4567-e89b-42d3-a456-426614174000"
+ID: str = "123e4567-e89b-42d3-a456-426614174000"
 
 
 def test_diagnostics_cannot_disclose_exception_headers_or_payloads() -> None:
-    record = logging.LogRecord(
+    record: logging.LogRecord = logging.LogRecord(
         "mcp.server.runner",
         logging.ERROR,
         "",
@@ -37,7 +40,7 @@ def test_diagnostics_cannot_disclose_exception_headers_or_payloads() -> None:
 
 
 async def test_composite_failure_cancels_siblings_and_preserves_classification() -> None:
-    cancelled = asyncio.Event()
+    cancelled: asyncio.Event = asyncio.Event()
 
     async def upstream(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/activity"):
@@ -52,11 +55,12 @@ async def test_composite_failure_cancels_siblings_and_preserves_classification()
 
     from beacon_mcp.client import GatewayError
 
-    client = BeaconClient(
+    client: BeaconClient = BeaconClient(
         Config.from_env({"BEACON_BASE_URL": "https://beacon.test"}),
         transport=httpx.MockTransport(upstream),
     )
     try:
+        caught: pytest.ExceptionInfo[GatewayError]
         with pytest.raises(GatewayError) as caught:
             await diagnose_node(client, {"id": ID})
         assert caught.value.code == "DEADLINE_EXCEEDED"
@@ -68,10 +72,10 @@ async def test_composite_failure_cancels_siblings_and_preserves_classification()
 async def test_cancelling_composite_awaits_all_upstream_reads() -> None:
     started: set[str] = set()
     cancelled: set[str] = set()
-    all_started = asyncio.Event()
+    all_started: asyncio.Event = asyncio.Event()
 
     async def upstream(request: httpx.Request) -> httpx.Response:
-        path = request.url.path
+        path: str = request.url.path
         started.add(path)
         if len(started) == 3:
             all_started.set()
@@ -81,11 +85,11 @@ async def test_cancelling_composite_awaits_all_upstream_reads() -> None:
         finally:
             cancelled.add(path)
 
-    client = BeaconClient(
+    client: BeaconClient = BeaconClient(
         Config.from_env({"BEACON_BASE_URL": "https://beacon.test"}),
         transport=httpx.MockTransport(upstream),
     )
-    task = asyncio.create_task(diagnose_node(client, {"id": ID}))
+    task: asyncio.Task[dict[str, object]] = asyncio.create_task(diagnose_node(client, {"id": ID}))
     try:
         await asyncio.wait_for(all_started.wait(), 1)
         task.cancel()
@@ -100,6 +104,7 @@ async def test_cancelling_composite_awaits_all_upstream_reads() -> None:
 
 
 async def test_inventory_order_and_forbidden_events() -> None:
+    http: httpx.AsyncClient
     async with gateway() as http:
         assert [
             tool["name"] for tool in (await rpc(http, "tools/list"))["result"]["tools"]
@@ -109,8 +114,9 @@ async def test_inventory_order_and_forbidden_events() -> None:
 
 
 async def test_invalid_calendar_still_rejected_with_beacon_classification() -> None:
+    http: httpx.AsyncClient
     async with gateway() as http:
-        result = (
+        result: dict[str, Any] = (
             await rpc(
                 http,
                 "tools/call",
@@ -126,9 +132,12 @@ async def test_invalid_calendar_still_rejected_with_beacon_classification() -> N
 
 
 def test_openapi_sync_requires_an_immutable_commit(monkeypatch: pytest.MonkeyPatch) -> None:
-    spec = importlib.util.spec_from_file_location("sync_openapi", "scripts/sync-openapi.py")
+    revision: str
+    spec: ModuleSpec | None = importlib.util.spec_from_file_location(
+        "sync_openapi", "scripts/sync-openapi.py"
+    )
     assert spec is not None and spec.loader is not None
-    module = importlib.util.module_from_spec(spec)
+    module: ModuleType = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     for revision in ("main", "dev", "v2.2.0", "abcdef"):
         monkeypatch.setattr("sys.argv", ["sync-openapi.py", revision])

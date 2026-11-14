@@ -1,3 +1,5 @@
+from typing import Any
+
 import httpx
 import pytest
 
@@ -7,6 +9,7 @@ from tests.python.helpers import gateway, rpc
 
 @pytest.mark.parametrize("name", OPERATIONS)
 async def test_all_eleven_statistics_and_bounds(name: str) -> None:
+    http: httpx.AsyncClient
     seen: list[httpx.Request] = []
 
     def upstream(request: httpx.Request) -> httpx.Response:
@@ -26,7 +29,9 @@ async def test_all_eleven_statistics_and_bounds(name: str) -> None:
     if name == "beacon_get_radio_presets":
         args["preset"] = "910.525,62.5,7"
     async with gateway(upstream) as http:
-        result = (await rpc(http, "tools/call", name=name, arguments=args))["result"]
+        result: dict[str, Any] = (await rpc(http, "tools/call", name=name, arguments=args))[
+            "result"
+        ]
     assert not result["isError"], result
     assert len(seen) == 1
     if OPERATIONS[name][1] == "array":

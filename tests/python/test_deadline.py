@@ -10,7 +10,8 @@ from beacon_mcp.config import Config
 
 
 async def test_total_timeout_includes_first_attempt_and_retry_backoff() -> None:
-    attempts = 0
+    caught: pytest.ExceptionInfo[GatewayError]
+    attempts: int = 0
 
     async def upstream(_request: httpx.Request) -> httpx.Response:
         nonlocal attempts
@@ -20,7 +21,7 @@ async def test_total_timeout_includes_first_attempt_and_retry_backoff() -> None:
             return httpx.Response(503, json={})
         return httpx.Response(200, json={"unexpected": "second request"})
 
-    client = BeaconClient(
+    client: BeaconClient = BeaconClient(
         Config.from_env({"BEACON_BASE_URL": "https://beacon.test", "BEACON_TIMEOUT_MS": "100"}),
         transport=httpx.MockTransport(upstream),
     )
@@ -36,7 +37,7 @@ async def test_total_timeout_includes_first_attempt_and_retry_backoff() -> None:
 
 
 async def test_fast_transient_failure_still_retries_once() -> None:
-    attempts = 0
+    attempts: int = 0
 
     async def upstream(_request: httpx.Request) -> httpx.Response:
         nonlocal attempts
@@ -45,7 +46,7 @@ async def test_fast_transient_failure_still_retries_once() -> None:
             return httpx.Response(503, json={})
         return httpx.Response(200, json={"ok": True})
 
-    client = BeaconClient(
+    client: BeaconClient = BeaconClient(
         Config.from_env({"BEACON_BASE_URL": "https://beacon.test", "BEACON_TIMEOUT_MS": "300"}),
         transport=httpx.MockTransport(upstream),
     )

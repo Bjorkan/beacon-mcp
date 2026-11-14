@@ -6,6 +6,7 @@ from typing import Any, cast
 
 import httpx
 from asgi_lifespan import LifespanManager
+from starlette.applications import Starlette
 
 from beacon_mcp.app import create_app
 from beacon_mcp.client import BeaconClient
@@ -33,13 +34,14 @@ def default_handler(_request: httpx.Request) -> httpx.Response:
 async def gateway(
     handler: MockHandler | None = None, registry: Registry | None = None, **env: str
 ) -> AsyncGenerator[httpx.AsyncClient]:
-    config = Config.from_env(
+    http: httpx.AsyncClient
+    config: Config = Config.from_env(
         {"BEACON_BASE_URL": "https://beacon.test", "BEACON_SUBSCRIPTIONS_ENABLED": "false", **env}
     )
-    beacon = BeaconClient(
+    beacon: BeaconClient = BeaconClient(
         config, transport=httpx.MockTransport(handler if handler is not None else default_handler)
     )
-    app = create_app(config, client=beacon, registry=registry)
+    app: Starlette = create_app(config, client=beacon, registry=registry)
     async with LifespanManager(app):
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://gateway.test"
@@ -49,14 +51,14 @@ async def gateway(
 
 async def rpc(http: httpx.AsyncClient, method: str, **params: object) -> dict[str, Any]:
     identifier: object = params.get("name", params.get("uri"))
-    headers = {
+    headers: dict[str, str] = {
         "Accept": "application/json, text/event-stream",
         "MCP-Protocol-Version": "2026-07-28",
         "Mcp-Method": method,
     }
     if isinstance(identifier, str):
         headers["Mcp-Name"] = identifier
-    response = await http.post(
+    response: httpx.Response = await http.post(
         "/",
         headers=headers,
         json={"jsonrpc": "2.0", "id": 1, "method": method, "params": {"_meta": META, **params}},

@@ -1,13 +1,14 @@
-from typing import Never
+from typing import Any, Never
 
 import httpx
 import pytest
 
+from beacon_mcp.extra_support import ResponseShape
 from beacon_mcp.handlers.activity import OPERATIONS
 from tests.python.helpers import gateway, rpc
 
-ID = "123e4567-e89b-42d3-a456-426614174000"
-KEY = "0123456789abcdef0123456789abcdef"
+ID: str = "123e4567-e89b-42d3-a456-426614174000"
+KEY: str = "0123456789abcdef0123456789abcdef"
 CASES: list[tuple[str, dict[str, object], str]] = [
     (
         "beacon_backfill_messages",
@@ -42,13 +43,14 @@ CASES: list[tuple[str, dict[str, object], str]] = [
 
 @pytest.mark.parametrize("name,args,path", CASES)
 async def test_all_eight_activity_tools(name: str, args: dict[str, object], path: str) -> None:
+    http: httpx.AsyncClient
     seen: list[httpx.Request] = []
 
     def upstream(request: httpx.Request) -> httpx.Response:
         seen.append(request)
         assert request.url.path == path
-        shape = OPERATIONS[name][1]
-        data = (
+        shape: ResponseShape = OPERATIONS[name][1]
+        data: list[dict[str, int]] | dict[str, list[dict[str, int]] | bool | int] = (
             [{"id": 9}, {"id": 8}]
             if shape == "array"
             else {
@@ -62,7 +64,9 @@ async def test_all_eight_activity_tools(name: str, args: dict[str, object], path
         return httpx.Response(200, json=data)
 
     async with gateway(upstream) as http:
-        result = (await rpc(http, "tools/call", name=name, arguments=args))["result"]
+        result: dict[str, Any] = (await rpc(http, "tools/call", name=name, arguments=args))[
+            "result"
+        ]
     assert not result["isError"], result
     if name == "beacon_get_node_observations":
         assert seen[0].url.params["cursor"] == "2147483649"
@@ -83,11 +87,13 @@ async def test_all_eight_activity_tools(name: str, args: dict[str, object], path
     ],
 )
 async def test_route_window_restrictions(args: dict[str, object]) -> None:
+    http: httpx.AsyncClient
+
     def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("invalid route evidence window")
 
     async with gateway(forbidden) as http:
-        result = await rpc(
+        result: dict[str, Any] = await rpc(
             http,
             "tools/call",
             name="beacon_get_route_observations",

@@ -1,16 +1,16 @@
 """Preserve exact Beacon cursors when reducing upstream pages to MCP limits."""
 
-from beacon_mcp.tool_support import page
+from beacon_mcp.tool_support import Page, page
 
 
 def test_page_keeps_both_cursor_forms_including_zero_and_opaque_text() -> None:
-    response = {
+    response: dict[str, list[int] | bool | int | str] = {
         "items": [1, 2, 3],
         "hasMore": True,
         "nextCursor": 0,
         "nextPageCursor": "v1:do-not-decode-or-rebuild",
     }
-    result = page(response, 2)
+    result: Page = page(response, 2)
     assert result == {
         "items": [1, 2],
         "pagination": {
@@ -26,9 +26,9 @@ def test_oversized_plain_list_does_not_invent_a_cursor() -> None:
 
 
 def test_page_passes_through_untrusted_cursor_and_sort_values() -> None:
-    cursor = {"position": [1, "opaque"]}
-    sort = ["upstream-specific"]
-    result = page(
+    cursor: dict[str, list[int | str]] = {"position": [1, "opaque"]}
+    sort: list[str] = ["upstream-specific"]
+    result: Page = page(
         {"items": [None], "hasMore": True, "nextCursor": cursor, "sort": sort, "order": None},
         1,
         include_sort=True,
