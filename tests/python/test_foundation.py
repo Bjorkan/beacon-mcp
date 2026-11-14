@@ -35,13 +35,13 @@ def test_defaults():
         ("SHUTDOWN_GRACE_MS", "60001"),
     ],
 )
-def test_invalid_config_redacts_values(key, value):
+def test_invalid_config_redacts_values(key: str, value: str) -> None:
     with pytest.raises(ValueError) as error:
         Config.from_env({"BEACON_BASE_URL": "https://beacon.example", key: value})
     assert "u:p" not in str(error.value)
 
 
-async def test_health_without_upstream(caplog):
+async def test_health_without_upstream(caplog: pytest.LogCaptureFixture) -> None:
     config = Config.from_env({"BEACON_BASE_URL": "http://unreachable.invalid"})
     app = create_app(config)
     async with (

@@ -5,11 +5,12 @@ import json
 import re
 import secrets
 import uuid
+from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import Enum
 from http import HTTPStatus
 from http.cookiejar import CookieJar, DefaultCookiePolicy
-from typing import Any
+from typing import Any, cast
 from urllib.parse import quote, urlencode
 
 import httpx
@@ -151,10 +152,20 @@ def identifier(kind: str, value: str) -> str:
     raise invalid("invalid identifier")
 
 
+def json_object(value: object) -> dict[str, object] | None:
+    """Narrow an untrusted JSON object to string keys and opaque values."""
+    if not isinstance(value, dict) or not all(isinstance(key, str) for key in value):
+        return None
+    # JSON object keys were checked before the cast; their values stay untrusted.
+    return cast(dict[str, object], value)
+
+
 def classify(response: httpx.Response, body: Any) -> GatewayError:
-    error = body.get("error", {}) if isinstance(body, dict) else {}
-    error = error if isinstance(error, dict) else {}
-    upstream = error.get("code") if isinstance(error.get("code"), str) else None
+    payload = json_object(body)
+    error = json_object(payload.get("error")) if payload is not None else None
+    details: dict[str, object] = error if error is not None else {}
+    raw_code = details.get("code")
+    upstream = raw_code if isinstance(raw_code, str) else None
     status = response.status_code
     code = {400: "INVALID_ARGUMENT", 404: "NOT_FOUND", 429: "RESOURCE_EXHAUSTED"}.get(
         status, "UNAVAILABLE"
@@ -166,8 +177,9 @@ def classify(response: httpx.Response, body: Any) -> GatewayError:
     except ValueError:
         reason = "<unknown status code>"
     message = f"Beacon request failed with HTTP {status} {reason}"
-    if status < 500 and isinstance(error.get("message"), str):
-        message = error["message"]
+    upstream_message = details.get("message")
+    if status < 500 and isinstance(upstream_message, str):
+        message = upstream_message
     return GatewayError(
         code,
         message,
@@ -206,7 +218,9 @@ class BeaconClient:
         await self.http.aclose()
 
     def url(self, operation: Operation, id: str | None, query: list[tuple[str, str]]) -> str:
-        if not isinstance(operation, Operation):
+        # Public callers are typed, but reject invalid runtime values explicitly.
+        # Narrowing from object prevents static tools from assuming the guard is dead.
+        if not isinstance(cast(object, operation), Operation):
             raise invalid("invalid public operation")
         path, kind, _ = operation.value
         url = self.config.base_url + "api/v1/" + path
@@ -265,10 +279,12 @@ class BeaconClient:
         timeout = (
             self.config.stats_timeout_ms if operation.value[2] else self.config.timeout_ms
         ) / 1000
+        # One end-to-end request budget, including jitter and an optional retry.
+        deadline = asyncio.get_running_loop().time() + timeout
         for attempt in range(2):
             try:
                 # HTTPX's inactivity timeout alone doesn't bound a slow-drip body.
-                async with asyncio.timeout(timeout):
+                async with asyncio.timeout_at(deadline):
                     async with self.http.stream("GET", url, timeout=timeout) as response:
                         if response.status_code == 204 and max_items is None:
                             return None
@@ -308,7 +324,13 @@ class BeaconClient:
             except httpx.TransportError:
                 if attempt:
                     raise GatewayError("UNAVAILABLE", "Beacon is temporarily unavailable") from None
-            await asyncio.sleep((25 + secrets.randbelow(50)) / 1000)
+            try:
+                # Include retry backoff in the same deadline; otherwise a slow
+                # first attempt could double the configured request budget.
+                async with asyncio.timeout_at(deadline):
+                    await asyncio.sleep((25 + secrets.randbelow(50)) / 1000)
+            except TimeoutError:
+                raise GatewayError("DEADLINE_EXCEEDED", "Beacon request timed out") from None
         raise GatewayError("UNAVAILABLE", "Beacon retry attempts exhausted")
 
 
@@ -326,7 +348,7 @@ async def read_bounded(response: httpx.Response) -> bytes:
 
 async def read_array(response: httpx.Response, max_items: int) -> ArrayPage:
     items: list[Any] = []
-    pending = ijson.sendable_list()
+    pending: list[object] = ijson.sendable_list()
     parser = ijson.items_coro(pending, "item", use_float=True)
     mode: str | None = None
     consumed = 0
@@ -354,11 +376,13 @@ async def read_array(response: httpx.Response, max_items: int) -> ArrayPage:
             if len(items) >= max_items:
                 return ArrayPage(items, False)
         if mode == "envelope":
-            value = decode_json(envelope)
-            source = value.get("items") if isinstance(value, dict) else value
+            value: object = decode_json(envelope)
+            document = json_object(value)
+            source = document.get("items") if document is not None else value
             if not isinstance(source, list):
                 raise ValueError
-            return ArrayPage(source[:max_items], len(source) <= max_items)
+            elements = cast(list[object], source)
+            return ArrayPage(elements[:max_items], len(elements) <= max_items)
         try:
             parser.close()
         except ijson.IncompleteJSONError:
@@ -403,8 +427,8 @@ def decode_json(data: bytes | bytearray) -> Any:
     def nonfinite(_value: str) -> None:
         raise ValueError("invalid JSON number")
 
-    value = json.loads(data, parse_constant=nonfinite)
-    pending = [(iter([value]), 0)]
+    value: object = json.loads(data, parse_constant=nonfinite)
+    pending: list[tuple[Iterator[object], int]] = [(iter([value]), 0)]
     while pending:
         iterator, depth = pending[-1]
         try:
@@ -415,5 +439,10 @@ def decode_json(data: bytes | bytearray) -> Any:
         if isinstance(item, (dict, list)):
             if depth >= 128:
                 raise ValueError("excessive JSON nesting")
-            pending.append((iter(item.values() if isinstance(item, dict) else item), depth + 1))
+            nested: Iterator[object]
+            if isinstance(item, dict):
+                nested = iter(cast(dict[str, object], item).values())
+            else:
+                nested = iter(cast(list[object], item))
+            pending.append((nested, depth + 1))
     return value

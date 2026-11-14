@@ -65,10 +65,21 @@ uv sync --locked
 uv run --locked ruff check src tests/python
 uv run --locked ruff format --check src tests/python
 uv run --locked pyright
+uvx --from basedpyright==1.39.8 basedpyright
 uv run --locked pytest
 uv build --no-sources
 tests/container/run.sh
 ```
+
+The independent **BasedPyright 1.39.8 strict** CI job checks all Python sources,
+tests, container helpers, and scripts with `[tool.basedpyright]` in
+`pyproject.toml`. It intentionally has no baseline suppressions or excluded
+test suites. Its installation is exact-version pinned using `uvx --from` while
+the existing application/dev dependency lockfile stays unchanged. The strict job
+will fail until all associated typing PRs have been merged and any remaining
+strict diagnostics resolved; do not merge the strict gate while red.
+A future change can add BasedPyright to the `uv.lock` dev group for fully
+transitive-locked analyzer dependencies.
 
 Set `BEACON_BASE_URL=https://beacon.example.org`, then run
 `uv run --locked beacon-mcp`. The root MCP endpoint

@@ -1,13 +1,20 @@
+"""Verify all public tool query arguments against the pinned Beacon Swagger."""
+
 import importlib
 from pathlib import Path
+from typing import cast
 
 import yaml
+from pydantic import TypeAdapter
 
 from beacon_mcp.client import Operation
 from beacon_mcp.runtime import CONTRACTS
 
+OBJECT = TypeAdapter(dict[str, object])
+PARAMETERS = TypeAdapter(list[dict[str, object]])
 
-def swagger_path(op):
+
+def swagger_path(op: Operation) -> str:
     endpoint, kind, _ = op.value
     if not kind:
         return "/" + endpoint
@@ -25,23 +32,31 @@ def swagger_path(op):
     return f"/{endpoint}/{{{parameter}}}" + ("/" + suffix if suffix else "")
 
 
-def test_all_49_public_get_operations_match_pinned_swagger_queries():
-    swagger = yaml.safe_load(Path("vendor/beacon-openapi.yaml").read_text())
-    covered = set()
+def test_all_49_public_get_operations_match_pinned_swagger_queries() -> None:
+    swagger = OBJECT.validate_python(yaml.safe_load(Path("vendor/beacon-openapi.yaml").read_text()))
+    paths = OBJECT.validate_python(swagger["paths"])
+    covered: set[Operation] = set()
     for module in ("core", "packet", "routing", "details", "activity", "statistics", "analytics"):
-        for name, value in importlib.import_module(
-            f"beacon_mcp.handlers.{module}"
-        ).OPERATIONS.items():
-            op = value[0] if isinstance(value, tuple) else value
+        raw_operations = importlib.import_module(f"beacon_mcp.handlers.{module}").OPERATIONS
+        operations = OBJECT.validate_python(raw_operations)
+        for name, raw_operation in operations.items():
+            op = (
+                cast(tuple[object, ...], raw_operation)[0]
+                if isinstance(raw_operation, tuple)
+                else raw_operation
+            )
+            assert isinstance(op, Operation)
             path = swagger_path(op)
-            operation = swagger["paths"][path]["get"]
+            endpoint = OBJECT.validate_python(paths[path])
+            get_operation = OBJECT.validate_python(endpoint["get"])
             assert op not in covered
             covered.add(op)
-            properties = CONTRACTS[name]["inputSchema"]["properties"]
-            for parameter in operation.get("parameters", []):
-                if parameter["in"] != "query":
+            properties = OBJECT.validate_python(CONTRACTS[name]["inputSchema"]["properties"])
+            for parameter in PARAMETERS.validate_python(get_operation.get("parameters", [])):
+                if parameter.get("in") != "query":
                     continue
-                key = parameter["name"]
+                key = parameter.get("name")
+                assert isinstance(key, str)
                 if name in ("beacon_search_messages", "beacon_get_channel_messages") and key in (
                     "region",
                     "regionId",

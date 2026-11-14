@@ -33,6 +33,21 @@ jobs:
       - name: Build Python distribution
         run: uv build --no-sources
 
+  strict-types:
+    name: BasedPyright strict (1.39.8)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install pinned uv
+        run: pipx install uv==0.11.29
+      - run: uv sync --locked
+      - name: Analyze all project Python files with BasedPyright strict
+        run: uvx --from basedpyright==1.39.8 basedpyright
+
   container:
     name: Container verification
     runs-on: ubuntu-latest

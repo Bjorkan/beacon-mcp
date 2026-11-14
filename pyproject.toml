@@ -52,3 +52,15 @@ pythonVersion = "3.13"
 typeCheckingMode = "standard"
 venvPath = "."
 venv = ".venv"
+
+# BasedPyright uses an independent strict configuration. Keep the existing
+# [tool.pyright] standard check until the strict migration has landed.
+[tool.basedpyright]
+include = ["src/beacon_mcp", "tests/python", "tests/container", "scripts"]
+extraPaths = ["src", "tests/python"]
+pythonVersion = "3.13"
+typeCheckingMode = "strict"
+# Do not accept green CI with unresolved Unknown-type warnings.
+failOnWarnings = true
+venvPath = "."
+venv = ".venv"

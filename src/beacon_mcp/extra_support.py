@@ -2,9 +2,9 @@
 
 import re
 from functools import partial
-from typing import Any
+from typing import Any, cast
 
-from beacon_mcp.client import BeaconClient, GatewayError, Operation, invalid
+from beacon_mcp.client import BeaconClient, GatewayError, Operation, invalid, json_object
 from beacon_mcp.runtime import CONTRACTS, Registry
 from beacon_mcp.tool_support import array_result, location, page, query
 from beacon_mcp.validation import duration
@@ -85,8 +85,9 @@ async def execute_extra(
         return result
     if response is None:
         return {"available": False}
-    if isinstance(response, dict):
-        return response
+    document = json_object(response)
+    if document is not None:
+        return document
     if isinstance(response, list):
-        return {"items": response}
+        return {"items": cast(list[object], response)}
     raise GatewayError("UNAVAILABLE", "Beacon returned an invalid result")
