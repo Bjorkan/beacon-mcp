@@ -1,9 +1,9 @@
 """Saved routes, route segments, cross-IATA evidence and traces."""
 
 from functools import partial
-from typing import Any
+from typing import Any, cast
 
-from beacon_mcp.client import BeaconClient, GatewayError, Operation, invalid
+from beacon_mcp.client import BeaconClient, GatewayError, Operation, invalid, json_object
 from beacon_mcp.runtime import Registry
 from beacon_mcp.tool_support import array_result, location, query
 
@@ -55,11 +55,11 @@ async def execute(name: str, client: BeaconClient, args: dict[str, Any]) -> Any:
     response = await client.request(op, query=[*filters, ("limit", str(limit))])
     if not isinstance(response, list):
         raise GatewayError("UNAVAILABLE", "Beacon returned invalid route or trace list")
-    items = response[:limit]
+    items = cast(list[object], response)[:limit]
     pagination: dict[str, Any] = {"hasMore": False}
-    if len(items) == limit and isinstance(items[-1], dict):
-        last = items[-1]
-        cursor = (
+    last = json_object(items[-1]) if len(items) == limit else None
+    if last is not None:
+        cursor: dict[str, object] = (
             {"cursor": last.get("lastSeen"), "cursorId": last.get("id")}
             if op == Operation.Routes
             else {"cursor": last.get("lastHeardAt"), "cursorTag": last.get("traceTag")}
