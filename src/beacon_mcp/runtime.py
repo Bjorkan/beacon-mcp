@@ -16,7 +16,7 @@ from mcp.server.subscriptions import ListenHandler
 from pydantic import TypeAdapter
 
 from beacon_mcp import __version__, handlers
-from beacon_mcp.client import BeaconClient, GatewayError
+from beacon_mcp.client import BeaconClient, GatewayError, json_object
 
 INTEGER = TypeAdapter(int)
 INTEGERS = TypeAdapter(list[int])
@@ -30,12 +30,10 @@ def load_contracts() -> dict[str, Any]:
         if not document.name.endswith("-tool-definitions.json"):
             continue
         decoded: object = json.loads(document.read_text())
-        if not isinstance(decoded, dict) or not all(
-            isinstance(key, str) for key in cast(dict[object, object], decoded)
-        ):
+        contracts = json_object(decoded)
+        if contracts is None:
             raise ValueError(f"invalid tool contract document: {document.name}")
-        # JSON object keys were validated above; json.loads has an Any return type.
-        result.update(cast(dict[str, object], decoded))
+        result.update(contracts)
     return result
 
 
