@@ -107,8 +107,12 @@ Raw Beacon JSON stays `object` until narrowed; array elements remain `object`.
 Use the `Page` and `Pagination` TypedDicts for gateway-built result envelopes,
 and preserve opaque cursor/sort values. Keep `Any` at documented schema/SDK/test
 boundaries rather than letting it propagate through HTTP results or async tasks.
-Annotate function parameters/returns and shared data explicitly; rely on inference
-for obvious local values. See the architecture guide's type-boundary explanation.
+Use explicit variable annotations (`name: Type = value`) at the first declaration,
+including obvious locals, module constants and test variables. Do not redeclare
+annotated parameters or repeat annotations on reassignment. Predeclare unpacking,
+loop and context-manager bindings where direct annotation is unavailable.
+Preserve comprehension/lambda scope, Enum members and SDK-owned dynamic attributes;
+see the architecture guide's type boundaries and annotation exceptions.
 
 Each of the 51 tools publishes an input/output schema, description and
 read-only/idempotent/open-world hints. The checked-in JSON documents in

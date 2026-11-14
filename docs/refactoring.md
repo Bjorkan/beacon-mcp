@@ -107,8 +107,9 @@ tests, container helpers and scripts. Every ordinary function now annotates its
 parameters and return value (except the conventional `self`/`cls` parameters).
 Missing return annotations in constructors and async tests were completed.
 Shared operation tables, callback aliases, ASGI byte headers, lifecycle tasks
-and externally useful instance attributes have explicit types. Obvious local
-values continue to use inference.
+and externally useful instance attributes have explicit types. That follow-up
+retained inference for obvious locals; the explicit annotation pass below
+supersedes that convention.
 
 HTTP and JSON decoding now return `object`, array items are `list[object]`, and
 handlers return opaque results rather than propagating `Any`. Two overloads
@@ -139,3 +140,41 @@ strict BasedPyright with zero errors and warnings, all 314 offline cases,
 distribution builds and hardened container integration. Frozen contracts,
 fixtures, upstream pins, dependencies, deployment files and CI gates remain
 unchanged. No known behavior regression remains from this follow-up review.
+
+## Explicit annotation pass
+
+Starting from `96d1213`, all 51 tracked Python files were inventoried again for
+individual variable bindings. The requested style now explicitly annotates even
+obvious locals, constants, intermediate values, callbacks and tasks. Forty-three
+files needed edits; the others already had complete declarations or contain only
+package markers, registration tables or enum members. The existing ijson stub
+also already has a fully annotated public surface.
+
+The final binding audit finds 663 annotated declarations, no uncovered ordinary
+bindings and no repeated declarations in one scope. Reassignments reuse existing
+parameter/variable types. Unpacking, loops, context managers and exception targets
+use separate declarations without changing evaluation order or introducing values.
+Closure variables retain their original `nonlocal` behavior.
+
+The 50 `Operation` enum members retain ordinary enum syntax. Comprehension/lambda
+bindings, container item updates and attributes owned by other objects retain
+their existing typing and scope. The single SDK stream-tuple context binding uses
+the SDK's return type without importing its private protocol classes. See the
+architecture guide for the precise exceptions and the project's new style rule.
+
+Annotation types were checked against the existing schemas, SDK/library APIs and
+all assignment branches. Dynamic JSON test envelopes retain `dict[str, Any]`,
+unknown upstream data stays `object`, and schema property maps use explicit nested
+dictionary types. No new models, casts, ignores or dependencies were introduced.
+
+As a second behavior check, the before/after ASTs of all 51 files match exactly
+after erasing variable annotations and imports. Calls, expressions, control flow,
+assignment targets/order and all test assertions are unchanged. Added imports
+provide annotation types from the standard library or existing dependencies;
+no runtime SDK implementation or protocol adaptation was added.
+
+Final verification passed locked dependency sync, Ruff lint/format checks,
+BasedPyright strict with zero errors and warnings, all 314 existing test cases,
+distribution builds and hardened container integration. The 51-tool discovery
+contracts, fixtures, upstream pin, dependency lock, quality configuration and
+deployment files are unchanged.

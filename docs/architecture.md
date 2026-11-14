@@ -110,6 +110,31 @@ handler sees them. Test RPC/SSE helpers also leave nested payloads dynamic so
 tests can exercise malformed protocol shapes. These boundaries do not weaken
 the strict type-checking settings or introduce runtime coercion of Beacon data.
 
+### Explicit variable annotations
+
+The project uses `name: Type = value` for first declarations throughout application
+code, tests and scripts, even for obvious types such as `str`, `int` and `bool`.
+Annotate a variable once in its scope. Later assignments and assignments to an
+already annotated parameter keep ordinary assignment syntax. Use one type covering
+all valid branches; do not introduce extra runtime assignments for typing.
+
+Unpacking, loop, context-manager and exception bindings cannot carry an annotation
+directly. Declare their names separately before binding them. Existing container
+annotations cover item updates such as `headers[key] = value`.
+
+The deliberate exceptions preserve Python and library behavior:
+
+- Enum members retain member assignment syntax; member annotations conflict with
+  strict enum typing.
+- Comprehension and lambda bindings use their iterable/callback types. Adding
+  outer declarations would describe a different scope.
+- Attributes on SDK/Starlette/logging objects retain their owner's declarations
+  or dynamic attribute API. BasedPyright rejects annotations on expressions such
+  as `app.state.server`; no replacement state model is introduced for typing.
+- The SDK stream tuple in `test_subscriptions.py` uses its typed context-manager
+  return. Naming its exact tuple type would require importing SDK-private stream
+  protocols, so that binding keeps SDK inference.
+
 ## Add a tool
 
 1. Follow the upstream release review in `AGENTS.md`; inspect the released
