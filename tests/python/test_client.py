@@ -128,6 +128,7 @@ class Chunks(httpx.AsyncByteStream):
 
 def fixed_response(response: httpx.Response) -> MockHandler:
     """Provide a typed handler for a fixed synthetic upstream response."""
+
     def handler(_request: httpx.Request) -> httpx.Response:
         return response
 
