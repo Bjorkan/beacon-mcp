@@ -138,9 +138,7 @@ async def connect_once(
                 decoded: object = json.loads(frame)
             except (ValueError, RecursionError):
                 continue
-            if not isinstance(decoded, dict) or not all(
-                isinstance(key, str) for key in decoded
-            ):
+            if not isinstance(decoded, dict) or not all(isinstance(key, str) for key in decoded):
                 continue
             message = cast(dict[str, object], decoded)
             if type(message.get("v")) is not int or message["v"] != 1:
