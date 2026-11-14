@@ -43,7 +43,7 @@ Streamable HTTP. Once connected, enable the Beacon tools and start asking
 questions—there is no separate Beacon MCP Server interface to learn.
 
 The service speaks the current MCP protocol revision and still accepts older
-clients: revisions back to `2024-10-07` negotiate automatically, so an MCP
+clients: revisions back to `2024-11-05` negotiate through the official Python MCP SDK v2, so an MCP
 client that predates the current revision can usually connect as-is.
 
 If you run into a connection error, check that you are using the dedicated
@@ -65,7 +65,7 @@ Want to run the service, contribute, or understand the implementation? See
 [AGENTS.md](AGENTS.md) for setup, deployment, architecture, security, and test
 details.
 
-The gateway currently exposes **49 read-only MCP tools** covering the published
+The gateway currently exposes **51 read-only MCP tools** covering the published
 Beacon Server **2.2.0** public REST GET API, including node activity,
 node-originated observations, neighbors, observer telemetry and adverts,
 broker status, regional metadata, route evidence and additional statistics.
@@ -74,11 +74,23 @@ is not exposed as a user tool. Admin and write operations remain unavailable.
 Large unpaged arrays may be truncated to 50 results; narrow the filters
 for more precise answers.
 
-The gateway is built in Rust. For a local build, use
-`cargo test --manifest-path rust/Cargo.toml --locked` and
-`cargo run --manifest-path rust/Cargo.toml --locked` with `BEACON_BASE_URL`
-set to your Beacon server. Production deployments pull a published image;
-`compose.yaml` requires an explicit `BEACON_MCP_IMAGE` SHA or digest.
+The gateway runs on Python **3.13.14** with official MCP SDK **2.3.0**.
+For local development install uv **0.11.29**, set `BEACON_BASE_URL`, and run:
+
+```sh
+uv sync --locked
+uv run --locked pytest
+uv run --locked beacon-mcp
+```
+
+Production deployments pull a published image from `ghcr.io/bjorkan/beacon-mcp`;
+`compose.yaml` requires an explicit `BEACON_MCP_IMAGE` SHA or digest. Never build
+on the production host. See [deployment and rollback](docs/deployment.md).
+Protocol negotiation, discovery, Streamable HTTP and subscriptions use SDK v2
+as shipped. No custom protocol compatibility adapters are provided; revision
+`2024-10-07` is outside this SDK's supported revisions. SDK-owned protocol
+metadata, HTTP methods, cancellation and protocol error statuses follow SDK v2.
+Mounted HTTP and Beacon startup/cleanup use the documented SDK lifespans.
 
 At the default `LOG_LEVEL=info`, the gateway logs one concise line per
 incoming request to the MCP root, including the HTTP/MCP method, tool name
@@ -86,7 +98,8 @@ when available, HTTP status and response-header latency. Health checks are
 not logged; SDK lifecycle INFO noise is filtered out. No request or response
 body is logged. Legacy clients without MCP method headers are labelled
 `unspecified`, and a 200 HTTP status can still contain an MCP tool error.
-Set `LOG_LEVEL=debug` or `trace` for verbose troubleshooting.
+Set `LOG_LEVEL=debug` or `trace` for gateway troubleshooting; transport diagnostics
+remain filtered to protect request data.
 
 ## Live resource subscriptions (on by default)
 
@@ -101,7 +114,13 @@ with no local cache. Clients can read them with
 `notifications.resourceSubscriptions` containing those URIs. Every matching
 upstream `nodeUpdate` / `observerStatus` causes a
 `notifications/resources/updated` on the corresponding listening stream. The
-client should re-read the resource after a notification. For legacy clients
+client should re-read the resource after a notification. The SDK matches URI
+strings exactly: subscribe with lowercase UUIDs/packet hashes and canonical
+decimal channel IDs. Resource-read normalization does not rewrite subscriptions.
+The SDK acknowledges all requested URIs, including unknown ones; Beacon only
+publishes enabled canonical node/observer (and opt-in packet/channel) changes.
+There is no 20-URI cap; SDK request bodies are limited to 128 KiB, with bounded
+listen streams and event buffers. See [SDK behavior and limits](docs/python-migration.md). For legacy clients
 resource reads still work but legacy `resources/subscribe` is **not** available.
 
 Packet and channel change hints are **opt-in** because public Beacon instances

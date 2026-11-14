@@ -15,7 +15,7 @@ trap cleanup EXIT INT TERM
 docker build --pull -t "$image" .
 test "$(docker run --rm --entrypoint id "$image" -u)" != "0"
 docker run --rm --entrypoint sh "$image" -c \
-  "test ! -e /app/src && test ! -e /app/tests && ! command -v node && ! command -v npm && test -x /usr/local/bin/beacon-mcp"
+  "test ! -e /app/src && test ! -e /app/tests && ! command -v node && ! command -v npm && ! command -v cargo && ! command -v rustc && ! command -v uv && test -x /usr/local/bin/beacon-mcp"
 docker network create "$network" >/dev/null
 docker run -d --name "$mock" --network "$network" --no-healthcheck \
   -v "$PWD/tests/container/mock-beacon.py:/mock.py:ro" \
@@ -47,4 +47,4 @@ fi
 docker exec "$gateway" /usr/local/bin/beacon-mcp --healthcheck
 docker stop --timeout 15 "$gateway" >/dev/null
 test "$(docker inspect -f '{{.State.ExitCode}}' "$gateway")" = "0"
-echo "Rust container integration checks passed."
+echo "Python container integration checks passed."

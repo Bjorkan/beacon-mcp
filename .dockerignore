@@ -9,11 +9,15 @@ AGENTS.md
 compose.yaml
 renovate.json
 README.md
-rust/target
 __pycache__
 *.log
 .DS_Store
 .idea
 .vscode
 docs
-tests/container
+tests
+
+.venv
+.pytest_cache
+.ruff_cache
+dist

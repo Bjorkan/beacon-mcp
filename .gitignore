@@ -1,7 +1,10 @@
-rust/target/
 __pycache__/
 .env
 .env.*
 !.env.example
 *.log
 .DS_Store
+.venv/
+.pytest_cache/
+.ruff_cache/
+dist/
