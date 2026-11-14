@@ -1,6 +1,7 @@
 import httpx
 import pytest
-from conftest import gateway, rpc
+
+from tests.python.conftest import gateway, rpc
 
 DETAIL_CASES = [
     ("beacon_list_brokers", {}, "/api/v1/brokers"),
