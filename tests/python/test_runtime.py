@@ -73,7 +73,9 @@ async def test_json_schema_validation_and_pydantic_integer_arguments():
     registry = Registry()
     seen: list[dict[str, Any]] = []
 
-    async def implementation(_client: BeaconClient, args: dict[str, Any]) -> dict[str, list[object]]:
+    async def implementation(
+        _client: BeaconClient, args: dict[str, Any]
+    ) -> dict[str, list[object]]:
         assert type(args["limit"]) is int
         assert all(type(value) is int for value in args["routeTypes"])
         seen.append(args)
