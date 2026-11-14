@@ -16,13 +16,13 @@ logger = logging.getLogger("beacon_mcp.access")
 
 class AccessLog:
     def __init__(self, app: ASGIApp) -> None:
-        self.app = app
+        self.app: ASGIApp = app
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http" or scope["path"] != "/":
             await self.app(scope, receive, send)
             return
-        headers = dict(scope["headers"])
+        headers: dict[bytes, bytes] = dict(scope["headers"])
 
         def safe(key: bytes) -> str:
             raw = headers.get(key, b"")

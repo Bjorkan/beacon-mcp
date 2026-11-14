@@ -21,7 +21,7 @@ def config(**env: str) -> Config:
     )
 
 
-async def test_debounce_validation_and_only_uri_retention():
+async def test_debounce_validation_and_only_uri_retention() -> None:
     live = Live(config(BEACON_SUBSCRIPTIONS_DEBOUNCE_MS="10"))
     queue: asyncio.Queue[ServerEvent] = asyncio.Queue()
     unsubscribe = live.bus.subscribe(queue.put_nowait)
@@ -38,7 +38,7 @@ async def test_debounce_validation_and_only_uri_retention():
     await live.close()
 
 
-async def test_traffic_opt_in_and_pending_bound():
+async def test_traffic_opt_in_and_pending_bound() -> None:
     live = Live(
         config(BEACON_SUBSCRIPTIONS_TRAFFIC_ENABLED="true", BEACON_SUBSCRIPTIONS_DEBOUNCE_MS="5000")
     )

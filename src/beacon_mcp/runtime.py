@@ -38,7 +38,9 @@ def load_contracts() -> dict[str, Any]:
 
 
 CONTRACTS = load_contracts()
-TOOL_ORDER = json.loads(files("beacon_mcp").joinpath("contracts/tool-order.json").read_text())
+TOOL_ORDER: list[str] = json.loads(
+    files("beacon_mcp").joinpath("contracts/tool-order.json").read_text()
+)
 
 
 def success(value: Any) -> types.CallToolResult:

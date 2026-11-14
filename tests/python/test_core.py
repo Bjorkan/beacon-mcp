@@ -38,7 +38,7 @@ async def test_all_nine_core_tools(name: str) -> None:
     assert result["content"][0]["text"].startswith("Beacon")
 
 
-async def test_cursors_normalization_and_scope_offset():
+async def test_cursors_normalization_and_scope_offset() -> None:
     seen: list[httpx.Request] = []
 
     def upstream(request: httpx.Request) -> httpx.Response:

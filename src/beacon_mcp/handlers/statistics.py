@@ -1,10 +1,10 @@
 """Eleven public statistics tools using the analytics timeout and array bounds."""
 
-from beacon_mcp.extra_support import register_operations
+from beacon_mcp.extra_support import ResponseShape, register_operations
 from beacon_mcp.operations import Operation
 from beacon_mcp.runtime import Registry
 
-OPERATIONS = {
+OPERATIONS: dict[str, tuple[Operation, ResponseShape]] = {
     "beacon_get_clock_drift": (Operation.ClockDrift, "array"),
     "beacon_get_node_types": (Operation.NodeTypes, "array"),
     "beacon_get_observation_stats": (Operation.ObservationStats, "array"),

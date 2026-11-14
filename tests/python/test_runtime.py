@@ -9,7 +9,7 @@ from beacon_mcp.runtime import CONTRACTS, Registry
 from tests.python.helpers import gateway, rpc
 
 
-async def test_sdk_discovery_and_frozen_tool_registration():
+async def test_sdk_discovery_and_frozen_tool_registration() -> None:
     registry = Registry()
 
     async def implementation(_client: BeaconClient, _args: dict[str, Any]) -> dict[str, object]:
@@ -29,7 +29,7 @@ async def test_sdk_discovery_and_frozen_tool_registration():
         ]
 
 
-def test_contract_copies_and_unique_inventory():
+def test_contract_copies_and_unique_inventory() -> None:
     frozen = json.loads(Path("tests/fixtures/tool-names.json").read_text())
     assert len(CONTRACTS) == len(frozen) == 51
     assert set(CONTRACTS) == set(frozen)
@@ -61,7 +61,7 @@ async def test_classified_errors(code: str, kind: str) -> None:
     }
 
 
-async def test_sdk_owns_malformed_call_parameters():
+async def test_sdk_owns_malformed_call_parameters() -> None:
     async with gateway() as http:
         missing_name = await rpc(http, "tools/call", arguments={})
         wrong_arguments = await rpc(http, "tools/call", name="beacon_list_iatas", arguments=[])
@@ -69,7 +69,7 @@ async def test_sdk_owns_malformed_call_parameters():
     assert wrong_arguments["error"]["code"] == -32602
 
 
-async def test_json_schema_validation_and_pydantic_integer_arguments():
+async def test_json_schema_validation_and_pydantic_integer_arguments() -> None:
     registry = Registry()
     seen: list[dict[str, Any]] = []
 
@@ -98,7 +98,7 @@ async def test_json_schema_validation_and_pydantic_integer_arguments():
     assert len(seen) == 1
 
 
-async def test_sdk_handles_unexpected_handler_exceptions():
+async def test_sdk_handles_unexpected_handler_exceptions() -> None:
     registry = Registry()
 
     async def failure(_client: BeaconClient, _args: dict[str, Any]) -> Never:

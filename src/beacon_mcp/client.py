@@ -52,16 +52,18 @@ def classify(response: httpx.Response, body: object) -> GatewayError:
 class NoCookies(DefaultCookiePolicy):
     """Public reads never retain or resend upstream session/tracking cookies."""
 
-    def set_ok(self, cookie: Any, request: Any) -> bool:
+    def set_ok(self, cookie: object, request: object) -> bool:
         return False
 
 
 class BeaconClient:
     """Issue only allowlisted reads; never accept caller-controlled HTTP details."""
 
-    def __init__(self, config: Config, *, transport: httpx.AsyncBaseTransport | None = None):
-        self.config = config
-        self.http = httpx.AsyncClient(
+    def __init__(
+        self, config: Config, *, transport: httpx.AsyncBaseTransport | None = None
+    ) -> None:
+        self.config: Config = config
+        self.http: httpx.AsyncClient = httpx.AsyncClient(
             cookies=CookieJar(policy=NoCookies()),
             follow_redirects=False,
             trust_env=False,

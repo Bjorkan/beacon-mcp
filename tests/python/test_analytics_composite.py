@@ -71,7 +71,7 @@ async def test_analytics_and_bounded_composites(
         assert len(result["structuredContent"]["neighbors"]) == 2
 
 
-def test_complete_inventory():
+def test_complete_inventory() -> None:
     expected = TypeAdapter(list[str]).validate_python(
         json.loads(Path("tests/fixtures/tool-names.json").read_text())
     )
@@ -98,7 +98,7 @@ async def test_all_thirty_negative_argument_fixtures_rejected(case: NegativeCase
         assert error["code"] == "INVALID_ARGUMENT"
 
 
-async def test_analytics_utf8_region_bound():
+async def test_analytics_utf8_region_bound() -> None:
     def forbidden(_request: httpx.Request) -> Never:
         pytest.fail("oversized UTF-8 region reached Beacon")
 

@@ -21,12 +21,12 @@ logger = logging.getLogger("beacon_mcp.subscriptions")
 class Live:
     """Debounce canonical resource URIs and publish them to the SDK's local bus."""
 
-    def __init__(self, config: Config):
-        self.config = config
-        self.bus = InMemorySubscriptionBus()
+    def __init__(self, config: Config) -> None:
+        self.config: Config = config
+        self.bus: InMemorySubscriptionBus = InMemorySubscriptionBus()
         self.pending: dict[str, asyncio.Task[None]] = {}
-        self.closed = False
-        self.reconnect_delay = 1.0
+        self.closed: bool = False
+        self.reconnect_delay: float = 1.0
 
     def received(self, event: str, data: object) -> None:
         fields = json_object(data)

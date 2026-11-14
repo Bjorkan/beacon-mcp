@@ -1,10 +1,10 @@
 """Seven detail and directory tools."""
 
-from beacon_mcp.extra_support import register_operations
+from beacon_mcp.extra_support import ResponseShape, register_operations
 from beacon_mcp.operations import Operation
 from beacon_mcp.runtime import Registry
 
-OPERATIONS = {
+OPERATIONS: dict[str, tuple[Operation, ResponseShape]] = {
     "beacon_list_brokers": (Operation.Brokers, "array"),
     "beacon_get_channel": (Operation.ChannelDetail, "object"),
     "beacon_get_iata": (Operation.IataDetail, "object"),

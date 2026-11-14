@@ -11,7 +11,7 @@ from tests.python.helpers import gateway, rpc
 from tests.python.subscription_helpers import ID, SUBSCRIPTION_ID, event, listen, running_gateway
 
 
-async def test_direct_sdk_handler_ack_and_exact_canonical_uri_delivery():
+async def test_direct_sdk_handler_ack_and_exact_canonical_uri_delivery() -> None:
     canonical = f"beacon://nodes/{ID}"
     different_case = f"beacon://nodes/{ID.upper()}"
     unknown = "beacon://regions/3"
@@ -39,7 +39,7 @@ async def test_direct_sdk_handler_ack_and_exact_canonical_uri_delivery():
             assert all('"notifications/resources/updated"' not in line for line in remaining)
 
 
-async def test_sdk_stream_limit_releases_on_disconnect_and_closes_gracefully():
+async def test_sdk_stream_limit_releases_on_disconnect_and_closes_gracefully() -> None:
     uri = f"beacon://nodes/{ID}"
     async with running_gateway(max_streams=1) as (http, app):
         async with listen(http, [uri]) as first:
@@ -112,7 +112,7 @@ async def test_sdk_native_legacy_initialize(version: str) -> None:
         assert "mcp-session-id" not in response.headers
 
 
-async def test_disabled_and_invalid_protocol_requests():
+async def test_disabled_and_invalid_protocol_requests() -> None:
     async with gateway() as http:
         discovered = (await rpc(http, "server/discover"))["result"]
         assert not discovered["capabilities"]["resources"].get("subscribe")
@@ -124,7 +124,7 @@ async def test_disabled_and_invalid_protocol_requests():
         assert malformed.status_code >= 400
 
 
-async def test_sdk_request_body_limit_bounds_subscription_filters():
+async def test_sdk_request_body_limit_bounds_subscription_filters() -> None:
     async with gateway() as http:
         response = await http.post(
             "/",
@@ -138,7 +138,7 @@ async def test_sdk_request_body_limit_bounds_subscription_filters():
         assert response.status_code == 413
 
 
-async def test_sdk_native_http_methods_and_client_disconnect():
+async def test_sdk_native_http_methods_and_client_disconnect() -> None:
     async with running_gateway() as (http, app):
         # Modern transport rejects standalone GET and DELETE itself.
         for method in ("GET", "DELETE"):
@@ -159,7 +159,7 @@ async def test_sdk_native_http_methods_and_client_disconnect():
         assert not app.state.beacon.http.is_closed
 
 
-async def test_official_sdk_client_discovers_and_calls_gateway():
+async def test_official_sdk_client_discovers_and_calls_gateway() -> None:
     async with running_gateway() as (http, _app):
         async with streamable_http_client(str(http.base_url)) as streams:
             async with ClientSession(*streams, read_timeout_seconds=3) as session:

@@ -9,14 +9,14 @@ from beacon_mcp.operations import Operation
 from beacon_mcp.runtime import Registry
 from beacon_mcp.tool_support import location, page, query
 
-OPERATIONS = {
+OPERATIONS: dict[str, Operation] = {
     "beacon_search_packets": Operation.Packets,
     "beacon_get_packet": Operation.Packet,
     "beacon_search_messages": Operation.Messages,
     "beacon_list_channels": Operation.Channels,
     "beacon_get_channel_messages": Operation.ChannelMessages,
 }
-PAYLOADS = {
+PAYLOADS: dict[str, list[int]] = {
     "request": [0],
     "response": [1],
     "text_message": [2],

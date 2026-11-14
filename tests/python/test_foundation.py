@@ -8,7 +8,7 @@ from beacon_mcp.app import create_app
 from beacon_mcp.config import Config
 
 
-def test_defaults():
+def test_defaults() -> None:
     config = Config.from_env({"BEACON_BASE_URL": "https://beacon.example/prefix"})
     assert config.base_url == "https://beacon.example/prefix/"
     assert config.ws_url == "wss://beacon.example/ws"

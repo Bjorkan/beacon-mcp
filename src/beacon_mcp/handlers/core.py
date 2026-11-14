@@ -10,7 +10,7 @@ from beacon_mcp.runtime import Registry
 from beacon_mcp.tool_support import array_result, location, page, query
 from beacon_mcp.validation import duration
 
-OPERATIONS = {
+OPERATIONS: dict[str, Operation] = {
     "beacon_get_server_info": Operation.ServerInfo,
     "beacon_list_iatas": Operation.Iatas,
     "beacon_list_regions": Operation.Regions,

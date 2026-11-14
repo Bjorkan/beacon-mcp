@@ -2,7 +2,7 @@
 
 import re
 from functools import partial
-from typing import Any, cast
+from typing import Any, Literal, cast
 
 from beacon_mcp.client import BeaconClient
 from beacon_mcp.errors import GatewayError, invalid
@@ -12,7 +12,9 @@ from beacon_mcp.tool_support import array_result, location, page, query
 from beacon_mcp.validation import duration, json_object
 
 # These array endpoints ignore a query limit; the client still bounds reading.
-NO_LIMIT = frozenset(
+type ResponseShape = Literal["array", "page", "object"]
+
+NO_LIMIT: frozenset[Operation] = frozenset(
     (
         Operation.Brokers,
         Operation.NodeNeighbors,
@@ -25,13 +27,19 @@ NO_LIMIT = frozenset(
 )
 
 
-def register_operations(registry: Registry, operations: dict[str, tuple[Operation, str]]) -> None:
+def register_operations(
+    registry: Registry, operations: dict[str, tuple[Operation, ResponseShape]]
+) -> None:
     for name, (operation, shape) in operations.items():
         registry.register(name, partial(execute_extra, name, operation, shape))
 
 
 async def execute_extra(
-    name: str, operation: Operation, shape: str, client: BeaconClient, arguments: dict[str, Any]
+    name: str,
+    operation: Operation,
+    shape: ResponseShape,
+    client: BeaconClient,
+    arguments: dict[str, Any],
 ) -> Any:
     validate_arguments(operation, arguments)
     resource_id = arguments.get("id")

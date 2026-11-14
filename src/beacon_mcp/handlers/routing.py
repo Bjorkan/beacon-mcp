@@ -10,7 +10,7 @@ from beacon_mcp.runtime import Registry
 from beacon_mcp.tool_support import array_result, location, query
 from beacon_mcp.validation import json_object
 
-OPERATIONS = {
+OPERATIONS: dict[str, Operation] = {
     "beacon_list_routes": Operation.Routes,
     "beacon_search_routes": Operation.RouteSearch,
     "beacon_find_cross_iata_routes": Operation.CrossRoutes,

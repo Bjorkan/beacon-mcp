@@ -10,7 +10,7 @@ from beacon_mcp.runtime import Registry
 from beacon_mcp.tool_support import array_result, location, query
 from beacon_mcp.validation import identifier
 
-OPERATIONS = {
+OPERATIONS: dict[str, Operation] = {
     "beacon_get_top_advertisers": Operation.TopAdvertisers,
     "beacon_get_network_overview": Operation.Overview,
     "beacon_get_network_series": Operation.Series,

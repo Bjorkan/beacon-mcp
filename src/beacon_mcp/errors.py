@@ -10,7 +10,7 @@ class GatewayError(Exception):
         status: int | None = None,
         upstream_code: str | None = None,
         retry_after: str | None = None,
-    ):
+    ) -> None:
         super().__init__(message)
         self.code = code
         self.message = message
