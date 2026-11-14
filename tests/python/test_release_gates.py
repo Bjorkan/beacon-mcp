@@ -6,6 +6,7 @@ from pathlib import Path
 
 import httpx
 import pytest
+from pydantic import TypeAdapter
 
 from beacon_mcp.__main__ import SafeDiagnostics
 from beacon_mcp.client import BeaconClient
@@ -13,11 +14,13 @@ from beacon_mcp.config import Config
 from beacon_mcp.handlers.composite import diagnose_node
 from tests.python.conftest import gateway, rpc
 
-EXPECTED_NAMES = json.loads(Path("tests/fixtures/tool-names.json").read_text())
+EXPECTED_NAMES = TypeAdapter(list[str]).validate_python(
+    json.loads(Path("tests/fixtures/tool-names.json").read_text())
+)
 ID = "123e4567-e89b-42d3-a456-426614174000"
 
 
-def test_diagnostics_cannot_disclose_exception_headers_or_payloads():
+def test_diagnostics_cannot_disclose_exception_headers_or_payloads() -> None:
     record = logging.LogRecord(
         "mcp.server.runner",
         logging.ERROR,
@@ -33,16 +36,17 @@ def test_diagnostics_cannot_disclose_exception_headers_or_payloads():
     assert record.exc_info is None and record.exc_text is None
 
 
-async def test_composite_failure_cancels_siblings_and_preserves_classification():
+async def test_composite_failure_cancels_siblings_and_preserves_classification() -> None:
     cancelled = asyncio.Event()
 
-    async def upstream(request):
+    async def upstream(request: httpx.Request) -> httpx.Response:
         if request.url.path.endswith("/activity"):
             return httpx.Response(
                 503, headers={"Retry-After": "10"}, json={"error": {"code": "deadline_exceeded"}}
             )
         try:
             await asyncio.Event().wait()
+            raise AssertionError("cancelled sibling unexpectedly resumed")
         finally:
             cancelled.set()
 
@@ -61,7 +65,7 @@ async def test_composite_failure_cancels_siblings_and_preserves_classification()
         await client.aclose()
 
 
-async def test_inventory_order_and_forbidden_events():
+async def test_inventory_order_and_forbidden_events() -> None:
     async with gateway() as http:
         assert [
             tool["name"] for tool in (await rpc(http, "tools/list"))["result"]["tools"]
@@ -70,7 +74,7 @@ async def test_inventory_order_and_forbidden_events():
         assert (await rpc(http, "events/subscribe"))["error"]["code"] == -32601
 
 
-async def test_invalid_calendar_still_rejected_with_beacon_classification():
+async def test_invalid_calendar_still_rejected_with_beacon_classification() -> None:
     async with gateway() as http:
         result = (
             await rpc(
@@ -87,8 +91,9 @@ async def test_invalid_calendar_still_rejected_with_beacon_classification():
     }
 
 
-def test_openapi_sync_requires_an_immutable_commit(monkeypatch):
+def test_openapi_sync_requires_an_immutable_commit(monkeypatch: pytest.MonkeyPatch) -> None:
     spec = importlib.util.spec_from_file_location("sync_openapi", "scripts/sync-openapi.py")
+    assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     for revision in ("main", "dev", "v2.2.0", "abcdef"):

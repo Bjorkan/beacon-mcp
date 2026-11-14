@@ -6,7 +6,7 @@ import pkgutil
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractAsyncContextManager
 from importlib.resources import files
-from typing import Any
+from typing import Any, cast
 
 import mcp.types as types
 from jsonschema import Draft202012Validator, ValidationError
@@ -25,10 +25,17 @@ Handler = Callable[[BeaconClient, dict[str, Any]], Awaitable[Any]]
 
 
 def load_contracts() -> dict[str, Any]:
-    result = {}
+    result: dict[str, Any] = {}
     for document in sorted(files("beacon_mcp").joinpath("contracts").iterdir(), key=str):
-        if document.name.endswith("-tool-definitions.json"):
-            result.update(json.loads(document.read_text()))
+        if not document.name.endswith("-tool-definitions.json"):
+            continue
+        decoded: object = json.loads(document.read_text())
+        if not isinstance(decoded, dict) or not all(
+            isinstance(key, str) for key in cast(dict[object, object], decoded)
+        ):
+            raise ValueError(f"invalid tool contract document: {document.name}")
+        # JSON object keys were validated above; json.loads has an Any return type.
+        result.update(cast(dict[str, object], decoded))
     return result
 
 
@@ -37,11 +44,9 @@ TOOL_ORDER = json.loads(files("beacon_mcp").joinpath("contracts/tool-order.json"
 
 
 def success(value: Any) -> types.CallToolResult:
-    count = (
-        len(value["items"])
-        if isinstance(value, dict) and isinstance(value.get("items"), list)
-        else None
-    )
+    document = cast(dict[str, object], value) if isinstance(value, dict) else None
+    item_list: object = document.get("items") if document is not None else None
+    count = len(cast(list[object], item_list)) if isinstance(item_list, list) else None
     text = f"Beacon returned {count} item(s)." if count is not None else "Beacon request succeeded."
     return types.CallToolResult(
         content=[types.TextContent(type="text", text=text)],
@@ -107,7 +112,9 @@ class Registry:
         try:
             # Low-level Server validates MCP params, not arbitrary advertised JSON Schemas.
             # Use the standard JSON Schema validator for this application's frozen arguments.
-            self.validators[name].validate(arguments)
+            # jsonschema's public validate method is incompletely annotated in its stubs.
+            validate = cast(Callable[[object], None], self.validators[name].validate)
+            validate(arguments)
         except ValidationError as error:
             return tool_error(f"Invalid arguments: {error.message}")
         try:

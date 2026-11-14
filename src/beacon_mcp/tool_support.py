@@ -1,8 +1,8 @@
 """Shared bounded transformations for public read-only tools."""
 
-from typing import Any
+from typing import Any, cast
 
-from beacon_mcp.client import ArrayPage, GatewayError, invalid
+from beacon_mcp.client import ArrayPage, GatewayError, invalid, json_object
 from beacon_mcp.validation import timestamp
 
 
@@ -16,15 +16,16 @@ def location(
 
 
 def query(args: dict[str, Any], exclude: tuple[str, ...] = ()) -> list[tuple[str, str]]:
-    result = []
+    result: list[tuple[str, str]] = []
     for key, value in args.items():
         if key in exclude:
             continue
         if key in ("since", "until"):
             converted = str(timestamp(value))
         elif isinstance(value, list):
+            elements = cast(list[object], value)
             converted = ",".join(
-                str(item).strip().upper() if key == "iatas" else str(item) for item in value
+                str(item).strip().upper() if key == "iatas" else str(item) for item in elements
             )
         elif key in ("iata", "fromIata", "toIata"):
             converted = value.strip().upper()
@@ -39,24 +40,26 @@ def query(args: dict[str, Any], exclude: tuple[str, ...] = ()) -> list[tuple[str
 
 
 def page(value: Any, limit: int, include_sort: bool = False) -> dict[str, Any]:
-    source = value.get("items") if isinstance(value, dict) else value
-    if not isinstance(source, list):
+    document = json_object(value)
+    raw_items = document.get("items") if document is not None else value
+    if not isinstance(raw_items, list):
         raise GatewayError("UNAVAILABLE", "Beacon returned invalid page")
-    has_more = (value.get("hasMore") is True if isinstance(value, dict) else False) or len(
-        source
-    ) > limit
+    items = cast(list[object], raw_items)
+    has_more = (document.get("hasMore") is True if document is not None else False) or (
+        len(items) > limit
+    )
     pagination: dict[str, Any] = {"hasMore": has_more}
-    if has_more and isinstance(value, dict):
-        cursor = {
-            new: value[old]
+    if has_more and document is not None:
+        cursor: dict[str, object] = {
+            new: document[old]
             for old, new in (("nextPageCursor", "pageCursor"), ("nextCursor", "cursor"))
-            if old in value
+            if old in document
         }
         if cursor:
             pagination["nextCursor"] = cursor
-    result = {"items": source[:limit], "pagination": pagination}
-    if include_sort and isinstance(value, dict):
-        result.update({key: value[key] for key in ("sort", "order") if key in value})
+    result: dict[str, Any] = {"items": items[:limit], "pagination": pagination}
+    if include_sort and document is not None:
+        result.update({key: document[key] for key in ("sort", "order") if key in document})
     return result
 
 

@@ -5,7 +5,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 
 class Handler(BaseHTTPRequestHandler):
-    def do_GET(self):
+    def do_GET(self) -> None:
         if self.path.startswith("/api/v1/nodes"):
             body = {
                 "items": [{"id": "container-node", "name": "Container test"}],
@@ -20,7 +20,8 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
-    def log_message(self, _format, *_args):
+    def log_message(self, format: str, *args: object) -> None:
+        # Match BaseHTTPRequestHandler's public override signature.
         pass
 
 

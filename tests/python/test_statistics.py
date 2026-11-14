@@ -6,10 +6,10 @@ from tests.python.conftest import gateway, rpc
 
 
 @pytest.mark.parametrize("name", OPERATIONS)
-async def test_all_eleven_statistics_and_bounds(name):
-    seen = []
+async def test_all_eleven_statistics_and_bounds(name: str) -> None:
+    seen: list[httpx.Request] = []
 
-    def upstream(request):
+    def upstream(request: httpx.Request) -> httpx.Response:
         seen.append(request)
         assert request.url.params.get("iatas") == "ARN,MMX"
         assert request.extensions["timeout"]["read"] == 20
@@ -18,7 +18,7 @@ async def test_all_eleven_statistics_and_bounds(name):
             json=[{"value": 1}, {"value": 2}] if OPERATIONS[name][1] == "array" else {"total": 2},
         )
 
-    args = {"iatas": ["arn", "mmx"]}
+    args: dict[str, object] = {"iatas": ["arn", "mmx"]}
     if OPERATIONS[name][1] == "array":
         args["limit"] = 1
     if OPERATIONS[name][1] == "object":
