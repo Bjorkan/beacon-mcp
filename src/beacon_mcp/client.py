@@ -218,6 +218,10 @@ class BeaconClient:
         await self.http.aclose()
 
     def url(self, operation: Operation, id: str | None, query: list[tuple[str, str]]) -> str:
+        # Public callers are typed, but reject invalid runtime values explicitly.
+        # Narrowing from object prevents static tools from assuming the guard is dead.
+        if not isinstance(cast(object, operation), Operation):
+            raise invalid("invalid public operation")
         path, kind, _ = operation.value
         url = self.config.base_url + "api/v1/" + path
         if kind:
