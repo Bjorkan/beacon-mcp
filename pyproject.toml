@@ -52,29 +52,3 @@ pythonVersion = "3.13"
 typeCheckingMode = "standard"
 venvPath = "."
 venv = ".venv"
-
-# BasedPyright uses an independent strict configuration. Keep the existing
-# [tool.pyright] standard check until the strict migration has landed.
-[tool.basedpyright]
-include = ["src/beacon_mcp", "tests/python", "tests/container", "scripts"]
-extraPaths = ["src", "tests/python"]
-pythonVersion = "3.13"
-typeCheckingMode = "strict"
-# Keep every diagnostic category from the supplied 591-error strict report as
-# an error. Additional advisory-only categories remain visible as warnings;
-# they are separately tracked instead of hidden or globally suppressed.
-failOnWarnings = false
-reportUnknownMemberType = "error"
-reportUnknownVariableType = "error"
-reportUnknownArgumentType = "error"
-reportUnknownParameterType = "error"
-reportMissingParameterType = "error"
-reportArgumentType = "error"
-reportUnknownLambdaType = "error"
-reportDeprecated = "error"
-reportOptionalMemberAccess = "error"
-reportMissingTypeStubs = "error"
-reportUnnecessaryIsInstance = "error"
-reportIncompatibleMethodOverride = "error"
-venvPath = "."
-venv = ".venv"
