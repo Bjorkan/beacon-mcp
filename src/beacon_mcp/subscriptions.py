@@ -4,12 +4,11 @@ import asyncio
 import json
 import logging
 import re
-from typing import cast
 
 from mcp.server.subscriptions import InMemorySubscriptionBus, ResourceUpdated
 from websockets.asyncio.client import connect
 
-from beacon_mcp.client import BeaconClient, GatewayError, Operation
+from beacon_mcp.client import BeaconClient, GatewayError, Operation, json_object
 from beacon_mcp.config import Config
 from beacon_mcp.resources import parse_uri
 
@@ -25,12 +24,9 @@ class Live:
         self.reconnect_delay = 1.0
 
     def received(self, event: str, data: object) -> None:
-        if self.closed or not isinstance(data, dict):
+        fields = json_object(data)
+        if self.closed or fields is None:
             return
-        # Beacon frames are JSON objects; validate at the untrusted event boundary.
-        if not all(isinstance(key, str) for key in cast(dict[object, object], data)):
-            return
-        fields = cast(dict[str, object], data)
         kind: str
         value: object
         if event == "nodeUpdate":
@@ -92,11 +88,8 @@ async def connect_once(
     headers: dict[str, str] = {}
     try:
         response: object = await client.request(Operation.WsTicket)
-        ticket: object = None
-        if isinstance(response, dict) and all(
-            isinstance(key, str) for key in cast(dict[object, object], response)
-        ):
-            ticket = cast(dict[str, object], response).get("ticket")
+        ticket_fields = json_object(response)
+        ticket = ticket_fields.get("ticket") if ticket_fields is not None else None
         if not isinstance(ticket, str) or not re.fullmatch(r"[\x20-\x7e]{1,4096}", ticket):
             raise ValueError("invalid WebSocket ticket")
         headers["X-Beacon-Ticket"] = ticket
@@ -140,11 +133,9 @@ async def connect_once(
                 decoded: object = json.loads(frame)
             except (ValueError, RecursionError):
                 continue
-            if not isinstance(decoded, dict) or not all(
-                isinstance(key, str) for key in cast(dict[object, object], decoded)
-            ):
+            message = json_object(decoded)
+            if message is None:
                 continue
-            message = cast(dict[str, object], decoded)
             if type(message.get("v")) is not int or message["v"] != 1:
                 continue
             kind = message.get("type")
