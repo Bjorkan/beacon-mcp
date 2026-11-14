@@ -10,7 +10,8 @@ from beacon_mcp.client import MAX_BYTES, BeaconClient, GatewayError, Operation
 from beacon_mcp.config import Config
 
 MockHandler = (
-    Callable[[httpx.Request], httpx.Response] | Callable[[httpx.Request], Coroutine[None, None, httpx.Response]]
+    Callable[[httpx.Request], httpx.Response]
+    | Callable[[httpx.Request], Coroutine[None, None, httpx.Response]]
 )
 
 
