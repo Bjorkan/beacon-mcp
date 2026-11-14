@@ -37,7 +37,7 @@ def test_all_49_public_get_operations_match_pinned_swagger_queries() -> None:
     paths = OBJECT.validate_python(swagger["paths"])
     covered: set[Operation] = set()
     for module in ("core", "packet", "routing", "details", "activity", "statistics", "analytics"):
-        raw_operations = getattr(importlib.import_module(f"beacon_mcp.handlers.{module}"), "OPERATIONS")
+        raw_operations = importlib.import_module(f"beacon_mcp.handlers.{module}").OPERATIONS
         operations = OBJECT.validate_python(raw_operations)
         for name, raw_operation in operations.items():
             op = (
