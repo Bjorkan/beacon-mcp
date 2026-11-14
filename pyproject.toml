@@ -60,9 +60,9 @@ include = ["src/beacon_mcp", "tests/python", "tests/container", "scripts"]
 extraPaths = ["src", "tests/python"]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
-# Keep the original 591-error report's diagnostic rules blocking.
-# Additional BasedPyright advisories remain visible but do not block deployment.
-failOnWarnings = false
+# All original diagnostic rules remain explicit errors, and supplemental
+# warnings also block the strict CI gate until they are resolved.
+failOnWarnings = true
 reportUnknownMemberType = "error"
 reportUnknownVariableType = "error"
 reportUnknownArgumentType = "error"
