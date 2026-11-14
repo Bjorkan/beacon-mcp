@@ -64,31 +64,23 @@ Use Python 3.13.14, uv 0.11.29 and the committed `uv.lock`:
 uv sync --locked
 uv run --locked ruff check src tests/python
 uv run --locked ruff format --check src tests/python
-uv run --locked pyright
-uv run --locked basedpyright --project basedpyright-config.json
+uv run --locked basedpyright
 uv run --locked pytest
 uv build --no-sources
 tests/container/run.sh
 ```
 
-The independent **BasedPyright 1.39.8 strict** CI job uses the explicit
-`basedpyright-config.json` file selected with `--project`. It is deliberately
-separate from `[tool.pyright]` because BasedPyright rejects TOML projects
-containing both configuration sections. It checks all Python sources,
+The **BasedPyright 1.39.8 strict** CI job reads its single
+`[tool.basedpyright]` configuration from `pyproject.toml`.
+The redundant standard-mode Pyright dependency and check have been removed. It checks all Python sources,
 tests, container helpers, and scripts in strict mode. All twelve categories
 from the supplied original 591-error report remain configured as **errors**.
 `failOnWarnings=true` is retained, so any strict warning also blocks CI.
 The integrated verification passed with **0 errors and 0 warnings**.
 
-For PR #95 only, the strict job locally merges earlier **unmerged** typing
-PRs #80–#90 and #94 into the ephemeral GitHub Actions workspace, then runs
-Ruff, pytest, and BasedPyright on the result. These temporary merges are
-never pushed and do not modify the independent PR branches or `main`.
-Already-merged prerequisite PRs are skipped. #95 must be merged last;
-afterward every normal CI run checks the actual repository without temporary
-merges. BasedPyright 1.39.8 and its transitive dependencies are pinned in the
-committed `uv.lock` as development dependencies, so the identical tool runs
-locally and in GitHub Actions with `uv run --locked`.
+BasedPyright 1.39.8 and its transitive dependencies are pinned in the
+committed `uv.lock`. CI checks the checked-out repository directly; no
+historical PR branches or generated import rewrites are involved.
 
 Set `BEACON_BASE_URL=https://beacon.example.org`, then run
 `uv run --locked beacon-mcp`. The root MCP endpoint

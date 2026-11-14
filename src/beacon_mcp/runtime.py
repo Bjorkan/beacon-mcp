@@ -1,8 +1,6 @@
 """Official MCP v2 runtime with frozen discovery and incremental registration."""
 
-import importlib
 import json
-import pkgutil
 from collections.abc import Awaitable, Callable
 from contextlib import AbstractAsyncContextManager
 from importlib.resources import files
@@ -15,7 +13,7 @@ from mcp.server.lowlevel import Server
 from mcp.server.subscriptions import ListenHandler
 from pydantic import TypeAdapter
 
-from beacon_mcp import __version__, handlers
+from beacon_mcp import __version__
 from beacon_mcp.client import BeaconClient, GatewayError, json_object
 
 INTEGER = TypeAdapter(int)
@@ -131,9 +129,21 @@ class Registry:
 
 
 def default_registry() -> Registry:
+    # Import after Registry is defined: handler modules reference its type.
+    from beacon_mcp.handlers import (
+        activity,
+        analytics,
+        composite,
+        core,
+        details,
+        packet,
+        routing,
+        statistics,
+    )
+
     registry = Registry()
-    for module in sorted(pkgutil.iter_modules(handlers.__path__), key=lambda module: module.name):
-        importlib.import_module(f"beacon_mcp.handlers.{module.name}").register(registry)
+    for module in (core, packet, routing, details, activity, statistics, analytics, composite):
+        module.register(registry)
     return registry
 
 
