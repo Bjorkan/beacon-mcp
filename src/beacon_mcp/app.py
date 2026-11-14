@@ -10,10 +10,10 @@ from mcp.server.transport_security import TransportSecuritySettings
 from starlette.applications import Starlette
 
 from beacon_mcp.asgi import create_asgi_app
-from beacon_mcp.client import BeaconClient
 from beacon_mcp.config import Config
-from beacon_mcp.runtime import Registry, create_server
-from beacon_mcp.subscriptions import Live, bridge
+from beacon_mcp.mcp.runtime import Registry, create_server
+from beacon_mcp.mcp.subscriptions import Live, bridge
+from beacon_mcp.upstream.client import BeaconClient
 
 # Native SDK body admission replaces the former 20-URI subscription wrapper cap.
 MAX_MCP_REQUEST_BYTES: int = 131072

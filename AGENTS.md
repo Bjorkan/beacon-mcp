@@ -58,7 +58,9 @@ the pinned Go handlers only call `parseIATAs` and ignore both parameters.
 
 The Python package lives in `src/beacon_mcp/`; the complete offline tests live
 in `tests/python/`, with language-independent fixtures in `tests/fixtures/`.
-See [the architecture guide](docs/architecture.md) for module responsibilities,
+The package is grouped into `upstream/` (Beacon HTTP/JSON), `mcp/` (protocol integration),
+`handlers/` (tool execution), and `contracts/` (frozen schemas). See
+[the architecture guide](docs/architecture.md) for module responsibilities,
 request flow and tool registration. Shared test helpers belong in `helpers.py`
 and `subscription_helpers.py`; reserve `conftest.py` for pytest fixtures/configuration.
 Use Python 3.13.14, uv 0.11.29 and the committed `uv.lock`:
@@ -91,7 +93,7 @@ No custom protocol adapters are maintained. Health routes are `/healthz`
 and `/readyz`; they do not probe the upstream server. The binary supports
 `--healthcheck` for the Docker and Compose health checks.
 
-Only the fixed public GET `Operation` enum in `src/beacon_mcp/operations.py` may contact
+Only the fixed public GET `Operation` enum in `src/beacon_mcp/upstream/operations.py` may contact
 upstream; never accept a caller-controlled host, path, credentials, headers or
 admin route. URL and body lengths are bounded. One jittered retry is allowed
 only for transient network failures or HTTP 502/503/504 **without**
@@ -99,7 +101,7 @@ only for transient network failures or HTTP 502/503/504 **without**
 from upstream 5xx must be redacted. Never log packet/message bodies, auth
 headers, upstream response bodies, stack traces or environment values.
 
-`client.py` owns HTTP transport and classification; `json_stream.py` owns byte/depth
+`upstream/client.py` owns HTTP transport and classification; `upstream/json_stream.py` owns byte/depth
 limits and incremental arrays. `validation.py` owns identifier/date checks and
 JSON object narrowing, while `errors.py` defines shared application failures.
 Keep the client's end-to-end deadline around response decoding and retry delays.

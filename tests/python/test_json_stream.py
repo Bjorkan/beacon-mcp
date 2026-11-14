@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from beacon_mcp.json_stream import JsonDepthGuard, decode_json
+from beacon_mcp.upstream.json_stream import JsonDepthGuard, decode_json
 
 
 def test_depth_guard_preserves_string_and_escape_state_between_chunks() -> None:

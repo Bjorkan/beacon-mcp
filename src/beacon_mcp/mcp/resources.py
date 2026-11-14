@@ -7,9 +7,9 @@ from mcp.server.context import ServerRequestContext
 from mcp.server.lowlevel import Server
 from mcp.shared.exceptions import MCPError
 
-from beacon_mcp.client import BeaconClient
 from beacon_mcp.errors import GatewayError
-from beacon_mcp.operations import Operation
+from beacon_mcp.upstream.client import BeaconClient
+from beacon_mcp.upstream.operations import Operation
 from beacon_mcp.validation import identifier
 
 RESOURCE_OPERATIONS: dict[str, tuple[Operation, str]] = {

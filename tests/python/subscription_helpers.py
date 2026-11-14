@@ -12,8 +12,8 @@ import uvicorn
 from starlette.applications import Starlette
 
 from beacon_mcp.app import create_app
-from beacon_mcp.client import BeaconClient
 from beacon_mcp.config import Config
+from beacon_mcp.upstream.client import BeaconClient
 from tests.python.helpers import META
 
 ID: str = "123e4567-e89b-42d3-a456-426614174000"

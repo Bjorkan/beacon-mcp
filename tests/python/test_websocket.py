@@ -10,9 +10,9 @@ from websockets.asyncio.server import Server as WebSocketServer
 from websockets.asyncio.server import ServerConnection, serve
 from websockets.exceptions import ConnectionClosed
 
-from beacon_mcp.client import BeaconClient
 from beacon_mcp.config import Config
-from beacon_mcp.subscriptions import Live, bridge, connect_once
+from beacon_mcp.mcp.subscriptions import Live, bridge, connect_once
+from beacon_mcp.upstream.client import BeaconClient
 
 ID: str = "123e4567-e89b-42d3-a456-426614174000"
 

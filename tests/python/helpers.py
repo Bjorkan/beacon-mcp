@@ -9,9 +9,9 @@ from asgi_lifespan import LifespanManager
 from starlette.applications import Starlette
 
 from beacon_mcp.app import create_app
-from beacon_mcp.client import BeaconClient
 from beacon_mcp.config import Config
-from beacon_mcp.runtime import Registry
+from beacon_mcp.mcp.runtime import Registry
+from beacon_mcp.upstream.client import BeaconClient
 
 # HTTPX supports both synchronous and asynchronous MockTransport callbacks.
 type MockHandler = (

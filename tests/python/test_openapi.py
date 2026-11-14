@@ -7,8 +7,8 @@ from typing import cast
 import yaml
 from pydantic import TypeAdapter
 
-from beacon_mcp.client import Operation
-from beacon_mcp.runtime import CONTRACTS
+from beacon_mcp.mcp.runtime import CONTRACTS
+from beacon_mcp.upstream.client import Operation
 
 OBJECT: TypeAdapter[dict[str, object]] = TypeAdapter(dict[str, object])
 PARAMETERS: TypeAdapter[list[dict[str, object]]] = TypeAdapter(list[dict[str, object]])

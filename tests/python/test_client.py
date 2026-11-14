@@ -6,9 +6,9 @@ from typing import Never
 import httpx
 import pytest
 
-from beacon_mcp.client import MAX_BYTES, BeaconClient, GatewayError, Operation
 from beacon_mcp.config import Config
-from beacon_mcp.json_stream import ArrayPage
+from beacon_mcp.upstream.client import MAX_BYTES, BeaconClient, GatewayError, Operation
+from beacon_mcp.upstream.json_stream import ArrayPage
 from tests.python.helpers import MockHandler
 
 

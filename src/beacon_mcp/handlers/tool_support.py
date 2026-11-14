@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from typing import Any, NotRequired, TypedDict, cast
 
 from beacon_mcp.errors import GatewayError, invalid
-from beacon_mcp.json_stream import ArrayPage
+from beacon_mcp.upstream.json_stream import ArrayPage
 from beacon_mcp.validation import json_object, timestamp
 
 

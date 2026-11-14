@@ -7,7 +7,7 @@ import mcp.types as mcp_types
 import pytest
 from pydantic import TypeAdapter
 
-from beacon_mcp.runtime import CONTRACTS, default_registry
+from beacon_mcp.mcp.runtime import CONTRACTS, default_registry
 from tests.python.helpers import gateway, rpc
 
 

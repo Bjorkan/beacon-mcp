@@ -1,8 +1,8 @@
 """Node activity, observation cursors, historical backfill and route evidence."""
 
-from beacon_mcp.extra_support import ResponseShape, register_operations
-from beacon_mcp.operations import Operation
-from beacon_mcp.runtime import Registry
+from beacon_mcp.handlers.extra_support import ResponseShape, register_operations
+from beacon_mcp.mcp.runtime import Registry
+from beacon_mcp.upstream.operations import Operation
 
 OPERATIONS: dict[str, tuple[Operation, ResponseShape]] = {
     "beacon_backfill_messages": (Operation.MessagesBackfill, "array"),

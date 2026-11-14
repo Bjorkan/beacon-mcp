@@ -3,11 +3,11 @@
 from functools import partial
 from typing import Any, cast
 
-from beacon_mcp.client import BeaconClient
 from beacon_mcp.errors import GatewayError, invalid
-from beacon_mcp.operations import Operation
-from beacon_mcp.runtime import Registry
-from beacon_mcp.tool_support import Page, Pagination, array_result, location, page, query
+from beacon_mcp.handlers.tool_support import Page, Pagination, array_result, location, page, query
+from beacon_mcp.mcp.runtime import Registry
+from beacon_mcp.upstream.client import BeaconClient
+from beacon_mcp.upstream.operations import Operation
 from beacon_mcp.validation import duration
 
 OPERATIONS: dict[str, Operation] = {

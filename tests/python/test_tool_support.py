@@ -1,6 +1,6 @@
 """Preserve exact Beacon cursors when reducing upstream pages to MCP limits."""
 
-from beacon_mcp.tool_support import Page, page
+from beacon_mcp.handlers.tool_support import Page, page
 
 
 def test_page_keeps_both_cursor_forms_including_zero_and_opaque_text() -> None:

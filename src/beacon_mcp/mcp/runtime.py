@@ -16,8 +16,8 @@ from mcp.server.subscriptions import ListenHandler
 from pydantic import TypeAdapter
 
 from beacon_mcp import __version__
-from beacon_mcp.client import BeaconClient
 from beacon_mcp.errors import GatewayError
+from beacon_mcp.upstream.client import BeaconClient
 from beacon_mcp.validation import json_object
 
 INTEGER: TypeAdapter[int] = TypeAdapter(int)
@@ -213,7 +213,7 @@ def create_server(
         **options,
     )
 
-    from beacon_mcp import prompts, resources
+    from beacon_mcp.mcp import prompts, resources
 
     resources.register(server, client)
     prompts.register(server)

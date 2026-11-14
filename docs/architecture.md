@@ -4,28 +4,39 @@ Beacon MCP is a read-only translator between MCP clients and public Beacon
 data. It keeps only in-flight data and subscription hints in process memory.
 There is no database, authentication layer or persistent cache.
 
-## Main modules
+## Source layout
 
-All application modules live in `src/beacon_mcp/`.
+All application code is in `src/beacon_mcp/`, grouped by responsibility:
 
-| Module | Responsibility |
-| --- | --- |
-| `__main__.py` | CLI entry point, safe logging, Uvicorn and container health check |
-| `__init__.py` | Package version |
-| `config.py` | Read and validate environment settings without exposing values in errors |
-| `app.py` | Assemble the SDK server, HTTP client and subscription lifespans |
-| `asgi.py` | Health routes, mounted MCP endpoint and body-free access logs |
-| `runtime.py` | Frozen tool discovery, registration, argument validation and MCP results |
-| `operations.py` | Fixed public GET allowlist, path kinds and timeout selection |
-| `client.py` | Safe URLs, HTTP requests, retries, deadlines and HTTP error classification |
-| `json_stream.py` | Bounded JSON reads, incremental array parsing and nesting limits |
-| `errors.py` | Shared `GatewayError` metadata and local input errors |
-| `validation.py` | Identifiers, dates, durations and untrusted JSON object checks |
-| `tool_support.py` | Shared location filters, query encoding and pagination |
-| `extra_support.py` | Shared execution for endpoints returning an object, array or page |
-| `resources.py` | Canonical resource URIs and fresh resource reads |
-| `prompts.py` | Read-only analysis prompt text and prompt argument checks |
-| `subscriptions.py` | Beacon tickets, socket handshake, heartbeat, reconnect and URI hints |
+```text
+beacon_mcp/
+├── __main__.py            # CLI and container healthcheck
+├── app.py                 # Wire components and lifespans
+├── asgi.py                # HTTP routes and access logs
+├── config.py              # Environment configuration
+├── errors.py              # Shared gateway errors
+├── validation.py          # Shared input/JSON validation
+├── upstream/              # Beacon REST transport and parsing
+│   ├── operations.py      # Allowed GET operations
+│   ├── client.py          # Safe HTTP requests and retries
+│   └── json_stream.py     # Bounded JSON and array decoding
+├── mcp/                   # MCP protocol-facing features
+│   ├── runtime.py         # Tool registry, schemas, dispatch
+│   ├── resources.py       # Resource URI reads
+│   ├── prompts.py         # Analysis prompts
+│   └── subscriptions.py   # WebSocket-to-MCP updates
+├── handlers/              # Tools grouped by Beacon subject
+│   ├── core.py, packet.py, routing.py, ...
+│   ├── tool_support.py    # Filters and pagination helpers
+│   └── extra_support.py   # Shared execution of simple GETs
+└── contracts/             # Frozen public MCP tool JSON schemas
+```
+
+Start at `__main__.py` to follow startup, `app.py` for wiring,
+`mcp/runtime.py` for MCP tool dispatch, `handlers/` for endpoint behavior
+or `upstream/client.py` for outbound Beacon requests. `errors.py` and
+`validation.py` remain at the package root because all layers use them.
+`__init__.py` defines the package version.
 
 The `handlers/` package groups tools by subject. Each module exposes `register()`:
 
@@ -41,7 +52,7 @@ The `handlers/` package groups tools by subject. Each module exposes `register()
 | `composite.py` | Node diagnosis and comparison of two IATA areas |
 
 `OPERATIONS` maps public tool names to Beacon operations. In the additional
-endpoint families it also specifies the response shape; `extra_support.py`
+endpoint families it also specifies the response shape; `handlers/extra_support.py`
 handles their genuinely shared behavior. Composites have named handlers because
 they combine several requests. `handlers/__init__.py` is just a package marker.
 
@@ -50,7 +61,7 @@ they combine several requests. `handlers/__init__.py` is just a package marker.
 1. `__main__.main()` loads `Config`, calls `create_app()` and starts Uvicorn.
 2. `asgi.py` mounts the SDK endpoint at `/`. The official SDK handles HTTP,
    protocol negotiation, request parsing and dispatch.
-3. `runtime.create_server()` connects the SDK's tool callback to `Registry.call()`.
+3. `mcp.runtime.create_server()` connects the SDK's tool callback to `Registry.call()`.
 4. The registry validates arguments against the checked-in JSON Schema, then
    normalizes integer-valued JSON numbers. It calls the registered handler with
    a fresh argument dictionary.
@@ -74,7 +85,7 @@ the optional retry delay. It calls `read_response()` inside that deadline.
 Only transient transport failures or eligible 502/503/504 responses can retry
 once; `Retry-After` prevents an immediate HTTP retry. Timeouts do not retry.
 
-`json_stream.py` enforces byte and nesting limits. For array endpoints it stops
+`upstream/json_stream.py` enforces byte and nesting limits. For array endpoints it stops
 after enough items have arrived. This is why an incomplete array can retain
 complete items and report truncation. Array results have no invented cursor.
 Paged responses preserve the exact upstream cursor, including opaque text.
@@ -93,7 +104,7 @@ caller must inspect its shape before accessing fields. `ArrayPage.items` is
 types. The client's overloads distinguish ordinary reads from bounded array reads
 without casting an unknown result to `ArrayPage`.
 
-`Page` and `Pagination` in `tool_support.py` describe the dictionaries the gateway
+`Page` and `Pagination` in `handlers/tool_support.py` describe the dictionaries the gateway
 builds itself. They are `TypedDict` annotations, so the actual results remain
 ordinary dictionaries. Optional cursor and sort values stay opaque to preserve
 upstream behavior. Additional endpoint registration uses the three literal

@@ -12,9 +12,9 @@ import pytest
 from pydantic import TypeAdapter
 
 from beacon_mcp.__main__ import SafeDiagnostics
-from beacon_mcp.client import BeaconClient
 from beacon_mcp.config import Config
 from beacon_mcp.handlers.composite import diagnose_node
+from beacon_mcp.upstream.client import BeaconClient
 from tests.python.helpers import gateway, rpc
 
 EXPECTED_NAMES: list[str] = TypeAdapter(list[str]).validate_python(
@@ -53,7 +53,7 @@ async def test_composite_failure_cancels_siblings_and_preserves_classification()
         finally:
             cancelled.set()
 
-    from beacon_mcp.client import GatewayError
+    from beacon_mcp.upstream.client import GatewayError
 
     client: BeaconClient = BeaconClient(
         Config.from_env({"BEACON_BASE_URL": "https://beacon.test"}),

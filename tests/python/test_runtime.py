@@ -5,8 +5,8 @@ from typing import Any, Never
 import httpx
 import pytest
 
-from beacon_mcp.client import BeaconClient, GatewayError
-from beacon_mcp.runtime import CONTRACTS, Registry
+from beacon_mcp.mcp.runtime import CONTRACTS, Registry
+from beacon_mcp.upstream.client import BeaconClient, GatewayError
 from tests.python.helpers import gateway, rpc
 
 

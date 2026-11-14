@@ -3,8 +3,8 @@ from typing import Any, Never
 import httpx
 import pytest
 
-from beacon_mcp.extra_support import ResponseShape
 from beacon_mcp.handlers.activity import OPERATIONS
+from beacon_mcp.handlers.extra_support import ResponseShape
 from tests.python.helpers import gateway, rpc
 
 ID: str = "123e4567-e89b-42d3-a456-426614174000"

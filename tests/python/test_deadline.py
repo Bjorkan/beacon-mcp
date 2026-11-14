@@ -5,8 +5,8 @@ import asyncio
 import httpx
 import pytest
 
-from beacon_mcp.client import BeaconClient, GatewayError, Operation
 from beacon_mcp.config import Config
+from beacon_mcp.upstream.client import BeaconClient, GatewayError, Operation
 
 
 async def test_total_timeout_includes_first_attempt_and_retry_backoff() -> None:
