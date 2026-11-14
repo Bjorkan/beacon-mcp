@@ -1,7 +1,9 @@
 import asyncio
 import json
 import socket
-from contextlib import asynccontextmanager
+from collections.abc import AsyncGenerator, AsyncIterator, Sequence
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
+from typing import Any, cast
 
 import httpx
 import pytest
@@ -10,6 +12,7 @@ from conftest import META, gateway, rpc
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.server.subscriptions import ListenHandler
+from starlette.applications import Starlette
 
 from beacon_mcp.app import MAX_MCP_REQUEST_BYTES, create_app
 from beacon_mcp.client import BeaconClient
@@ -20,7 +23,9 @@ SUBSCRIPTION_ID = "io.modelcontextprotocol/subscriptionId"
 
 
 @asynccontextmanager
-async def running_gateway(max_streams=2, traffic=False):
+async def running_gateway(
+    max_streams: int = 2, traffic: bool = False
+) -> AsyncGenerator[tuple[httpx.AsyncClient, Starlette]]:
     config = Config.from_env(
         {
             "BEACON_BASE_URL": "http://127.0.0.1:9",
@@ -59,7 +64,9 @@ async def running_gateway(max_streams=2, traffic=False):
     assert app.state.live.closed and not app.state.live.pending
 
 
-def listen(http, uris, *, request_id="listen-1"):
+def listen(
+    http: httpx.AsyncClient, uris: Sequence[str], *, request_id: str | int = "listen-1"
+) -> AbstractAsyncContextManager[httpx.Response]:
     return http.stream(
         "POST",
         "/",
@@ -77,13 +84,15 @@ def listen(http, uris, *, request_id="listen-1"):
     )
 
 
-async def event(lines, method):
+async def event(lines: AsyncIterator[str], method: str) -> dict[str, Any]:
     async with asyncio.timeout(2):
         async for line in lines:
             if line.startswith("data:"):
-                value = json.loads(line[5:].strip())
-                if value.get("method") == method:
-                    return value
+                decoded: object = json.loads(line[5:].strip())
+                if isinstance(decoded, dict) and all(isinstance(key, str) for key in decoded):
+                    value = cast(dict[str, Any], decoded)
+                    if value.get("method") == method:
+                        return value
     raise AssertionError("stream ended before notification")
 
 
@@ -146,7 +155,7 @@ async def test_sdk_stream_limit_releases_on_disconnect_and_closes_gracefully():
 
 
 @pytest.mark.parametrize("traffic", [False, True])
-async def test_sdk_honors_more_than_twenty_uris_but_publication_is_opt_in(traffic):
+async def test_sdk_honors_more_than_twenty_uris_but_publication_is_opt_in(traffic: bool) -> None:
     uris = ["beacon://packets/aabbccddeeff0011", *[f"beacon://channels/{i}" for i in range(1, 30)]]
     async with running_gateway(traffic=traffic) as (http, app):
         async with listen(http, uris) as response:
@@ -164,7 +173,7 @@ async def test_sdk_honors_more_than_twenty_uris_but_publication_is_opt_in(traffi
 
 
 @pytest.mark.parametrize("version", ["2024-11-05", "2025-03-26", "2025-06-18", "2025-11-25"])
-async def test_sdk_native_legacy_initialize(version):
+async def test_sdk_native_legacy_initialize(version: str) -> None:
     async with gateway() as http:
         response = await http.post(
             "/",
