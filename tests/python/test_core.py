@@ -1,9 +1,9 @@
 import httpx
 import pytest
-from conftest import gateway, rpc
 
 from beacon_mcp.handlers.core import OPERATIONS
 from beacon_mcp.runtime import CONTRACTS
+from tests.python.conftest import gateway, rpc
 
 ID = "123e4567-e89b-42d3-a456-426614174000"
 
