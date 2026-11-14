@@ -11,7 +11,7 @@
   ],
   "pythonVersion": "3.13",
   "typeCheckingMode": "strict",
-  "failOnWarnings": false,
+  "failOnWarnings": true,
   "reportUnknownMemberType": "error",
   "reportUnknownVariableType": "error",
   "reportUnknownArgumentType": "error",
