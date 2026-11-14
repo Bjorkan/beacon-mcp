@@ -75,12 +75,12 @@ The independent **BasedPyright 1.39.8 strict** CI job checks all Python sources,
 tests, container helpers, and scripts with `[tool.basedpyright]` in
 `pyproject.toml`. The twelve rules present in the original 591-error report
 are explicitly configured as **errors** in strict mode. No test paths or
-diagnostic rules are excluded, and no baseline ignores are used. Additional
-BasedPyright advisory warnings (such as explicit `Any` and unused call
-results) remain visible but are not fatal; `failOnWarnings=false` prevents
-unrelated advisory categories from expanding this migration's acceptance scope.
-The integration review reported zero errors but 385 additional warnings.
-Those warnings are technical debt, not a claim of a warning-free codebase.
+diagnostic rules are excluded, and no baseline ignores are used. All
+BasedPyright warnings are also blocking (`failOnWarnings=true`), including
+the extra categories such as explicit `Any` and unused call results.
+The integration review passed the original error categories but still reported
+**385 additional warnings**: the strict gate must remain red until all are
+resolved. Do not weaken the gate or declare this a warning-free codebase.
 
 The analyzer is exact-version pinned using `uvx --from`, while the
 application/dev `uv.lock` remains unchanged. The strict job is expected to
