@@ -7,6 +7,8 @@ import httpx
 import pytest
 import uvicorn
 from conftest import META, gateway, rpc
+from mcp import ClientSession
+from mcp.client.streamable_http import streamable_http_client
 from mcp.server.subscriptions import ListenHandler
 
 from beacon_mcp.app import MAX_MCP_REQUEST_BYTES, create_app
@@ -231,3 +233,24 @@ async def test_sdk_native_http_methods_and_client_disconnect():
         response = await http.delete("/", headers={"MCP-Protocol-Version": "2025-11-25"})
         assert response.status_code == 405  # Stateless sessions cannot be deleted.
         assert not app.state.beacon.http.is_closed
+
+
+async def test_official_sdk_client_discovers_and_calls_gateway():
+    async with running_gateway() as (http, _app):
+        async with streamable_http_client(str(http.base_url)) as streams:
+            async with ClientSession(*streams, read_timeout_seconds=3) as session:
+                await session.discover()
+                assert session.server_info is not None
+                assert session.server_info.name == "beacon-mcp"
+                tools = await session.list_tools()
+                assert len(tools.tools) == 51
+                # The local mock backend returns 404; SDK results retain Beacon metadata.
+                result = await session.call_tool("beacon_get_node", {"id": ID})
+                assert result.is_error
+                assert result.structured_content["error"]["code"] == "NOT_FOUND"
+                templates = await session.list_resource_templates()
+                assert len(templates.resource_templates) == 7
+                prompts = await session.list_prompts()
+                assert len(prompts.prompts) == 3
+                prompt = await session.get_prompt("beacon_node_diagnostics", {"id": ID})
+                assert prompt.messages
