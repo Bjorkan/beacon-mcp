@@ -6,10 +6,10 @@ from pathlib import Path
 from typing import NotRequired, TypedDict
 
 import httpx
-
-from tests.python.conftest import gateway, rpc
 import pytest
 from pydantic import TypeAdapter
+
+from tests.python.conftest import gateway, rpc
 
 
 class UpstreamRequest(TypedDict):

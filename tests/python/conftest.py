@@ -62,7 +62,9 @@ async def rpc(http: httpx.AsyncClient, method: str, **params: Any) -> dict[str, 
         json={"jsonrpc": "2.0", "id": 1, "method": method, "params": {"_meta": META, **params}},
     )
     decoded: object = response.json()
-    if not isinstance(decoded, dict) or not all(isinstance(key, str) for key in decoded):
+    if not isinstance(decoded, dict) or not all(
+        isinstance(key, str) for key in cast(dict[object, object], decoded)
+    ):
         raise AssertionError("MCP response must be a JSON object")
     # The test suite deliberately exercises invalid parameter shapes; validate the
     # top-level JSON-RPC envelope while leaving individual payloads dynamic.

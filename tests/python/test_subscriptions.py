@@ -8,6 +8,7 @@ from typing import Any, cast
 import httpx
 import pytest
 import uvicorn
+from conftest import META, gateway, rpc
 from mcp import ClientSession
 from mcp.client.streamable_http import streamable_http_client
 from mcp.server.subscriptions import ListenHandler
@@ -16,7 +17,6 @@ from starlette.applications import Starlette
 from beacon_mcp.app import MAX_MCP_REQUEST_BYTES, create_app
 from beacon_mcp.client import BeaconClient
 from beacon_mcp.config import Config
-from tests.python.conftest import META, gateway, rpc
 
 ID = "123e4567-e89b-42d3-a456-426614174000"
 SUBSCRIPTION_ID = "io.modelcontextprotocol/subscriptionId"
@@ -89,7 +89,9 @@ async def event(lines: AsyncIterator[str], method: str) -> dict[str, Any]:
         async for line in lines:
             if line.startswith("data:"):
                 decoded: object = json.loads(line[5:].strip())
-                if isinstance(decoded, dict) and all(isinstance(key, str) for key in decoded):
+                if isinstance(decoded, dict) and all(
+                    isinstance(key, str) for key in cast(dict[object, object], decoded)
+                ):
                     value = cast(dict[str, Any], decoded)
                     if value.get("method") == method:
                         return value

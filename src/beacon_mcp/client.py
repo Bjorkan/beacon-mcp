@@ -154,7 +154,9 @@ def identifier(kind: str, value: str) -> str:
 
 def json_object(value: object) -> dict[str, object] | None:
     """Narrow an untrusted JSON object to string keys and opaque values."""
-    if not isinstance(value, dict) or not all(isinstance(key, str) for key in value):
+    if not isinstance(value, dict):
+        return None
+    if any(not isinstance(key, str) for key in cast(dict[object, object], value)):
         return None
     # JSON object keys were checked before the cast; their values stay untrusted.
     return cast(dict[str, object], value)
