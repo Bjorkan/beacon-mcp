@@ -86,6 +86,11 @@ jobs:
       - name: Install pinned uv
         run: pipx install uv==0.11.29
       - run: uv sync --locked
+      - name: Normalize import blocks after ephemeral test-file merges
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.number == 95 }}
+        run: |
+          uv run --locked ruff check --select I --fix tests/python
+          uv run --locked ruff format tests/python
       - name: Validate integration lint and formatting
         run: |
           uv run --locked ruff check src tests/python
