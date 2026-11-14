@@ -28,16 +28,17 @@ Shutdown grace is rounded up to whole seconds. Compose allows 15 seconds by
 default; increase `stop_grace_period` when increasing `SHUTDOWN_GRACE_MS`.
 Health/readiness reports process availability without probing Beacon.
 
-## Coordinated cutover
+## Release process
 
-All 14 migration PRs belong to native GitHub stack 49 and are ready for review
-at the maintainer's request. All checks, container gates and review requirements
-must pass before merge. None is deployed or
-merged independently. Image publishing runs only after a push to main or a
-release tag; PR checks build images locally but never publish or deploy them.
-Only after explicit maintainer approval may the **entire** stack be atomically
-merged, selecting its top PR with GitHub's native stack merge. Never substitute
-14 individual merges or bypass repository rules.
+The Python SDK v2 migration is already merged into `main`. Pull requests
+are checked by Ruff, BasedPyright strict, pytest, distribution build and the
+container verification job. A successful push to `main` (or an approved
+version tag) publishes a new container image to GHCR; publishing is not a
+production deployment.
+
+Update the production `BEACON_MCP_IMAGE` digest only after reviewing the
+published image and the target environment. Keep a known-good image digest
+available for rollback.
 
 ## Rollback
 
