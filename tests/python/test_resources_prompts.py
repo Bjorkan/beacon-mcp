@@ -1,11 +1,10 @@
 import json
-from typing import Never
 
 import httpx
 import pytest
-from conftest import gateway, rpc
 
 from beacon_mcp.resources import parse_uri
+from tests.python.conftest import gateway, rpc
 
 ID = "123e4567-e89b-42d3-a456-426614174000"
 
@@ -22,10 +21,10 @@ ID = "123e4567-e89b-42d3-a456-426614174000"
         "beacon://regions/3",
     ],
 )
-async def test_all_seven_resources_fresh_and_canonical(uri: str) -> None:
+async def test_all_seven_resources_fresh_and_canonical(uri):
     calls = 0
 
-    def upstream(request: httpx.Request) -> httpx.Response:
+    def upstream(request):
         nonlocal calls
         calls += 1
         return httpx.Response(200, json={"path": request.url.path, "sequence": calls})
@@ -55,10 +54,10 @@ async def test_all_seven_resources_fresh_and_canonical(uri: str) -> None:
         "beacon://scopes/foo",
     ],
 )
-async def test_injected_uris_rejected(uri: str) -> None:
+async def test_injected_uris_rejected(uri):
     assert parse_uri(uri) is None
 
-    def forbidden(_request: httpx.Request) -> Never:
+    def forbidden(_):
         pytest.fail("unsafe URI reached Beacon")
 
     async with gateway(forbidden) as http:
@@ -73,7 +72,7 @@ async def test_injected_uris_rejected(uri: str) -> None:
         ("beacon_route_review", {"iata": "arn", "pathKey": "AB" * 16}, "pathKey " + "ab" * 16),
     ],
 )
-async def test_all_three_prompts(name: str, args: dict[str, str], contains: str) -> None:
+async def test_all_three_prompts(name, args, contains):
     def forbidden(_):
         pytest.fail("prompts must not contact Beacon")
 

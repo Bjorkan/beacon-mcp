@@ -6,10 +6,11 @@ import sys
 from contextlib import suppress
 
 import httpx
-from test_subscriptions import ID, event, listen
+
+from tests.python.test_subscriptions import ID, event, listen
 
 
-async def test_cli_uptime_healthcheck_silent_logs_and_sigterm_closes_sse() -> None:
+async def test_cli_uptime_healthcheck_silent_logs_and_sigterm_closes_sse():
     with socket.socket() as reservation:
         reservation.bind(("127.0.0.1", 0))
         port = reservation.getsockname()[1]

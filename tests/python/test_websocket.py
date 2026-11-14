@@ -3,7 +3,7 @@ import json
 
 import httpx
 import pytest
-from mcp.server.subscriptions import ResourceUpdated
+from mcp.server.subscriptions import ResourceUpdated, ServerEvent
 from websockets.asyncio.server import ServerConnection, serve
 from websockets.exceptions import ConnectionClosed
 
@@ -22,14 +22,16 @@ def config(**env: str) -> Config:
 
 async def test_debounce_validation_and_only_uri_retention():
     live = Live(config(BEACON_SUBSCRIPTIONS_DEBOUNCE_MS="10"))
-    queue: asyncio.Queue[ResourceUpdated] = asyncio.Queue()
+    queue: asyncio.Queue[ServerEvent] = asyncio.Queue()
     unsubscribe = live.bus.subscribe(queue.put_nowait)
     for _ in range(5):
         live.received("nodeUpdate", {"nodeId": ID, "text": "never-store"})
     live.received("nodeUpdate", {"nodeId": "../admin"})
     live.received("packetObservation", {"packetHash": "AABBCCDDEEFF0011"})
     assert list(live.pending) == [f"beacon://nodes/{ID}"]
-    assert (await asyncio.wait_for(queue.get(), 1)).uri == f"beacon://nodes/{ID}"
+    update = await asyncio.wait_for(queue.get(), 1)
+    assert isinstance(update, ResourceUpdated)
+    assert update.uri == f"beacon://nodes/{ID}"
     assert queue.empty()
     unsubscribe()
     await live.close()
@@ -54,9 +56,10 @@ async def test_traffic_opt_in_and_pending_bound():
 @pytest.mark.parametrize("traffic", [False, True])
 async def test_ticket_handshake_and_reconnect(legacy: bool, traffic: bool) -> None:
     tickets: list[str | None] = []
-    events: asyncio.Queue[ResourceUpdated] = asyncio.Queue()
+    events: asyncio.Queue[ServerEvent] = asyncio.Queue()
 
     async def mock(socket: ServerConnection) -> None:
+        assert socket.request is not None
         tickets.append(socket.request.headers.get("X-Beacon-Ticket"))
         await socket.send(
             json.dumps(
@@ -97,7 +100,9 @@ async def test_ticket_handshake_and_reconnect(legacy: bool, traffic: bool) -> No
         task = asyncio.create_task(bridge(client, live))
         try:
             for _ in range(2):
-                assert (await asyncio.wait_for(events.get(), 4)).uri == f"beacon://nodes/{ID}"
+                update = await asyncio.wait_for(events.get(), 4)
+                assert isinstance(update, ResourceUpdated)
+                assert update.uri == f"beacon://nodes/{ID}"
             assert tickets == ([None, None] if legacy else ["ticket-1", "ticket-2"])
             assert calls == 2 and events.empty()
         finally:
@@ -133,7 +138,7 @@ async def test_handshake_frame_and_heartbeat_fail_closed(scenario: str) -> None:
         cfg = config(BEACON_WS_URL=f"ws://127.0.0.1:{server.sockets[0].getsockname()[1]}/ws")
         client = BeaconClient(cfg, transport=httpx.MockTransport(not_found))
         live = Live(cfg)
-        events: asyncio.Queue[ResourceUpdated] = asyncio.Queue()
+        events: asyncio.Queue[ServerEvent] = asyncio.Queue()
         live.bus.subscribe(events.put_nowait)
         try:
             with pytest.raises((ValueError, ConnectionClosed)):

@@ -1,23 +1,11 @@
 import json
 from pathlib import Path
-from typing import Never, TypedDict
 
 import httpx
 import pytest
-from conftest import gateway, rpc
-from pydantic import TypeAdapter
 
 from beacon_mcp.runtime import CONTRACTS, default_registry
-
-
-class NegativeCase(TypedDict):
-    name: str
-    arguments: dict[str, object]
-
-
-NEGATIVE_CASES = TypeAdapter(list[NegativeCase]).validate_python(
-    json.loads(Path("tests/fixtures/invalid-tool-cases.json").read_text())
-)
+from tests.python.conftest import gateway, rpc
 
 ID = "123e4567-e89b-42d3-a456-426614174000"
 B = "123e4567-e89b-42d3-a456-426614174001"
@@ -47,12 +35,10 @@ B = "123e4567-e89b-42d3-a456-426614174001"
         ("beacon_compare_regions", {"iataA": "arn", "iataB": "mmx"}, 2),
     ],
 )
-async def test_analytics_and_bounded_composites(
-    name: str, args: dict[str, object], calls: int
-) -> None:
-    seen: list[httpx.Request] = []
+async def test_analytics_and_bounded_composites(name, args, calls):
+    seen = []
 
-    def upstream(request: httpx.Request) -> httpx.Response:
+    def upstream(request):
         seen.append(request)
         array = request.url.path.endswith(("neighbors", "top-advertisers"))
         return httpx.Response(
@@ -72,9 +58,7 @@ async def test_analytics_and_bounded_composites(
 
 
 def test_complete_inventory():
-    expected = TypeAdapter(list[str]).validate_python(
-        json.loads(Path("tests/fixtures/tool-names.json").read_text())
-    )
+    expected = json.loads(Path("tests/fixtures/tool-names.json").read_text())
     registered = default_registry().list_tools()
     assert len(registered) == 51
     assert {tool.name for tool in registered} == set(expected)
@@ -82,9 +66,11 @@ def test_complete_inventory():
         assert tool.model_dump(by_alias=True, exclude_none=True) == CONTRACTS[tool.name]
 
 
-@pytest.mark.parametrize("case", NEGATIVE_CASES)
-async def test_all_thirty_negative_argument_fixtures_rejected(case: NegativeCase) -> None:
-    def forbidden(_request: httpx.Request) -> Never:
+@pytest.mark.parametrize(
+    "case", json.loads(Path("tests/fixtures/invalid-tool-cases.json").read_text())
+)
+async def test_all_thirty_negative_argument_fixtures_rejected(case):
+    def forbidden(_):
         pytest.fail("invalid request reached upstream")
 
     async with gateway(forbidden) as http:
@@ -99,7 +85,7 @@ async def test_all_thirty_negative_argument_fixtures_rejected(case: NegativeCase
 
 
 async def test_analytics_utf8_region_bound():
-    def forbidden(_request: httpx.Request) -> Never:
+    def forbidden(_):
         pytest.fail("oversized UTF-8 region reached Beacon")
 
     async with gateway(forbidden) as http:
