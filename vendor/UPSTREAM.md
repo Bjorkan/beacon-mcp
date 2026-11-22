@@ -21,3 +21,13 @@ cargo test --manifest-path rust/Cargo.toml --locked
 The synchronization command refuses branches and moving tags; it requires a
 full 40-character commit SHA. Review the upstream handlers and update the
 checked-in Rust tool discovery contract deliberately if the API changes.
+
+The current latest published stable release was verified as `v2.2.0` on
+2026-11-22; its annotated tag resolves to the pinned immutable commit.
+Run `python3 scripts/check_upstream_release.py` to compare the pin against the
+latest GitHub release and resolve its tag to a commit (detecting re-cut tags).
+`.github/workflows/upstream-release.yml` runs this check every Monday and on
+manual dispatch; PR CI tests the checker offline. A failed release check is a
+review signal, **not** an automatic contract or tool update. Do not adopt
+unreleased `dev` changes or overwrite the checked-in API contract without
+reviewing handlers, tool schemas and regression tests.
