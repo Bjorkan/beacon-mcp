@@ -8,6 +8,9 @@
     "minimumReleaseAge": null,
     "automerge": true
   },
+  "lockFileMaintenance": {
+    "minimumReleaseAge": null
+  },
   "automerge": true,
   "automergeType": "pr",
   "platformAutomerge": true,
