@@ -3,5 +3,18 @@
   "extends": ["config:best-practices"],
   "minimumReleaseAge": "14 days",
   "internalChecksFilter": "strict",
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "minimumReleaseAge": null,
+    "automerge": true
+  },
+  "lockFileMaintenance": {
+    "minimumReleaseAge": null
+  },
+  "automerge": true,
+  "automergeType": "pr",
+  "platformAutomerge": true,
+  "automergeStrategy": "squash",
+  "ignoreTests": false,
   "timezone": "Europe/Stockholm"
 }
