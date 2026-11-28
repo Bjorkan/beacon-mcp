@@ -21,10 +21,10 @@ persistent disk, database or external event storage; Events webhooks and
 replay/outbox are therefore out of scope. See the
 [non-implementation policy](docs/mcp-events-migration.md).
 
-Pinned upstream API/release: `v2.2.0` at
-`265a835e36931a2c39b9b08e7a78837b9cf0e343` (re-cut annotated tag).
+Pinned upstream API/release: `v2.3.0` at
+`4c391b849ade3e35884315126d61a468d51b24a6` (annotated tag; GitHub Release pending at sync).
 Vendored contract: `vendor/beacon-openapi.yaml`; docs commit
-`008f988863014c32e673c5c0176ea86db2868ccf`.
+`6660c56b2dbae965836556dbbf0f6c9fb1b06640`.
 
 **Before reviewing or changing API integration**, identify the latest
 published `MeshCore-Beacon/beacon-server` GitHub release, resolve the tag to
@@ -49,10 +49,9 @@ stats hours and observer comparison use `[since,until)`. Message filters use
 `sentAt >= since`. Unknown well-formed node/packet/trace IDs return 404.
 Upstream `/info` can return null minimum client versions, regardless of its
 Swagger nullability. Upstream 503 `deadline_exceeded` with `Retry-After` maps to
-`DEADLINE_EXCEEDED`. Messages' documented `region` and `regionId` filters on the ordinary
-`/messages` and `/channels/{id}/messages` reads are deliberately not exposed:
-the pinned Go handlers only call `parseIATAs` and ignore both parameters.
-`/messages/backfill` does resolve region filters and exposes them.
+`DEADLINE_EXCEEDED`. Beacon 2.3 resolves `region` and `regionId` on ordinary
+`/messages` and `/channels/{id}/messages` reads, as well as message backfill.
+The gateway exposes these filters; use one region selector at a time.
 
 ## Development
 
@@ -82,7 +81,7 @@ only for transient network failures or HTTP 502/503/504 **without**
 from upstream 5xx must be redacted. Never log packet/message bodies, auth
 headers, upstream response bodies, stack traces or environment values.
 
-Each of the 49 tools publishes an input/output schema, description and
+Each of the 55 tools publishes an input/output schema, description and
 read-only/idempotent/open-world hints. The checked-in JSON documents in
 `rust/src/*-tool-definitions.json` freeze the MCP discovery contract; update
 them with a reviewed contract change, not with a build-time download.
@@ -91,20 +90,20 @@ requested. Numeric, opaque and compound cursors vary per endpoint. Four
 upstream-array tools return `hasMore:false` and only set `truncated:true` if
 the response was cut short; they have no fake continuation cursor.
 Beacon 2.2 adds node-originated hourly activity (`/nodes/{id}/activity`)
-over a 1m–720h range; results draw on rollups plus the raw tail, so a
+over a 1h–720h range in Beacon 2.3; results draw on rollups plus the raw tail, so a
 freshly migrated server may initially have sparse historical points while
 migrations 062/063 re-roll the last three days. Node-originated observation
 pages (`/nodes/{id}/observations`) use an observation-ID cursor but are
 ordered by packet first-heard time then observation ID: the IDs are not
 globally monotonic across pages. Preserve and reuse the exact nextCursor.
 
-The additional public GET tools expose all 49 documented non-admin GET
-operations from the pinned Swagger specification (except the internal
-ws-ticket operation, which is used automatically by subscriptions).
-All filters the handlers actually support are included in the public tool
-schemas; upstream Swagger-documented but ignored ordinary-message region
-filters are intentionally excluded. A frozen Swagger parity test tracks these
-exceptions.
+The gateway exposes 53 public REST GET tools and two composite tools.
+The internal ws-ticket operation is used automatically by subscriptions.
+Beacon 2.3 adds four public node polling/telemetry reads and a node poller
+filter. Latest telemetry is capped locally with an explicit truncation flag;
+history uses bounded ranges and trusted readings by default. Accounts, auth,
+personal alerts, Atlas, telemetry requests and admin routes remain excluded.
+The frozen Swagger parity test checks supported query parameters.
 Large server-side arrays without a cursor are truncated to the MCP limit
 with pagination.hasMore=false and an explicit truncated flag.
 

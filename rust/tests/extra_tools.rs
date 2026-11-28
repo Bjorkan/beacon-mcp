@@ -34,6 +34,14 @@ async fn mock() -> (
                 let body = if uri.contains("/nodes/") && uri.contains("/activity") {
                     json!({"range":"48h","points":[{"t":1762819200000_i64,"observations":2}],
                         "summary":{"observations":2},"windowStart":1762819200000_i64})
+                } else if uri.contains("/nodes/telemetry/latest") {
+                    json!({"generatedAt":123,"items":[{"nodeId":ID,"batteryMv":3300},{"nodeId":ID,"temperatureC":12.5}]})
+                } else if uri.contains("/nodes/") && uri.contains("/poller") {
+                    json!({"claim":null,"readings24h":0,"targets":[]})
+                } else if uri.contains("/nodes/") && uri.contains("/polling") {
+                    json!({"polled":false,"latestReadingAt":null,"poller":null,"standbys":[]})
+                } else if uri.contains("/nodes/") && uri.contains("/telemetry") {
+                    json!({"range":"72h","interval":"6h","polled":true,"untrustedReadings":0,"points":[]})
                 } else if uri.contains("/nodes/") && uri.contains("/observations") {
                     json!({"items":[{"id":9},{"id":8}],"hasMore":true,"nextCursor":8})
                 } else if uri.contains("/observers/directory") {
@@ -86,7 +94,7 @@ fn frozen_discovery_has_all_additional_tools_and_read_only_hints() {
     .expect("HTTP client configuration");
     let tools = ExtraTools::new(client);
     let listed = tools.list();
-    assert_eq!(listed.len(), 26);
+    assert_eq!(listed.len(), 30);
     let mut names = std::collections::HashSet::new();
     for tool in listed {
         let raw = serde_json::to_value(&tool).unwrap();
@@ -263,5 +271,70 @@ async fn public_statistic_filters_normalize_iatas_and_preserve_preset() {
     }
     assert!(paths[8].contains("iatas=ARN"));
     assert!(paths[8].contains("preset=910.525%2C62.5%2C7"));
+    task.abort();
+}
+
+#[tokio::test]
+async fn beacon_23_public_polling_and_telemetry_contract() {
+    let (tools, seen, task) = mock().await;
+    for (name, suffix) in [
+        ("beacon_get_node_poller", "poller"),
+        ("beacon_get_node_polling", "polling"),
+    ] {
+        let response = tools.execute(name, args(json!({"id":ID}))).await.unwrap();
+        assert!(response.is_object());
+        assert_eq!(
+            seen.lock().unwrap().last().unwrap(),
+            &format!("/api/v1/nodes/{ID}/{suffix}")
+        );
+    }
+    let history = tools
+        .execute(
+            "beacon_get_node_telemetry",
+            args(json!({"id":ID,"range":"72h","interval":"6h","include":"untrusted"})),
+        )
+        .await
+        .unwrap();
+    assert_eq!(history["polled"], true);
+    let latest = tools
+        .execute(
+            "beacon_list_latest_node_telemetry",
+            args(json!({"iata":"arn","limit":1})),
+        )
+        .await
+        .unwrap();
+    assert_eq!(latest["items"].as_array().unwrap().len(), 1);
+    assert_eq!(latest["generatedAt"], 123);
+    assert_eq!(
+        latest["pagination"],
+        json!({"hasMore":false,"truncated":true})
+    );
+    {
+        let paths = seen.lock().unwrap();
+        assert!(paths[2].starts_with(&format!("/api/v1/nodes/{ID}/telemetry?")));
+        assert!(paths[2].contains("range=72h"));
+        assert!(paths[2].contains("interval=6h"));
+        assert!(paths[2].contains("include=untrusted"));
+        assert_eq!(paths[3], "/api/v1/nodes/telemetry/latest?iata=ARN");
+    }
+    let count = seen.lock().unwrap().len();
+    for (name, arguments) in [
+        ("beacon_get_node_activity", json!({"id":ID,"range":"59m"})),
+        ("beacon_get_node_telemetry", json!({"id":ID,"range":"48h"})),
+        (
+            "beacon_get_node_telemetry",
+            json!({"id":ID,"interval":"5m"}),
+        ),
+        (
+            "beacon_get_node_telemetry",
+            json!({"id":ID,"include":"all"}),
+        ),
+        ("beacon_get_node_poller", json!({"id":"../admin"})),
+        ("beacon_list_latest_node_telemetry", json!({"limit":51})),
+    ] {
+        let error = tools.execute(name, args(arguments)).await.unwrap_err();
+        assert_eq!(error.code, ErrorCode::InvalidArgument);
+    }
+    assert_eq!(seen.lock().unwrap().len(), count);
     task.abort();
 }

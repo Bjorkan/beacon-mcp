@@ -416,7 +416,7 @@
   },
   "beacon_get_node_activity": {
     "name": "beacon_get_node_activity",
-    "description": "Beacon 2.2 hourly activity of packets originated by a node. range defaults to 24h and is at most 720h.",
+    "description": "Hourly activity of packets originated by a node. Range defaults to 24h; Beacon 2.3 requires 1h to 720h.",
     "annotations": {
       "destructiveHint": false,
       "idempotentHint": true,
@@ -437,7 +437,8 @@
           "type": "string",
           "minLength": 2,
           "maxLength": 6,
-          "pattern": "^[1-9][0-9]*[hm]$"
+          "pattern": "^[1-9][0-9]*[hm]$",
+          "description": "Whole minutes or hours; 60m to 720h."
         }
       },
       "required": [
@@ -859,7 +860,7 @@
   },
   "beacon_get_observer_telemetry": {
     "name": "beacon_get_observer_telemetry",
-    "description": "Get observer telemetry history with optional range, afterId and interval.",
+    "description": "Get observer telemetry history with optional range, afterId and interval. The 1h interval returns stored snapshots (including reboot rows), not evenly spaced hourly buckets; 6h and 24h return buckets.",
     "annotations": {
       "destructiveHint": false,
       "idempotentHint": true,
@@ -3249,6 +3250,489 @@
         "items",
         "pagination"
       ]
+    }
+  },
+  "beacon_get_node_poller": {
+    "name": "beacon_get_node_poller",
+    "description": "Get a poller node's stored claim, slot usage, readings delivered in the last 24h and ranked targets. A null claim and empty targets mean no claim or polling disabled.",
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true,
+      "readOnlyHint": true
+    },
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "claim": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "acceptsRequests": {
+                  "type": "boolean"
+                },
+                "live": {
+                  "type": "boolean"
+                },
+                "receivedAt": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "description": "Unix epoch milliseconds (UTC)"
+                },
+                "slots": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "free": {
+                      "type": "integer"
+                    },
+                    "max": {
+                      "type": "integer"
+                    },
+                    "own": {
+                      "type": "integer"
+                    },
+                    "requested": {
+                      "type": "integer"
+                    },
+                    "used": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "readings24h": {
+          "type": "integer"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "nodeId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "publicKey": {
+                "type": "string"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "role": {
+                "type": "string",
+                "enum": [
+                  "poller",
+                  "standby",
+                  "unassigned"
+                ]
+              },
+              "rank": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "claimedSnr": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "evidenceSnr": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "evidenceCount": {
+                "type": "integer"
+              },
+              "state": {
+                "type": "string"
+              },
+              "misses": {
+                "type": "integer"
+              },
+              "requested": {
+                "type": "boolean"
+              },
+              "lastAttempt": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Unix epoch milliseconds (UTC)"
+              },
+              "lastOk": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Unix epoch milliseconds (UTC)"
+              },
+              "latestReadingAt": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Unix epoch milliseconds (UTC)"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "beacon_get_node_polling": {
+    "name": "beacon_get_node_polling",
+    "description": "Get a node's assigned poller, ranked standbys and newest trusted reading. Polling disabled or unpolled nodes return empty assignments.",
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true,
+      "readOnlyHint": true
+    },
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "polled": {
+          "type": "boolean"
+        },
+        "latestReadingAt": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Unix epoch milliseconds (UTC)"
+        },
+        "poller": {
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "observerId": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "rank": {
+                  "type": "integer"
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "standbys": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "observerId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "rank": {
+                "type": "integer"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "beacon_get_node_telemetry": {
+    "name": "beacon_get_node_telemetry",
+    "description": "Get polled node telemetry bucketed in UTC. Counters are increments; counterSpanSecs gives elapsed time for rates. Other values are averages except maximum uptime. Untrusted readings are excluded unless explicitly included.",
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true,
+      "readOnlyHint": true
+    },
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+        },
+        "range": {
+          "type": "string",
+          "enum": [
+            "24h",
+            "72h",
+            "168h",
+            "720h"
+          ],
+          "default": "168h"
+        },
+        "interval": {
+          "type": "string",
+          "enum": [
+            "1h",
+            "6h",
+            "24h"
+          ],
+          "description": "Default depends on range: 24h/72h -> 1h; 168h -> 6h; 720h -> 24h."
+        },
+        "include": {
+          "type": "string",
+          "enum": [
+            "untrusted"
+          ]
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "range": {
+          "type": "string"
+        },
+        "interval": {
+          "type": "string"
+        },
+        "polled": {
+          "type": "boolean"
+        },
+        "untrustedReadings": {
+          "type": "integer"
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "t": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Unix epoch milliseconds (UTC)"
+              },
+              "readings": {
+                "type": "integer"
+              },
+              "batteryMv": {
+                "type": "integer"
+              },
+              "noiseFloorDb": {
+                "type": "integer"
+              },
+              "lastRssiDb": {
+                "type": "integer"
+              },
+              "uptimeSeconds": {
+                "type": "integer"
+              },
+              "queueLength": {
+                "type": "integer"
+              },
+              "packetsReceived": {
+                "type": "integer"
+              },
+              "packetsSent": {
+                "type": "integer"
+              },
+              "receiveErrors": {
+                "type": "integer"
+              },
+              "counterSpanSecs": {
+                "type": "integer"
+              },
+              "temperatureC": {
+                "type": "number"
+              },
+              "lastSnrDb": {
+                "type": "number"
+              },
+              "airtimeTxSecs": {
+                "type": "number"
+              },
+              "airtimeRxSecs": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "beacon_list_latest_node_telemetry": {
+    "name": "beacon_list_latest_node_telemetry",
+    "description": "List latest trusted battery and temperature readings in the last seven days. Narrow by location; local limit defaults to 20, max 50, with truncation and no continuation cursor.",
+    "annotations": {
+      "destructiveHint": false,
+      "idempotentHint": true,
+      "openWorldHint": true,
+      "readOnlyHint": true
+    },
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "iata": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9]{3}$",
+          "description": "Single reception IATA code; normalized uppercase; cannot combine with iatas"
+        },
+        "iatas": {
+          "description": "IATA identifiers; normalized to uppercase",
+          "items": {
+            "description": "Three-character IATA identifier; normalized to uppercase",
+            "pattern": "^[A-Za-z0-9]{3}$",
+            "type": "string"
+          },
+          "maxItems": 20,
+          "minItems": 1,
+          "type": "array"
+        },
+        "region": {
+          "description": "Exact case-sensitive region slug as returned by beacon_list_regions.slug; the display name (e.g. Sverige) will not match",
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        "regionId": {
+          "exclusiveMinimum": 0,
+          "maximum": 2147483647,
+          "type": "integer"
+        },
+        "limit": {
+          "default": 20,
+          "description": "Maximum results, from 1 through 50",
+          "maximum": 50,
+          "minimum": 1,
+          "type": "integer"
+        }
+      }
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "generatedAt": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "description": "Unix epoch milliseconds (UTC)"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "nodeId": {
+                "type": "string"
+              },
+              "sampledAt": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "description": "Unix epoch milliseconds (UTC)"
+              },
+              "batteryMv": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "temperatureC": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "pagination": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "hasMore": {
+              "const": false,
+              "type": "boolean"
+            },
+            "truncated": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
     }
   }
 }

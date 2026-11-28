@@ -44,6 +44,7 @@ struct Args {
     sort: Option<String>,
     order: Option<String>,
     neighbors: Option<bool>,
+    poller: Option<bool>,
     broker: Option<String>,
     status: Option<String>,
     range: Option<String>,
@@ -86,6 +87,7 @@ fn fields(name: &str) -> Option<&'static [&'static str]> {
             "sort",
             "order",
             "neighbors",
+            "poller",
         ],
         "beacon_get_node" | "beacon_get_observer" => &["id"],
         "beacon_search_observers" => &[
@@ -310,6 +312,7 @@ impl CoreTools {
         put("sort", args.sort);
         put("order", args.order);
         put("neighbors", args.neighbors.map(|n| n.to_string()));
+        put("poller", args.poller.map(|n| n.to_string()));
         put("broker", args.broker);
         put("status", args.status);
         put("cursor", args.cursor.map(|n| n.to_string()));

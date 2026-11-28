@@ -73,6 +73,8 @@ fn fields(name: &str) -> Option<&'static [&'static str]> {
             "limit",
             "cursor",
             "iatas",
+            "region",
+            "regionId",
             "scope",
             "since",
             "channelId",
@@ -87,9 +89,16 @@ fn fields(name: &str) -> Option<&'static [&'static str]> {
             "hash",
             "keyKnown",
         ],
-        "beacon_get_channel_messages" => {
-            &["channelId", "limit", "cursor", "iatas", "scope", "since"]
-        }
+        "beacon_get_channel_messages" => &[
+            "channelId",
+            "limit",
+            "cursor",
+            "iatas",
+            "region",
+            "regionId",
+            "scope",
+            "since",
+        ],
         _ => return None,
     })
 }

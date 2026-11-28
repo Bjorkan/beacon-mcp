@@ -609,6 +609,12 @@
             "boolean",
             "null"
           ]
+        },
+        "isPoller": {
+          "type": [
+            "boolean",
+            "null"
+          ]
         }
       },
       "type": "object"
@@ -1336,6 +1342,91 @@
         "serverVersion": {
           "pattern": "^\\d+\\.\\d+\\.\\d+$",
           "type": "string"
+        },
+        "features": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "polling": {
+              "type": "boolean"
+            },
+            "registration": {
+              "type": "boolean"
+            },
+            "telemetryRequests": {
+              "type": "boolean"
+            },
+            "alerts": {
+              "type": "boolean"
+            },
+            "atlasTelemetry": {
+              "type": "boolean"
+            },
+            "atlasPoller": {
+              "type": "boolean"
+            },
+            "atlas7d": {
+              "type": "boolean"
+            },
+            "mapTelemetry": {
+              "type": "boolean"
+            },
+            "appDeviceLabel": {
+              "type": "boolean"
+            },
+            "accounts": {
+              "type": "string"
+            },
+            "portalUrl": {
+              "type": "string"
+            },
+            "alertChannels": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "email": {
+                  "type": "boolean"
+                },
+                "push": {
+                  "type": "boolean"
+                }
+              }
+            },
+            "push": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {}
+            }
+          }
+        },
+        "display": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "temperatureUnit": {
+              "type": "string",
+              "enum": [
+                "c",
+                "f"
+              ]
+            },
+            "distanceUnit": {
+              "type": "string",
+              "enum": [
+                "metric",
+                "imperial"
+              ]
+            }
+          }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "atlas": {
+              "type": "integer"
+            }
+          }
         }
       },
       "type": "object"
@@ -1764,6 +1855,10 @@
           "type": "string",
           "pattern": "^[A-Za-z0-9]{3}$",
           "description": "Single reception IATA code; normalized uppercase; cannot combine with iatas"
+        },
+        "poller": {
+          "type": "boolean",
+          "description": "Filter by stored polling claim: true includes pollers, false excludes them."
         }
       },
       "type": "object"
@@ -1929,6 +2024,12 @@
                 ]
               },
               "stale": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "isPoller": {
                 "type": [
                   "boolean",
                   "null"

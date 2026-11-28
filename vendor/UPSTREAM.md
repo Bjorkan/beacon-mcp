@@ -1,14 +1,14 @@
 # Vendored Beacon OpenAPI contract
 
 - Repository: `https://github.com/MeshCore-Beacon/beacon-server`
-- Commit: `265a835e36931a2c39b9b08e7a78837b9cf0e343`
+- Commit: `4c391b849ade3e35884315126d61a468d51b24a6`
 - Source: `docs/swagger.yaml`
 - Documentation repository: `https://github.com/MeshCore-Beacon/beacon-docs`
-- Documentation commit: `008f988863014c32e673c5c0176ea86db2868ccf`
+- Documentation commit: `6660c56b2dbae965836556dbbf0f6c9fb1b06640`
 - Documentation source: `docs/api-contract.md`
-- Synchronized: 2026-11-12
-- Source contract version: `2.2.0` (from pinned upstream commit)
-- Note: The Beacon source contract is pinned to the commit above; the separately pinned documentation commit may lag behind it.
+- Synchronized: 2026-11-28
+- Source contract version: `2.3.0` (from pinned upstream commit)
+- Note: The explicitly requested annotated `v2.3.0` tag resolves to the commit above; at synchronization time the latest published GitHub Release was still `v2.2.0`.
 
 To update, identify the latest published Beacon release, review its server and
 documentation contracts, then pin the release's full commit and run:

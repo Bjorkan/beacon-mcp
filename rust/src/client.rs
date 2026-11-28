@@ -59,6 +59,10 @@ pub enum Operation {
     NodeActivity,
     NodeNeighbors,
     NodeObservations,
+    NodePoller,
+    NodePolling,
+    NodeTelemetry,
+    NodeLatestTelemetry,
     ObserverAdverts,
     ObserverTelemetry,
     ObserverDirectory,
@@ -115,6 +119,10 @@ impl Operation {
             NodeActivity => ("nodes", "uuid/activity"),
             NodeNeighbors => ("nodes", "uuid/neighbors"),
             NodeObservations => ("nodes", "uuid/observations"),
+            NodePoller => ("nodes", "uuid/poller"),
+            NodePolling => ("nodes", "uuid/polling"),
+            NodeTelemetry => ("nodes", "uuid/telemetry"),
+            NodeLatestTelemetry => ("nodes/telemetry/latest", ""),
             ObserverAdverts => ("observers", "uuid/adverts"),
             ObserverTelemetry => ("observers", "uuid/telemetry"),
             ObserverDirectory => ("observers/directory", ""),
@@ -144,6 +152,8 @@ impl Operation {
                 | Self::ObserverComparison
                 | Self::CrossRoutes
                 | Self::NodeActivity
+                | Self::NodeTelemetry
+                | Self::NodeLatestTelemetry
                 | Self::ObserverDirectory
                 | Self::RouteObservations
                 | Self::ClockDrift
@@ -253,7 +263,7 @@ impl BeaconClient {
             })?;
             let (value, suffix) = match kind {
                 "uuid" | "uuid/activity" | "uuid/neighbors" | "uuid/observations"
-                | "uuid/adverts" | "uuid/telemetry" => (
+                | "uuid/adverts" | "uuid/telemetry" | "uuid/poller" | "uuid/polling" => (
                     {
                         let uuid = uuid::Uuid::parse_str(id).map_err(|_| {
                             GatewayError::new(ErrorCode::InvalidArgument, "invalid UUID")
@@ -390,7 +400,7 @@ impl BeaconClient {
                 } else {
                     self.timeout
                 })
-                .header(reqwest::header::USER_AGENT, "beacon-mcp/2.2.0")
+                .header(reqwest::header::USER_AGENT, "beacon-mcp/2.3.0")
                 .send()
                 .await;
             let response = match response {
