@@ -15,6 +15,7 @@ publish = false
 
 [workspace.dependencies]
 base64 = "0.23"
+tokio-util = "0.7"
 getrandom = "0.4"
 axum = "0.8.9"
 bytes = "1"
@@ -28,7 +29,6 @@ regex = "1"
 thiserror = "2"
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "net", "signal", "time", "sync"] }
 tokio-tungstenite = { version = "0.30.0", default-features = false, features = ["connect", "rustls-tls-native-roots"] }
-tokio-util = "0.7"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt"] }
 url = "2"

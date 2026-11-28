@@ -16,3 +16,5 @@ Frozen, behavior-preserving baseline. No catalog change.
 - [03-registry.md](03-registry.md) — canonical operation registry, JSON Schema contracts, continuation tokens.
 
 - [04-domain.md](04-domain.md) — pure typed entities, metric registry, polling/time/evidence semantics.
+
+- [05-workflow-engine.md](05-workflow-engine.md) — shared resolver, deterministic planner, budgets, envelope, progress/cancellation.

@@ -181,13 +181,16 @@ name = "beacon-workflows"
 version = "2.3.0"
 dependencies = [
  "beacon-api",
+ "beacon-domain",
  "chrono",
+ "futures-util",
  "reqwest",
  "rmcp",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
+ "tokio-util",
  "tracing",
  "url",
  "uuid",
