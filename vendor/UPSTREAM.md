@@ -8,7 +8,7 @@
 - Documentation source: `docs/api-contract.md`
 - Synchronized: 2026-11-28
 - Source contract version: `2.3.0` (from pinned upstream commit)
-- Note: The explicitly requested annotated `v2.3.0` tag resolves to the commit above; at synchronization time the latest published GitHub Release was still `v2.2.0`.
+- Note: The explicitly requested annotated `v2.3.0` tag object `7370576c1442ac880fbe7e45f6aaa9d5e7b56403` resolves to the commit above. Re-verified 2026-11-28 in AI-first 01: latest published GitHub Release is now `v2.3.0`, so the pin is current.
 
 To update, identify the latest published Beacon release, review its server and
 documentation contracts, then pin the release's full commit and run:
