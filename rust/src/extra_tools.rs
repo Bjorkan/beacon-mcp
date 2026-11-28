@@ -363,7 +363,10 @@ impl ExtraTools {
             .await?;
         if op == Operation::NodeLatestTelemetry {
             let items = response["items"].as_array().ok_or_else(|| {
-                GatewayError::new(ErrorCode::Unavailable, "Beacon returned invalid telemetry list")
+                GatewayError::new(
+                    ErrorCode::Unavailable,
+                    "Beacon returned invalid telemetry list",
+                )
             })?;
             let truncated = items.len() > limit as usize;
             let mut pagination = json!({"hasMore": false});

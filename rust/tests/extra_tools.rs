@@ -305,7 +305,10 @@ async fn beacon_23_public_polling_and_telemetry_contract() {
         .unwrap();
     assert_eq!(latest["items"].as_array().unwrap().len(), 1);
     assert_eq!(latest["generatedAt"], 123);
-    assert_eq!(latest["pagination"], json!({"hasMore":false,"truncated":true}));
+    assert_eq!(
+        latest["pagination"],
+        json!({"hasMore":false,"truncated":true})
+    );
     {
         let paths = seen.lock().unwrap();
         assert!(paths[2].starts_with(&format!("/api/v1/nodes/{ID}/telemetry?")));
@@ -318,8 +321,14 @@ async fn beacon_23_public_polling_and_telemetry_contract() {
     for (name, arguments) in [
         ("beacon_get_node_activity", json!({"id":ID,"range":"59m"})),
         ("beacon_get_node_telemetry", json!({"id":ID,"range":"48h"})),
-        ("beacon_get_node_telemetry", json!({"id":ID,"interval":"5m"})),
-        ("beacon_get_node_telemetry", json!({"id":ID,"include":"all"})),
+        (
+            "beacon_get_node_telemetry",
+            json!({"id":ID,"interval":"5m"}),
+        ),
+        (
+            "beacon_get_node_telemetry",
+            json!({"id":ID,"include":"all"}),
+        ),
         ("beacon_get_node_poller", json!({"id":"../admin"})),
         ("beacon_list_latest_node_telemetry", json!({"limit":51})),
     ] {
