@@ -88,17 +88,25 @@ fn composites_use_bounded_fanout_and_ticket_stays_internal() {
 #[test]
 fn baseline_docs_cover_inventory_comparison_matrix_and_eval() {
     for doc in [
+        "docs/ai-first/README.md",
         "docs/ai-first/01-baseline-inventory.md",
         "docs/ai-first/01-upstream-comparison.md",
+        "docs/ai-first/01-upstream-diff.md",
         "docs/ai-first/01-capability-matrix.md",
         "docs/ai-first/01-eval-baseline.md",
     ] {
         let text = fs::read_to_string(repo_root().join(doc)).expect("baseline doc readable");
-        assert!(text.contains("Refs #121"), "{doc} references issue");
+        if doc.ends_with("README.md") {
+            assert!(text.contains("PR 01"), "{doc} references PR");
+        } else {
+            assert!(text.contains("Refs #121"), "{doc} references issue");
+        }
     }
     let inventory = read_repo("docs/ai-first/01-baseline-inventory.md");
     assert!(inventory.contains("WsTicket"));
     assert!(inventory.contains("workflow.diagnose_node"));
+    let diff = read_repo("docs/ai-first/01-upstream-diff.md");
+    assert!(diff.contains("Signed no-delta") || diff.contains("no-delta"));
     let eval = read_repo("docs/ai-first/01-eval-baseline.md");
     for marker in [
         "EVAL-01", "EVAL-02", "EVAL-03", "EVAL-04", "EVAL-05", "EVAL-06",
@@ -126,4 +134,54 @@ fn resource_and_prompt_baseline_counts() {
     assert!(beacon_mcp_rust::resources::parse_uri("beacon://nodes/../admin").is_none());
     let prompts = beacon_mcp_rust::prompts::list().prompts.len();
     assert_eq!(prompts, 3, "three prompts");
+}
+
+#[test]
+fn operation_enum_covers_53_public_reads_plus_internal_ticket() {
+    let source = read_repo("rust/src/client.rs");
+    // Count `Variant,` lines inside the Operation enum block.
+    let enum_block = source
+        .split("pub enum Operation")
+        .nth(1)
+        .expect("Operation enum")
+        .split('}')
+        .next()
+        .expect("enum block");
+    let variants: Vec<String> = enum_block
+        .lines()
+        .map(str::trim)
+        .filter(|line| {
+            !line.is_empty()
+                && !line.starts_with("//")
+                && line.ends_with(',')
+                && !line.contains("enum")
+        })
+        .map(|line| line.trim_end_matches(',').to_owned())
+        .collect();
+    assert_eq!(variants.len(), 54, "54 Operation variants: {variants:?}");
+    assert!(variants.contains(&"WsTicket".to_owned()));
+    assert!(variants.contains(&"NodePolling".to_owned()));
+    assert!(variants.contains(&"NodePoller".to_owned()));
+    // Every public endpoint arm must exist in endpoint().
+    for endpoint in [
+        "\"info\"",
+        "\"iatas\"",
+        "\"nodes/telemetry/latest\"",
+        "\"observers/directory\"",
+        "\"messages/backfill\"",
+        "\"packets/backfill\"",
+        "\"routes/cross\"",
+        "\"ws-ticket\"",
+    ] {
+        assert!(source.contains(endpoint), "missing endpoint {endpoint}");
+    }
+    let diff = read_repo("docs/ai-first/01-upstream-diff.md");
+    for op in [
+        "NodePolling",
+        "NodePoller",
+        "WsTicket",
+        "ObserverComparison",
+    ] {
+        assert!(diff.contains(op), "diff missing {op}");
+    }
 }
