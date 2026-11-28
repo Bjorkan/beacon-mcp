@@ -217,7 +217,7 @@ impl ServerHandler for BeaconServer {
     ) -> Result<InitializeResult, McpError> {
         context.peer.set_peer_info(request.clone());
         let mut info = self.negotiate_initialize(&request)?;
-        // rmcp 3.8 no longer lists 2024-10-07 among its built-in revisions,
+        // rmcp 3.10.0 no longer lists 2024-10-07 among its built-in revisions,
         // but the existing gateway still serves its stateless initialize.
         if request.protocol_version.as_str() == "2024-10-07" {
             info.protocol_version = serde_json::from_str("\"2024-10-07\"")

@@ -42,5 +42,7 @@ webhook delivery. See [the Events plan](mcp-events-migration.md).
 
 The latest comparison was against the published Beacon `v2.1.1` release at
 `d0a55dbf6d6f5ed4345bd72c039845f6c947fd16`; review its handlers rather
-than relying only on Swagger when changing the integration. Release metadata
-and vendored contract are in `vendor/UPSTREAM.md`.
+than relying only on Swagger when changing the integration. AI-first 01
+(`docs/ai-first/01-upstream-comparison.md`) re-verified the vendored pin against
+the now-published `v2.3.0` tag (`7370576c…` → `4c391b84…`): no delta.
+Release metadata and vendored contract are in `vendor/UPSTREAM.md`.
