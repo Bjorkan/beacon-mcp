@@ -33,8 +33,7 @@ load verification deferred to #134.
 parallel via `buffer_unordered(max_concurrent)`, per-section `Result`
 (no `try_join!` total failure), real progress only (completed section keys,
 no percentages), cancellation through HTTP/retry/pagination/CPU with permits
-released and no further attempts. Stateless: no cross-request memoization;
-replica-independence tested.
+released and no further attempts. Stateless: no cross-request memoization; replay determinism tested (same plan + envelope shape on fresh replica).
 
 `envelope.rs`: separates completion (`Complete/Partial/AmbiguousEntity/
 NotFound/Unsupported/Unavailable`) vs coverage vs query vs evidence vs

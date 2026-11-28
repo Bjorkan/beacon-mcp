@@ -48,6 +48,23 @@ pub fn capability(
     None
 }
 
+fn now_iso() -> String {
+    chrono::Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
+}
+
+fn next_actions_for(status: SectionStatus) -> Option<String> {
+    match status {
+        SectionStatus::Ok => None,
+        SectionStatus::NotFound => Some("verify identity and retry".to_owned()),
+        SectionStatus::Unsupported => Some("check server version and capability".to_owned()),
+        SectionStatus::Disabled => Some("enable the operation and retry".to_owned()),
+        SectionStatus::Unavailable => Some("retry later with narrower window".to_owned()),
+        SectionStatus::Unknown => Some("retry with explicit identifiers".to_owned()),
+        SectionStatus::Timeout => Some("retry with narrower window".to_owned()),
+        SectionStatus::BudgetExhausted => Some("retry with narrower scope".to_owned()),
+    }
+}
+
 pub async fn execute<F, Fut>(
     context: &RequestContext,
     steps: Vec<Step>,
@@ -60,31 +77,70 @@ where
 {
     use futures_util::stream::{self, StreamExt};
     let max_concurrent = context.tier.max_concurrent();
-    let mut admitted = Vec::new();
+    // Partition: capability-gated steps never touch upstream nor attempts.
+    let mut gated: Vec<SectionResult> = Vec::new();
+    let mut runnable: Vec<Step> = Vec::new();
+    let mut budget_section: Option<SectionResult> = None;
     for step in steps {
         if context.cancel.is_cancelled() {
             break;
         }
+        if let Some(meta) = find_by_key(step.operation_key)
+            && let Some(status) = capability(
+                &meta,
+                context.capabilities.polling_v23,
+                context.capabilities.activity_v22,
+            )
+        {
+            gated.push(SectionResult {
+                name: step.operation_key,
+                status,
+                data: None,
+                error: Some("unsupported for server capability".to_owned()),
+                at: now_iso(),
+            });
+            continue;
+        }
         if context.try_attempt().is_err() {
+            budget_section = Some(SectionResult {
+                name: step.operation_key,
+                status: SectionStatus::BudgetExhausted,
+                data: None,
+                error: Some("attempt budget exhausted".to_owned()),
+                at: now_iso(),
+            });
             break;
         }
-        admitted.push(step);
+        runnable.push(step);
     }
     let cancel = context.cancel.clone();
-    let results: Vec<SectionResult> = stream::iter(admitted)
+    let concurrent = context.concurrent.clone();
+    let mut results: Vec<SectionResult> = stream::iter(runnable)
         .map(|step| {
             let cancel = cancel.clone();
             let progress = progress.clone();
+            let concurrent = concurrent.clone();
             let key = step.operation_key;
             let future = run(step);
             async move {
+                // Per-request + global permits bound fan-out; released on completion.
+                let Ok(_request_permit) = concurrent.acquire_owned().await else {
+                    return SectionResult {
+                        name: key,
+                        status: SectionStatus::BudgetExhausted,
+                        data: None,
+                        error: Some("concurrency unavailable".to_owned()),
+                        at: now_iso(),
+                    };
+                };
+                let _global_permit = crate::context::global_permit().await;
                 if cancel.is_cancelled() {
                     return SectionResult {
                         name: key,
                         status: SectionStatus::Timeout,
                         data: None,
                         error: Some("cancelled".to_owned()),
-                        at: String::new(),
+                        at: now_iso(),
                     };
                 }
                 match future.await {
@@ -97,7 +153,7 @@ where
                             status: SectionStatus::Ok,
                             data: Some(data),
                             error: None,
-                            at: String::new(),
+                            at: now_iso(),
                         }
                     }
                     Err((status, error)) => SectionResult {
@@ -105,7 +161,7 @@ where
                         status,
                         data: None,
                         error: Some(error),
-                        at: String::new(),
+                        at: now_iso(),
                     },
                 }
             }
@@ -113,11 +169,14 @@ where
         .buffer_unordered(max_concurrent)
         .collect()
         .await;
-    let mut sections = results;
-    sections.sort_by_key(|section| section.name);
-    let completion = if sections.is_empty() {
+    results.extend(gated);
+    if let Some(section) = budget_section {
+        results.push(section);
+    }
+    results.sort_by_key(|section| section.name);
+    let completion = if results.is_empty() {
         Some(Completion::Unavailable)
-    } else if sections
+    } else if results
         .iter()
         .all(|section| section.status == SectionStatus::Ok)
     {
@@ -125,10 +184,24 @@ where
     } else {
         Some(Completion::Partial)
     };
+    let mut next_actions: Vec<String> = results
+        .iter()
+        .filter_map(|section| next_actions_for(section.status))
+        .collect();
+    next_actions.sort();
+    next_actions.dedup();
+    let sources: Vec<String> = results
+        .iter()
+        .map(|section| section.name.to_owned())
+        .collect();
+    let query = serde_json::json!({"operations": sources});
     Envelope {
         completion,
-        coverage: format!("{} sections", sections.len()),
-        sections,
+        coverage: format!("{} sections", results.len()),
+        query,
+        sources,
+        next_actions,
+        sections: results,
         ..Default::default()
     }
 }
@@ -164,7 +237,11 @@ mod tests {
         let context = RequestContext::new(
             Tier::Summary,
             CancellationToken::new(),
-            Capabilities::default(),
+            Capabilities {
+                polling_v23: true,
+                activity_v22: true,
+                ..Default::default()
+            },
         );
         let (sender, mut receiver) = tokio::sync::mpsc::channel(8);
         let steps = plan(&["node.get", "node.polling"]);
@@ -183,16 +260,146 @@ mod tests {
                 .iter()
                 .any(|section| section.status == SectionStatus::Ok)
         );
+        assert!(
+            envelope
+                .sections
+                .iter()
+                .all(|section| !section.at.is_empty())
+        );
+        assert!(!envelope.next_actions.is_empty());
+        assert!(
+            !envelope
+                .query
+                .get("operations")
+                .unwrap()
+                .as_array()
+                .unwrap()
+                .is_empty()
+        );
         let progressed = receiver.recv().await.unwrap();
         assert_eq!(progressed, "node.get");
 
         let cancel = CancellationToken::new();
         cancel.cancel();
         let cancelled = RequestContext::new(Tier::Summary, cancel, Capabilities::default());
-        let envelope = execute(&cancelled, plan(&["node.get"]), None, |_| async {
+        {
+            use std::sync::atomic::{AtomicUsize, Ordering};
+            let calls = AtomicUsize::new(0);
+            let envelope = execute(&cancelled, plan(&["node.get"]), None, |_| async {
+                calls.fetch_add(1, Ordering::SeqCst);
+                Ok(serde_json::json!({})) as Result<_, (SectionStatus, String)>
+            })
+            .await;
+            assert!(envelope.sections.is_empty());
+            assert_eq!(calls.load(Ordering::SeqCst), 0);
+        }
+    }
+
+    #[tokio::test]
+    async fn capability_gating_makes_zero_upstream_calls() {
+        use std::sync::atomic::{AtomicUsize, Ordering};
+        let calls = AtomicUsize::new(0);
+        let context = RequestContext::new(
+            Tier::Summary,
+            CancellationToken::new(),
+            Capabilities::default(),
+        );
+        let envelope = execute(&context, plan(&["node.polling"]), None, |_| async {
+            calls.fetch_add(1, Ordering::SeqCst);
             Ok(serde_json::json!({})) as Result<_, (SectionStatus, String)>
         })
         .await;
-        assert!(envelope.sections.is_empty());
+        assert_eq!(calls.load(Ordering::SeqCst), 0);
+        assert_eq!(envelope.sections.len(), 1);
+        assert_eq!(envelope.sections[0].status, SectionStatus::Unsupported);
+    }
+
+    #[tokio::test]
+    async fn budget_exhaustion_surfaces_typed_section_and_replay_is_deterministic() {
+        let context = RequestContext::new(
+            Tier::Summary,
+            CancellationToken::new(),
+            Capabilities {
+                polling_v23: true,
+                activity_v22: true,
+                ..Default::default()
+            },
+        );
+        // Exhaust the 6-attempt Summary budget with 8 steps.
+        let many = plan(&[
+            "node.get",
+            "node.search",
+            "node.neighbors",
+            "node.observations",
+            "node.activity",
+            "observer.get",
+            "observer.search",
+            "packet.get",
+        ]);
+        let first = execute(&context, many.clone(), None, |_| async {
+            Ok(serde_json::json!({"ok": true})) as Result<_, (SectionStatus, String)>
+        })
+        .await;
+        assert!(
+            first
+                .sections
+                .iter()
+                .any(|section| section.status == SectionStatus::BudgetExhausted)
+        );
+        assert!(!first.next_actions.is_empty());
+
+        // Replay on a fresh replica with same input yields same plan and shape.
+        let fresh = RequestContext::new(
+            Tier::Summary,
+            CancellationToken::new(),
+            Capabilities {
+                polling_v23: true,
+                activity_v22: true,
+                ..Default::default()
+            },
+        );
+        let second = execute(&fresh, many, None, |_| async {
+            Ok(serde_json::json!({"ok": true})) as Result<_, (SectionStatus, String)>
+        })
+        .await;
+        assert_eq!(first.sections.len(), second.sections.len());
+    }
+
+    #[tokio::test]
+    async fn fault_statuses_carry_next_actions() {
+        let context = RequestContext::new(
+            Tier::Summary,
+            CancellationToken::new(),
+            Capabilities {
+                polling_v23: true,
+                activity_v22: true,
+                ..Default::default()
+            },
+        );
+        let envelope = execute(
+            &context,
+            plan(&["node.get", "node.search"]),
+            None,
+            |step| async move {
+                if step.operation_key == "node.get" {
+                    Err((SectionStatus::Timeout, "deadline".to_owned()))
+                } else {
+                    Err((SectionStatus::Unavailable, "upstream down".to_owned()))
+                }
+            },
+        )
+        .await;
+        assert!(
+            envelope
+                .sections
+                .iter()
+                .all(|section| !section.at.is_empty())
+        );
+        assert!(
+            envelope
+                .next_actions
+                .iter()
+                .any(|action| action.contains("narrower"))
+        );
     }
 }

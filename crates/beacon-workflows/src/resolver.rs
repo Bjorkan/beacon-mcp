@@ -83,7 +83,7 @@ pub fn resolve(
                     .into_iter()
                     .take(MAX_CANDIDATES)
                     .map(|index| Candidate {
-                        identity: format!("pubkey:{index}"),
+                        identity: pubkeys[index].as_str().to_owned(),
                         entity: EntityType::Node,
                         name: None,
                         iata: input.iata.clone(),
@@ -102,7 +102,7 @@ pub fn resolve(
         if normalized.is_empty() || normalized.len() > 256 {
             return Resolved::Invalid("invalid name".to_owned());
         }
-        let mut hits: Vec<Candidate> = nodes_by_name
+        let name_matches: Vec<&Candidate> = nodes_by_name
             .iter()
             .filter(|candidate| {
                 candidate
@@ -110,6 +110,19 @@ pub fn resolve(
                     .as_deref()
                     .is_some_and(|candidate_name| candidate_name.to_ascii_lowercase() == normalized)
             })
+            .collect();
+        if name_matches.is_empty() {
+            return Resolved::NotFound;
+        }
+        if input.entity.is_some()
+            && !name_matches
+                .iter()
+                .any(|candidate| Some(candidate.entity) == input.entity)
+        {
+            return Resolved::Invalid("entity type mismatch".to_owned());
+        }
+        let mut hits: Vec<Candidate> = name_matches
+            .into_iter()
             .filter(|candidate| input.entity.is_none_or(|entity| candidate.entity == entity))
             .filter(|candidate| {
                 input.iata.as_deref().is_none_or(|wanted| {
@@ -248,5 +261,33 @@ mod tests {
             &keys,
         );
         assert!(matches!(prefix_ambiguous, Resolved::Ambiguous { .. }));
+    }
+}
+
+#[cfg(test)]
+mod cross_type_tests {
+    use super::{Candidate, EntityType, ResolveInput, Resolved, resolve};
+
+    #[test]
+    fn name_with_wrong_entity_is_invalid_not_notfound() {
+        let candidates = vec![Candidate {
+            identity: "223e4567-e89b-42d3-a456-426614174001".to_owned(),
+            entity: EntityType::Observer,
+            name: Some("Kalle".to_owned()),
+            iata: None,
+        }];
+        let result = resolve(
+            &ResolveInput {
+                name: Some("Kalle".to_owned()),
+                id: None,
+                pubkey: None,
+                prefix: None,
+                entity: Some(EntityType::Node),
+                iata: None,
+            },
+            &candidates,
+            &[],
+        );
+        assert!(matches!(result, Resolved::Invalid(_)));
     }
 }
