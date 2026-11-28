@@ -125,7 +125,7 @@ async fn lists_only_implemented_tools_and_calls_all_nine() {
         .iter()
         .map(|v| v["name"].as_str().unwrap())
         .collect::<Vec<_>>();
-    assert_eq!(names.len(), 51);
+    assert_eq!(names.len(), 55);
     for (name, args, field) in [
         ("beacon_get_server_info", json!({}), "serverVersion"),
         ("beacon_list_iatas", json!({"limit":1}), "items"),
@@ -133,7 +133,7 @@ async fn lists_only_implemented_tools_and_calls_all_nine() {
         ("beacon_list_scopes", json!({"limit":2}), "items"),
         (
             "beacon_search_nodes",
-            json!({"sort":"name","iatas":["arn"],"limit":1}),
+            json!({"sort":"name","iatas":["arn"],"limit":1,"poller":false}),
             "items",
         ),
         ("beacon_get_node", json!({"id":ID}), "name"),
@@ -224,6 +224,7 @@ async fn lists_only_implemented_tools_and_calls_all_nine() {
     );
     let requested = paths.lock().unwrap();
     assert!(requested.iter().any(|path| path.contains("iatas=ARN")));
+    assert!(requested.iter().any(|path| path.contains("poller=false")));
     assert!(
         requested
             .iter()

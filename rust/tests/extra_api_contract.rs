@@ -29,6 +29,13 @@ fn additional_tool_queries_cover_every_pinned_upstream_parameter() {
         ("beacon_backfill_messages", "/messages/backfill"),
         ("beacon_get_node_activity", "/nodes/{nodeId}/activity"),
         ("beacon_get_node_neighbors", "/nodes/{nodeId}/neighbors"),
+        ("beacon_get_node_poller", "/nodes/{nodeId}/poller"),
+        ("beacon_get_node_polling", "/nodes/{nodeId}/polling"),
+        ("beacon_get_node_telemetry", "/nodes/{nodeId}/telemetry"),
+        (
+            "beacon_list_latest_node_telemetry",
+            "/nodes/telemetry/latest",
+        ),
         (
             "beacon_get_node_observations",
             "/nodes/{nodeId}/observations",
@@ -61,7 +68,7 @@ fn additional_tool_queries_cover_every_pinned_upstream_parameter() {
         ("beacon_get_top_observers", "/stats/top-observers"),
         ("beacon_get_top_talkers", "/stats/top-talkers"),
     ];
-    assert_eq!(routes.len(), 26);
+    assert_eq!(routes.len(), 30);
     let legacy_routes = [
         ("beacon_get_server_info", "/info"),
         ("beacon_list_iatas", "/iatas"),
@@ -122,14 +129,6 @@ fn additional_tool_queries_cover_every_pinned_upstream_parameter() {
                 next_is_query_name = true;
             } else if next_is_query_name && line.starts_with("name: ") {
                 let param = line.trim_start_matches("name: ");
-                // Upstream advertises region filters for message reads but its
-                // handlers never apply them (they only call parseIATAs).
-                if ["beacon_search_messages", "beacon_get_channel_messages"].contains(&name)
-                    && ["region", "regionId"].contains(&param)
-                {
-                    next_is_query_name = false;
-                    continue;
-                }
                 let param = if param == "channelID" {
                     "channelId"
                 } else {

@@ -1,4 +1,4 @@
-//! Additional fixed public Beacon v2.2 REST reads.
+//! Additional fixed public Beacon v2.3 REST reads.
 //! No caller-supplied URL, HTTP method, credentials or administrative paths.
 use crate::{
     client::{BeaconClient, ErrorCode, GatewayError, Operation},
@@ -8,7 +8,7 @@ use crate::{
 use rmcp::model::{JsonObject, Tool};
 use serde_json::{Value, json};
 
-const NAMES: [&str; 26] = [
+const NAMES: [&str; 30] = [
     "beacon_list_brokers",
     "beacon_get_channel",
     "beacon_get_iata",
@@ -17,6 +17,10 @@ const NAMES: [&str; 26] = [
     "beacon_get_node_activity",
     "beacon_get_node_neighbors",
     "beacon_get_node_observations",
+    "beacon_get_node_poller",
+    "beacon_get_node_polling",
+    "beacon_get_node_telemetry",
+    "beacon_list_latest_node_telemetry",
     "beacon_get_observer_adverts",
     "beacon_get_observer_telemetry",
     "beacon_list_observer_directory",
@@ -65,6 +69,10 @@ fn operation(name: &str) -> Option<(Operation, Shape)> {
         "beacon_get_node_activity" => (NodeActivity, Object),
         "beacon_get_node_neighbors" => (NodeNeighbors, Array),
         "beacon_get_node_observations" => (NodeObservations, Page),
+        "beacon_get_node_poller" => (NodePoller, Object),
+        "beacon_get_node_polling" => (NodePolling, Object),
+        "beacon_get_node_telemetry" => (NodeTelemetry, Object),
+        "beacon_list_latest_node_telemetry" => (NodeLatestTelemetry, Object),
         "beacon_get_observer_adverts" => (ObserverAdverts, Page),
         "beacon_get_observer_telemetry" => (ObserverTelemetry, Object),
         "beacon_list_observer_directory" => (ObserverDirectory, Page),
@@ -87,7 +95,10 @@ fn operation(name: &str) -> Option<(Operation, Shape)> {
     })
 }
 
-fn duration(value: &str) -> Result<(), GatewayError> {
+fn duration(value: &str) -> Result<u32, GatewayError> {
+    if !value.is_ascii() {
+        return Err(invalid("invalid duration"));
+    }
     let (amount, unit) = value.split_at(value.len().saturating_sub(1));
     let amount: u32 = amount.parse().map_err(|_| invalid("invalid duration"))?;
     let minutes = match unit {
@@ -100,7 +111,7 @@ fn duration(value: &str) -> Result<(), GatewayError> {
     if minutes == 0 || minutes > 43_200 {
         return Err(invalid("range must be between 1 minute and 720 hours"));
     }
-    Ok(())
+    Ok(minutes)
 }
 
 fn iata(value: &str) -> Result<String, GatewayError> {
@@ -189,6 +200,9 @@ impl ExtraTools {
             | Operation::NodeActivity
             | Operation::NodeNeighbors
             | Operation::NodeObservations
+            | Operation::NodePoller
+            | Operation::NodePolling
+            | Operation::NodeTelemetry
             | Operation::ObserverAdverts
             | Operation::ObserverTelemetry
             | Operation::ScopeDetail => Some(
@@ -247,7 +261,15 @@ impl ExtraTools {
                 }
                 "range" => {
                     let text = value.as_str().ok_or_else(|| invalid("invalid duration"))?;
-                    duration(text)?;
+                    let minutes = duration(text)?;
+                    if op == Operation::NodeActivity && minutes < 60 {
+                        return Err(invalid("node activity range must be at least 1h"));
+                    }
+                    if op == Operation::NodeTelemetry
+                        && !["24h", "72h", "168h", "720h"].contains(&text)
+                    {
+                        return Err(invalid("invalid node telemetry range"));
+                    }
                     text.to_owned()
                 }
                 "cursor" | "afterId" | "afterObservationId" | "regionId" | "payloadType"
@@ -261,6 +283,19 @@ impl ExtraTools {
                         return Err(invalid("integer outside supported range"));
                     }
                     number.to_string()
+                }
+                "interval" if op == Operation::NodeTelemetry => {
+                    let text = value.as_str().ok_or_else(|| invalid("invalid interval"))?;
+                    if !["1h", "6h", "24h"].contains(&text) {
+                        return Err(invalid("invalid node telemetry interval"));
+                    }
+                    text.to_owned()
+                }
+                "include" if op == Operation::NodeTelemetry => {
+                    if value.as_str() != Some("untrusted") {
+                        return Err(invalid("invalid node telemetry include"));
+                    }
+                    "untrusted".to_owned()
                 }
                 "keyKnown" => value
                     .as_bool()
@@ -295,6 +330,7 @@ impl ExtraTools {
                 op,
                 Operation::Brokers
                     | Operation::NodeNeighbors
+                    | Operation::NodeLatestTelemetry
                     | Operation::NodeTypes
                     | Operation::ObservationStats
                     | Operation::PayloadBreakdown
@@ -325,6 +361,21 @@ impl ExtraTools {
             .client
             .request(op, identifier.as_deref(), &query)
             .await?;
+        if op == Operation::NodeLatestTelemetry {
+            let items = response["items"].as_array().ok_or_else(|| {
+                GatewayError::new(ErrorCode::Unavailable, "Beacon returned invalid telemetry list")
+            })?;
+            let truncated = items.len() > limit as usize;
+            let mut pagination = json!({"hasMore": false});
+            if truncated {
+                pagination["truncated"] = json!(true);
+            }
+            return Ok(json!({
+                "items": items.iter().take(limit as usize).collect::<Vec<_>>(),
+                "generatedAt": response["generatedAt"],
+                "pagination": pagination
+            }));
+        }
         match shape {
             Shape::Page => {
                 let mut result = page(response.clone(), limit as usize, false)?;
