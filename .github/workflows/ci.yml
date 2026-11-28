@@ -26,15 +26,15 @@ jobs:
       - name: Install pinned Rust toolchain
         run: rustup toolchain install 1.99.1 --profile minimal --component clippy --component rustfmt
       - name: Check Rust formatting
-        run: cargo +1.99.1 fmt --manifest-path rust/Cargo.toml --all -- --check
+        run: cargo +1.99.1 fmt --all -- --check
       - name: Check all Rust targets
-        run: cargo +1.99.1 check --manifest-path rust/Cargo.toml --workspace --all-targets --locked
+        run: cargo +1.99.1 check --workspace --all-targets --locked
       - name: Lint Rust source and tests (all features)
-        run: cargo +1.99.1 clippy --manifest-path rust/Cargo.toml --workspace --all-targets --all-features --locked -- -D warnings
+        run: cargo +1.99.1 clippy --workspace --all-targets --all-features --locked -- -D warnings
       - name: Run Rust tests (all features)
-        run: cargo +1.99.1 test --manifest-path rust/Cargo.toml --workspace --all-features --locked
+        run: cargo +1.99.1 test --workspace --all-features --locked
       - name: Build Rust gateway
-        run: cargo +1.99.1 build --manifest-path rust/Cargo.toml --release --locked
+        run: cargo +1.99.1 build --workspace --release --locked
 
   container:
     name: Container verification

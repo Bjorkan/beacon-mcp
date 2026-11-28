@@ -5,8 +5,8 @@ Status: frozen baseline, no behavior change.
 
 ## 1. Tool inventory (55 tools = 53 public REST reads + 2 composites)
 
-Source of truth: `rust/src/*-tool-definitions.json`, `tests/fixtures/tool-names.json`,
-`Operation` enum in `rust/src/client.rs` (54 variants = 53 public + internal `WsTicket`).
+Source of truth: `crates/beacon-workflows/src/*-tool-definitions.json`, `tests/fixtures/tool-names.json`,
+`Operation` enum in `crates/beacon-api/src/client.rs` (moved to workspace in PR 02; content unchanged) (54 variants = 53 public + internal `WsTicket`).
 
 | # | MCP tool | Operation | Upstream `GET /api/v1/…` | Future operation key |
 |---|----------|-----------|---------------------------|----------------------|
@@ -73,7 +73,7 @@ admin (`/admin/*`), writes, arbitrary host/path/credentials/headers.
 
 ## 2. Resources (7 templates)
 
-`rust/src/resources.rs::parse_uri`, advertised in `server.rs::list_resource_templates`:
+`crates/beacon-domain/src/resources.rs::parse_uri`, advertised in `server.rs::list_resource_templates` (workspace locations since PR 02):
 
 | Template | ID rule |
 |----------|---------|
@@ -90,7 +90,7 @@ rejected. Tests: `resources::tests`.
 
 ## 3. Prompts (3, stateless)
 
-`rust/src/prompts.rs`: `beacon_node_diagnostics` (UUID),
+`crates/beacon-mcp/src/prompts.rs`: `beacon_node_diagnostics` (UUID),
 `beacon_region_comparison` (`iataA`/`iataB`, must differ),
 `beacon_route_review` (`iata` + 32-hex `pathKey`). No upstream call, no storage.
 Newlines/control chars and overlong args rejected.

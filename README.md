@@ -78,8 +78,8 @@ Large unpaged arrays may be truncated to 50 results; narrow the filters
 for more precise answers.
 
 The gateway is built in Rust. For a local build, use
-`cargo test --manifest-path rust/Cargo.toml --locked` and
-`cargo run --manifest-path rust/Cargo.toml --locked` with `BEACON_BASE_URL`
+`cargo test --workspace --locked` and
+`cargo run --package beacon-mcp --locked` with `BEACON_BASE_URL`
 set to your Beacon server. Production deployments pull a published image;
 `compose.yaml` requires an explicit `BEACON_MCP_IMAGE` SHA or digest.
 
