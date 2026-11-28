@@ -55,25 +55,27 @@ The gateway exposes these filters; use one region selector at a time.
 
 ## Development
 
-The Rust source, lockfile and tests live in `rust/`. Use the pinned toolchain
+The Rust source, lockfile and tests live in the workspace root (`Cargo.toml`/`Cargo.lock`)
+with four crates in `crates/`: `beacon-api`, `beacon-domain`, `beacon-workflows`,
+`beacon-mcp`. Use the pinned toolchain
 from CI (currently 1.99.1):
 
 ```sh
-cargo +1.99.1 fmt --manifest-path rust/Cargo.toml --all -- --check
-cargo +1.99.1 clippy --manifest-path rust/Cargo.toml --all-targets --locked -- -D warnings
-cargo +1.99.1 test --manifest-path rust/Cargo.toml --locked
-cargo +1.99.1 build --manifest-path rust/Cargo.toml --release --locked
+cargo +1.99.1 fmt --all -- --check
+cargo +1.99.1 clippy --workspace --all-targets --locked -- -D warnings
+cargo +1.99.1 test --workspace --locked
+cargo +1.99.1 build --workspace --release --locked
 tests/container/run.sh
 ```
 
 For local execution set `BEACON_BASE_URL=https://beacon.example.org`, then
-`cargo run --manifest-path rust/Cargo.toml --locked`. The root MCP endpoint
+`cargo run --package beacon-mcp --locked`. The root MCP endpoint
 supports modern `server/discover`, `tools/list` and `tools/call` and stateless
 legacy initialization back through `2024-10-07`. Health routes are `/healthz`
 and `/readyz`; they do not probe the upstream server. The binary supports
 `--healthcheck` for the Docker and Compose health checks.
 
-Only the fixed public GET `Operation` enum in `rust/src/client.rs` may contact
+Only the fixed public GET `Operation` enum in `crates/beacon-api/src/client.rs` may contact
 upstream; never accept a caller-controlled host, path, credentials, headers or
 admin route. URL and body lengths are bounded. One jittered retry is allowed
 only for transient network failures or HTTP 502/503/504 **without**
@@ -83,7 +85,7 @@ headers, upstream response bodies, stack traces or environment values.
 
 Each of the 55 tools publishes an input/output schema, description and
 read-only/idempotent/open-world hints. The checked-in JSON documents in
-`rust/src/*-tool-definitions.json` freeze the MCP discovery contract; update
+`crates/beacon-workflows/src/*-tool-definitions.json` freeze the MCP discovery contract; update
 them with a reviewed contract change, not with a build-time download.
 Lists default to 20 and reject limits above 50; they never return more than
 requested. Numeric, opaque and compound cursors vary per endpoint. Four

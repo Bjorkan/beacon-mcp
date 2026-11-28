@@ -9,4 +9,6 @@ Frozen, behavior-preserving baseline. No catalog change.
 - [01-capability-matrix.md](01-capability-matrix.md) — rmcp 3.10.0, protocol
   revisions, extension support, SDK upgrade decision.
 - [01-eval-baseline.md](01-eval-baseline.md) — bilingual SV/EN eval seed
-  (EVAL-01..06). Executable offline harness: `rust/tests/baseline_eval.rs`.
+  (EVAL-01..06). Executable offline harness: `crates/beacon-mcp/tests/baseline_eval.rs`.
+
+- [02-workspace.md](02-workspace.md) — four-crate split, dependency rule, module map (no behavior change).

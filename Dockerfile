@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1.29@sha256:572cebbc2b15e6f84c077742952674889cb63cd5e9b80abdffcbe587b6f19183
 FROM rust:1.99.1-bookworm@sha256:e6f2cff35d0f309acf8433b4f05878ed77092602c5065cc81801177da0bb3a9c AS build
-WORKDIR /app/rust
-COPY rust/Cargo.toml rust/Cargo.lock ./
-COPY rust/src ./src
+WORKDIR /app
+COPY Cargo.toml Cargo.lock ./
+COPY crates ./crates
 RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
-    cargo build --release --locked
+    cargo build --release --locked --package beacon-mcp
 
 FROM debian:bookworm-slim@sha256:734a72b3d6142a71993b4bc580ca01d8ca687f77a2c422d96a961d3376b179bc AS runtime
 LABEL org.opencontainers.image.title="Beacon MCP Server" \
@@ -14,7 +14,7 @@ LABEL org.opencontainers.image.title="Beacon MCP Server" \
 RUN apt-get update && apt-get install --no-install-recommends -y ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --uid 1000 --user-group --no-create-home --shell /usr/sbin/nologin beacon
-COPY --from=build /app/rust/target/release/beacon-mcp-rust /usr/local/bin/beacon-mcp
+COPY --from=build /app/target/release/beacon-mcp /usr/local/bin/beacon-mcp
 USER beacon:beacon
 ENV HOST=0.0.0.0 PORT=3000
 EXPOSE 3000

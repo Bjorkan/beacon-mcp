@@ -15,7 +15,7 @@ documentation contracts, then pin the release's full commit and run:
 
 ```sh
 python3 scripts/sync-openapi.py <full-beacon-server-commit>
-cargo test --manifest-path rust/Cargo.toml --locked
+cargo test --workspace --locked
 ```
 
 The synchronization command refuses branches and moving tags; it requires a

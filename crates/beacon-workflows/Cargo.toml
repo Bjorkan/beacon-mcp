@@ -1,0 +1,19 @@
+[package]
+name = "beacon-workflows"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+beacon-api.workspace = true
+chrono.workspace = true
+rmcp.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+uuid.workspace = true
+url.workspace = true
+reqwest.workspace = true
