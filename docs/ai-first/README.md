@@ -18,3 +18,5 @@ Frozen, behavior-preserving baseline. No catalog change.
 - [04-domain.md](04-domain.md) — pure typed entities, metric registry, polling/time/evidence semantics.
 
 - [05-workflow-engine.md](05-workflow-engine.md) — shared resolver, deterministic planner, budgets, envelope, progress/cancellation.
+
+- [06-expert-gateway.md](06-expert-gateway.md) — list/describe/execute over the 53-read registry; legacy catalog retained.

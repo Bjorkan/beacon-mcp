@@ -128,7 +128,9 @@ async fn lists_only_implemented_tools_and_calls_all_nine() {
         .iter()
         .map(|v| v["name"].as_str().unwrap())
         .collect::<Vec<_>>();
-    assert_eq!(names.len(), 55);
+    // PR06 additive stage: 55 legacy tools + beacon_explore gateway.
+    assert_eq!(names.len(), 56);
+    assert!(names.contains(&"beacon_explore"));
     for (name, args, field) in [
         ("beacon_get_server_info", json!({}), "serverVersion"),
         ("beacon_list_iatas", json!({"limit":1}), "items"),

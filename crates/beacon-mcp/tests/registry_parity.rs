@@ -49,6 +49,7 @@ fn no_prohibited_routes_are_reachable() {
         "crates/beacon-workflows/src/analytics-tool-definitions.json",
         "crates/beacon-workflows/src/extra-tool-definitions.json",
         "crates/beacon-workflows/src/composite-tool-definitions.json",
+        "crates/beacon-workflows/src/explore-tool-definitions.json",
     ] {
         let text = fs::read_to_string(repo_root().join(file)).unwrap();
         assert!(!text.contains("ws-ticket"), "ticket leaked in {file}");

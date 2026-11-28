@@ -1,0 +1,62 @@
+{
+  "beacon_explore": {
+    "name": "beacon_explore",
+    "description": "Expert gateway over the 53 allowlisted Beacon REST reads. Modes: list (bounded category-filtered discovery), describe (exact schemas, example, capabilities, limitations), execute (validated operation with args). Internal WS ticket never exposed.",
+    "annotations": {
+      "readOnlyHint": true,
+      "idempotentHint": true,
+      "destructiveHint": false,
+      "openWorldHint": true
+    },
+    "inputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["list", "describe", "execute"]
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "operation": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "args": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "required": ["mode"],
+      "allOf": [
+        {
+          "if": {"properties": {"mode": {"const": "describe"}}},
+          "then": {"required": ["mode", "operation"]}
+        },
+        {
+          "if": {"properties": {"mode": {"const": "execute"}}},
+          "then": {"required": ["mode", "operation", "args"]}
+        }
+      ]
+    },
+    "outputSchema": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "key": {"type": "string"},
+        "data": {},
+        "items": {"type": "array"},
+        "count": {"type": "integer"}
+      }
+    }
+  }
+}
