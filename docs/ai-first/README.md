@@ -12,3 +12,5 @@ Frozen, behavior-preserving baseline. No catalog change.
   (EVAL-01..06). Executable offline harness: `crates/beacon-mcp/tests/baseline_eval.rs`.
 
 - [02-workspace.md](02-workspace.md) — four-crate split, dependency rule, module map (no behavior change).
+
+- [03-registry.md](03-registry.md) — canonical operation registry, JSON Schema contracts, continuation tokens.
