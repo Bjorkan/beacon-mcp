@@ -14,3 +14,5 @@ Frozen, behavior-preserving baseline. No catalog change.
 - [02-workspace.md](02-workspace.md) — four-crate split, dependency rule, module map (no behavior change).
 
 - [03-registry.md](03-registry.md) — canonical operation registry, JSON Schema contracts, continuation tokens.
+
+- [04-domain.md](04-domain.md) — pure typed entities, metric registry, polling/time/evidence semantics.
