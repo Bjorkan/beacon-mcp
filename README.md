@@ -24,6 +24,7 @@ features, or send messages.
 - “Show the details for this packet or trace.”
 - “Show hourly originated packet activity for this node over the last 48 hours.”
 - “Show observations originating from this node, then continue with the next cursor.”
+- “Show a repeater's battery and temperature history and which observer polls it.”
 - “Which nodes have excessive clock drift, and which radio presets are used?”
 - “Compare received signal distributions, path statistics and active talkers.”
 
@@ -65,8 +66,10 @@ Want to run the service, contribute, or understand the implementation? See
 [AGENTS.md](AGENTS.md) for setup, deployment, architecture, security, and test
 details.
 
-The gateway currently exposes **49 read-only MCP tools** covering the published
-Beacon Server **2.2.0** public REST GET API, including node activity,
+The gateway currently exposes **55 read-only MCP tools** (53 public REST
+reads and two composites) covering the Beacon Server **2.3.0** tagged public
+REST GET API, including node activity, polling assignments, poller claims,
+and node telemetry,
 node-originated observations, neighbors, observer telemetry and adverts,
 broker status, regional metadata, route evidence and additional statistics.
 The WebSocket ticket is fetched internally for resource subscriptions and

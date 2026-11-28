@@ -400,7 +400,7 @@ impl BeaconClient {
                 } else {
                     self.timeout
                 })
-                .header(reqwest::header::USER_AGENT, "beacon-mcp/2.2.0")
+                .header(reqwest::header::USER_AGENT, "beacon-mcp/2.3.0")
                 .send()
                 .await;
             let response = match response {

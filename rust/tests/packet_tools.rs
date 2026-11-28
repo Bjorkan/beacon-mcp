@@ -143,7 +143,7 @@ async fn calls_all_five_packet_and_channel_tools_with_filters_and_cursors() {
         ),
         (
             "beacon_search_messages",
-            json!({"channelHash":"ab","since":"2026-10-01T00:00:00Z"}),
+            json!({"channelHash":"ab","since":"2026-10-01T00:00:00Z","region":"sverige"}),
             "items",
         ),
         (
@@ -153,7 +153,7 @@ async fn calls_all_five_packet_and_channel_tools_with_filters_and_cursors() {
         ),
         (
             "beacon_get_channel_messages",
-            json!({"channelId":7,"cursor":24}),
+            json!({"channelId":7,"cursor":24,"regionId":1}),
             "items",
         ),
     ] {
@@ -195,6 +195,8 @@ async fn calls_all_five_packet_and_channel_tools_with_filters_and_cursors() {
     assert!(paths.iter().any(
         |path| !path.contains("channelID=7") && path.starts_with("/api/v1/channels/7/messages")
     ));
+    assert!(paths.iter().any(|path| path.contains("region=sverige")));
+    assert!(paths.iter().any(|path| path.contains("regionId=1")));
     drop(paths);
     token.cancel();
     for task in tasks {
