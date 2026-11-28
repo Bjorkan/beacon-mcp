@@ -5,3 +5,5 @@
 )]
 
 pub mod client;
+pub mod continuation;
+pub mod registry;

@@ -29,29 +29,115 @@ use std::sync::Arc;
 use tokio_util::sync::CancellationToken;
 
 // The frozen discovery schema is also the pre-request validation boundary.
-// Its keywords are deliberately limited to the subset used by these tools.
+// JSON Schema 2020-12 compatible for the keywords the contracts publish:
+// $ref/$defs, oneOf/anyOf/allOf, nested objects/arrays, type arrays,
+// format (uuid asserted, others pass through), if/then/else, plus the
+// original flat bounds. Error strings preserve the frozen negative fixtures.
+fn resolve_local_ref<'a>(schema_root: &'a Value, reference: &str) -> Option<&'a Value> {
+    let path = reference.strip_prefix("#/")?;
+    let mut current = schema_root;
+    for segment in path.split('/') {
+        let key = segment.replace("~1", "/").replace("~0", "~");
+        current = current.get(&key)?;
+    }
+    Some(current)
+}
+
+#[allow(dead_code)]
 fn validate_field(value: &Value, schema: &Value, path: &str) -> Result<(), String> {
-    let kind = schema["type"].as_str().unwrap_or("");
-    let valid_type = match kind {
-        "string" => value.is_string(),
-        "integer" => value.as_i64().is_some() || value.as_u64().is_some(),
-        "boolean" => value.is_boolean(),
-        "array" => value.is_array(),
-        _ => true,
+    validate_field_with_root(value, schema, schema, path)
+}
+
+fn validate_field_with_root(
+    value: &Value,
+    schema: &Value,
+    schema_root: &Value,
+    path: &str,
+) -> Result<(), String> {
+    if let Some(reference) = schema.get("$ref").and_then(Value::as_str)
+        && let Some(target) = resolve_local_ref(schema_root, reference)
+    {
+        return validate_field_with_root(value, target, schema_root, path);
+    }
+    if let Some(branches) = schema.get("oneOf").and_then(Value::as_array) {
+        let mut failures = Vec::new();
+        let mut matched = 0;
+        for branch in branches {
+            match validate_field_with_root(value, branch, schema_root, path) {
+                Ok(()) => matched += 1,
+                Err(message) => failures.push(message),
+            }
+        }
+        if matched == 1 {
+            return Ok(());
+        }
+        return Err(failures.into_iter().next().unwrap_or_else(|| {
+            format!("{path}: Invalid input: does not match exactly one schema")
+        }));
+    }
+    if let Some(branches) = schema.get("anyOf").and_then(Value::as_array) {
+        let mut last_error = None;
+        for branch in branches {
+            match validate_field_with_root(value, branch, schema_root, path) {
+                Ok(()) => return Ok(()),
+                Err(message) => last_error = Some(message),
+            }
+        }
+        return Err(last_error
+            .unwrap_or_else(|| format!("{path}: Invalid input: does not match any schema")));
+    }
+    if let Some(branches) = schema.get("allOf").and_then(Value::as_array) {
+        for branch in branches {
+            validate_field_with_root(value, branch, schema_root, path)?;
+        }
+    }
+    if let Some(condition) = schema.get("if") {
+        let condition_holds = validate_field_with_root(value, condition, schema_root, path).is_ok();
+        if condition_holds && let Some(then_schema) = schema.get("then") {
+            validate_field_with_root(value, then_schema, schema_root, path)?;
+        }
+        if !condition_holds && let Some(else_schema) = schema.get("else") {
+            validate_field_with_root(value, else_schema, schema_root, path)?;
+        }
+    }
+    let kind_value = &schema["type"];
+    let allowed_kinds: Vec<&str> = if let Some(kind) = kind_value.as_str() {
+        vec![kind]
+    } else if let Some(kinds) = kind_value.as_array() {
+        kinds.iter().filter_map(Value::as_str).collect()
+    } else {
+        Vec::new()
     };
-    if !valid_type {
-        let expected = if kind == "integer" { "number" } else { kind };
-        let received = match value {
-            Value::Null => "null",
-            Value::String(_) => "string",
-            Value::Number(_) => "number",
-            Value::Bool(_) => "boolean",
-            Value::Array(_) => "array",
-            Value::Object(_) => "object",
-        };
-        return Err(format!(
-            "{path}: Invalid input: expected {expected}, received {received}"
-        ));
+    if !allowed_kinds.is_empty() {
+        let valid_type = allowed_kinds.iter().any(|kind| match *kind {
+            "string" => value.is_string(),
+            "integer" => value.as_i64().is_some() || value.as_u64().is_some(),
+            "number" => value.as_f64().is_some(),
+            "boolean" => value.is_boolean(),
+            "array" => value.is_array(),
+            "object" => value.is_object(),
+            "null" => value.is_null(),
+            _ => true,
+        });
+        if !valid_type {
+            let expected = allowed_kinds.join("|");
+            let received = match value {
+                Value::Null => "null",
+                Value::String(_) => "string",
+                Value::Number(_) => "number",
+                Value::Bool(_) => "boolean",
+                Value::Array(_) => "array",
+                Value::Object(_) => "object",
+            };
+            let expected_label = if expected == "integer" {
+                "number".to_owned()
+            } else {
+                expected
+            };
+            return Err(format!(
+                "{path}: Invalid input: expected {expected_label}, received {received}"
+            ));
+        }
     }
     if let Some(options) = schema["enum"].as_array()
         && !options.contains(value)
@@ -63,6 +149,13 @@ fn validate_field(value: &Value, schema: &Value, path: &str) -> Result<(), Strin
             .collect::<Vec<_>>()
             .join("|");
         return Err(format!("{path}: Invalid option: expected one of {choices}"));
+    }
+    if let Some(text) = value.as_str()
+        && let Some(format) = schema.get("format").and_then(Value::as_str)
+        && format == "uuid"
+        && uuid::Uuid::parse_str(text).is_err()
+    {
+        return Err(format!("{path}: Invalid UUID"));
     }
     if let Some(text) = value.as_str() {
         if let Some(min) = schema["minLength"].as_u64()
@@ -138,7 +231,26 @@ fn validate_field(value: &Value, schema: &Value, path: &str) -> Result<(), Strin
             return Err(format!("{path}: Invalid array length"));
         }
         for (index, item) in values.iter().enumerate() {
-            validate_field(item, &schema["items"], &format!("{path}.{index}"))?;
+            validate_field_with_root(
+                item,
+                &schema["items"],
+                schema_root,
+                &format!("{path}.{index}"),
+            )?;
+        }
+    }
+    if let Some(object) = value.as_object()
+        && let Some(properties) = schema.get("properties").and_then(Value::as_object)
+    {
+        for (field, rule) in properties {
+            if let Some(field_value) = object.get(field) {
+                validate_field_with_root(
+                    field_value,
+                    rule,
+                    schema_root,
+                    &format!("{path}.{field}"),
+                )?;
+            }
         }
     }
     Ok(())
@@ -146,6 +258,7 @@ fn validate_field(value: &Value, schema: &Value, path: &str) -> Result<(), Strin
 
 fn validate_tool_input(tool: &Tool, args: &rmcp::model::JsonObject) -> Result<(), String> {
     let schema = &tool.input_schema;
+    let schema_root = Value::Object(schema.as_ref().clone());
     let properties = schema["properties"]
         .as_object()
         .ok_or_else(|| "Invalid tool schema properties".to_owned())?;
@@ -190,7 +303,7 @@ fn validate_tool_input(tool: &Tool, args: &rmcp::model::JsonObject) -> Result<()
             unknown.push(format!("\"{field}\""));
             continue;
         };
-        if let Err(message) = validate_field(value, rule, field) {
+        if let Err(message) = validate_field_with_root(value, rule, &schema_root, field) {
             errors.push(message);
         }
     }
@@ -559,4 +672,53 @@ pub fn router_with_live(
         .route("/readyz", get(health))
         .fallback_service(mcp)
         .layer(middleware::from_fn(crate::request_logging::summarize))
+}
+
+#[cfg(test)]
+mod schema_keyword_tests {
+    use super::validate_field;
+    use serde_json::json;
+
+    #[test]
+    fn supports_oneof_anyof_allof_defs_nested_and_conditionals() {
+        // oneOf: exactly one branch must match.
+        let schema = json!({"oneOf": [{"type": "string"}, {"type": "integer"}]});
+        assert!(validate_field(&json!("a"), &schema, "f").is_ok());
+        assert!(validate_field(&json!(1), &schema, "f").is_ok());
+        assert!(validate_field(&json!(1.5), &schema, "f").is_err());
+
+        // $defs + $ref.
+        let schema = json!({
+            "$defs": {"name": {"type": "string", "minLength": 2}},
+            "$ref": "#/$defs/name",
+        });
+        assert!(validate_field(&json!("ab"), &schema, "f").is_ok());
+        assert!(validate_field(&json!("a"), &schema, "f").is_err());
+
+        // Nested objects.
+        let schema = json!({
+            "type": "object",
+            "properties": {"outer": {"type": "object", "properties": {"inner": {"type": "string"}}}},
+        });
+        assert!(validate_field(&json!({"outer": {"inner": "x"}}), &schema, "f").is_ok());
+        assert!(validate_field(&json!({"outer": {"inner": 1}}), &schema, "f").is_err());
+
+        // type arrays (nullable unions used by output schemas).
+        let schema = json!({"type": ["string", "null"]});
+        assert!(validate_field(&json!("x"), &schema, "f").is_ok());
+        assert!(validate_field(&json!(null), &schema, "f").is_ok());
+        assert!(validate_field(&json!(1), &schema, "f").is_err());
+
+        // if/then/else.
+        let schema = json!({
+            "type": "string",
+            "if": {"minLength": 3},
+            "then": {"pattern": "^A"},
+            "else": {"pattern": "^B"},
+        });
+        assert!(validate_field(&json!("ABC"), &schema, "f").is_ok());
+        assert!(validate_field(&json!("xBC"), &schema, "f").is_err());
+        assert!(validate_field(&json!("B"), &schema, "f").is_ok());
+        assert!(validate_field(&json!("A"), &schema, "f").is_err());
+    }
 }
