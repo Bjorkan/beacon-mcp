@@ -5,6 +5,7 @@ use beacon_domain::resources;
 use beacon_workflows::{
     analytics_tools::AnalyticsTools,
     composite_tools::CompositeTools,
+    explore::ExploreTools,
     extra_tools::ExtraTools,
     packet_tools::{self, PacketTools},
     routing_tools::RoutingTools,
@@ -138,6 +139,12 @@ fn validate_field_with_root(
                 "{path}: Invalid input: expected {expected_label}, received {received}"
             ));
         }
+    }
+    if schema
+        .get("const")
+        .is_some_and(|expected| value != expected)
+    {
+        return Err(format!("{path}: Invalid option: expected constant value"));
     }
     if let Some(options) = schema["enum"].as_array()
         && !options.contains(value)
@@ -325,6 +332,7 @@ pub struct BeaconServer {
     pub analytics_tools: AnalyticsTools,
     pub extra_tools: ExtraTools,
     pub composite_tools: CompositeTools,
+    pub explore_tools: ExploreTools,
     pub live: Option<Arc<Live>>,
 }
 
@@ -379,6 +387,7 @@ impl ServerHandler for BeaconServer {
                 .chain(self.analytics_tools.list())
                 .chain(self.extra_tools.list())
                 .chain(self.composite_tools.list())
+                .chain(self.explore_tools.list())
                 .collect(),
             ..Default::default()
         })
@@ -392,6 +401,7 @@ impl ServerHandler for BeaconServer {
             .or_else(|| self.analytics_tools.definition(name))
             .or_else(|| self.extra_tools.definition(name))
             .or_else(|| self.composite_tools.definition(name))
+            .or_else(|| self.explore_tools.definition(name))
     }
 
     async fn list_prompts(
@@ -569,6 +579,14 @@ impl ServerHandler for BeaconServer {
                 .is_some_and(|text| packet_tools::timestamp(text).is_err())
         });
         let result = match if self
+            .explore_tools
+            .definition(request.name.as_ref())
+            .is_some()
+        {
+            self.explore_tools
+                .execute(request.name.as_ref(), request.arguments)
+                .await
+        } else if self
             .composite_tools
             .definition(request.name.as_ref())
             .is_some()
@@ -656,6 +674,7 @@ pub fn router_with_live(
                 analytics_tools: AnalyticsTools::new(client.clone()),
                 extra_tools: ExtraTools::new(client.clone()),
                 composite_tools: CompositeTools::new(client.clone()),
+                explore_tools: ExploreTools::new(client.clone()),
                 live: live.clone(),
             })
         },

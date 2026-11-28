@@ -129,6 +129,8 @@ async fn advertises_all_51_public_and_composite_tools_and_calls_every_analytics_
         .collect::<Vec<_>>();
     let mut expected: Vec<String> =
         serde_json::from_str(include_str!("../../../tests/fixtures/tool-names.json")).unwrap();
+    // PR06 additive stage: legacy 55-tool catalog retained plus beacon_explore gateway.
+    expected.push("beacon_explore".to_owned());
     names.sort();
     expected.sort();
     assert_eq!(names, expected);

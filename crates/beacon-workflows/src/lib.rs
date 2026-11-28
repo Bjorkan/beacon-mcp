@@ -8,6 +8,7 @@ pub mod analytics_tools;
 pub mod composite_tools;
 pub mod context;
 pub mod envelope;
+pub mod explore;
 pub mod extra_tools;
 pub mod packet_tools;
 pub mod planner;
